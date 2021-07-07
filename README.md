@@ -8,7 +8,8 @@ Have begun implemening:
 * Refocus using angular spectrum method - done
 * Cosine window to avoid edge effects - done for circular window for bundle holograpy, need rectangular for general purpose
 * Focus metrics (Brenner, Sobel, Peak Intensity done)
-* Auto focus whole image by optimising focus metric done, need to implement ROI
+* Auto focus whole image or ROI by optimising focus metric done (done).
+* Generate LUT of propagators for faster auto-focus (done).
 
 All needs documenting properly.
 
