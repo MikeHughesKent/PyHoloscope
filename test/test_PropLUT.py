@@ -12,7 +12,7 @@ import cv2 as cv
 import context
 
 
-import pyHoloscope as holo
+import PyHoloscope as holo
 
 from pybundle import PyBundle
 import time
