@@ -1,7 +1,7 @@
 # PyHoloscope : Holographic Microscopy Utilities for Python
 Mainly developed by Mike Hughes, Applied Optics Group, University of Kent. Pull requests welcome.
 
-A project to develop tools for holographic microscopy in Python. The aim is to make this optimised, fast and suitable for real-time use, including GPU acceleration. There is already a python library called [HoloPy] (https://github.com/manoharan-lab/holopy) which implements a lot of useful functionality, so check that out if you need something that works now.  
+A project to develop tools for holographic microscopy in Python. The aim is to make this optimised, fast and suitable for real-time use, including GPU acceleration. There is already a python library called [HoloPy](https://github.com/manoharan-lab/holopy) which implements a lot of useful functionality, so check that out if you need something that works now.  
 
 Have begun implementing:
 * Generate propagator for angular spectrum method - done
