@@ -1,9 +1,9 @@
 # PyHoloscope : Holographic Microscopy Utilities for Python
 Mainly developed by Mike Hughes, Applied Optics Group, University of Kent. Pull requests welcome.
 
-In process of migrating code from Matlab. Hope to mostly use OpenCV to make this fast. 
+A project to develop tools for holographic microscopy in Python. The aim is to make this optimised, fast and suitable for real-time use, including GPU acceleration. There is already a python library called [HoloPy] (https://github.com/manoharan-lab/holopy) which implements a lot of useful functionality, so check that out if you need something that works now.  
 
-Have begun implemening:
+Have begun implementing:
 * Generate propagator for angular spectrum method - done
 * Refocus using angular spectrum method - done
 * Cosine window to avoid edge effects - done for circular window for bundle holograpy, need rectangular for general purpose
@@ -21,3 +21,4 @@ Other things to do in longer timer:
 * Port tracking code from Matlab (or maybe try and integrate with TrackPy?)
 * Iterative phase recovery for inline holography
 * GPU acceleration
+* Phase recovery techniques (from inline holography)
