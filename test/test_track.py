@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Tests numerical refocus of inline hologram.
+Tests tracking functionality
 
 @author: Mike Hughes
 """
@@ -19,7 +19,10 @@ import PyHoloscope.track as track
 
 import PyHoloscope as holo
 
-mHolo = holo.Holo()
+wavelength = 450e-9
+pixelSize = 0.44e-6
+
+mHolo = holo.Holo(wavelength, pixelSize)
 
 mTrack = track.Tracker()
 

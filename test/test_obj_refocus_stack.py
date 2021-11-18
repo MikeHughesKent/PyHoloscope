@@ -44,7 +44,7 @@ hp = holo.Holo(wavelength, pixelSize)
 hp.setBackground(backgroundProc)
 hp.setWindow(backgroundProc, windowRad, windowSkinThickness)
 
-depthRange = [0, 0.001]
+depthRange = [0, 0.002]
 nDepths = 100
 
 t0 = time.time()
@@ -52,7 +52,7 @@ depthStack = hp.depthStack(holoProc, depthRange, nDepths)
 print("Time to build depth stack (s): ", round(time.time() - t0,4))
 
 t0 = time.time()
-img = depthStack.getDepthIntensity(10)
+img = depthStack.getDepthIntensity(0.00053)
 print("Time to fetch image (s): ", round(time.time() - t0,6))
 plt.figure()
 plt.imshow(img, cmap='gray')

@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-Tests finding focus using pre-calculated look up table (LUT) of propagators
-for depths. This approxiamtely halved the time to locate the optical focal
-depth.
+Tests finding focus of a ROI both by refocusing whole image and also
+by refocusing just the ROI with a surrounding margin for speed.
 
 @author: Mike Hughes
 """
