@@ -2,26 +2,44 @@
 """
 Created on Tue Oct 26 23:14:14 2021
 
-@author: AOG
+Tests synthetic DIC and phase gradient.
+
+@author: Mike Hughes
+Applied Optics Group
+University of Kent
 """
 import numpy as np
 import math
 from matplotlib import pyplot as plt
 
+import context      # Load paths
+
 import PyHoloscope as holo
 
-imageField = np.ones((100,100)) + 1j * np.ones((100,100))
 
-xM, yM = np.meshgrid(np.linspace(0, 3 * math.pi, num = 100), np.linspace(0,0,num = 100)) 
 
-imageField= imageField * np.exp(1j * xM)
+imageField = np.ones((100,100), dtype = complex)
+phaseField = np.zeros((100,100), dtype = complex)
+
+phaseField[20:40,20:40] = math.pi
+imageField = imageField * np.exp(1j * phaseField)
 
 plt.figure()
 plt.imshow(np.angle(imageField))
 plt.title('Phase')
 
-DIC = holo.syntheticDIC(imageField)
+
+#DIC
+dic= holo.syntheticDIC(imageField)
 
 plt.figure()
-plt.imshow(DIC)
+plt.imshow(dic)
 plt.title('DIC')
+
+
+# Phase Gradient
+phaseGrad = holo.phaseGradient(imageField)
+
+plt.figure()
+plt.imshow(phaseGrad)
+plt.title('Phase Gradient')

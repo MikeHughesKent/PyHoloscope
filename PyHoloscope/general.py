@@ -17,15 +17,15 @@ Classes:
 """
 
 import numpy as np
-import cv2 as cv
+from matplotlib import pyplot as plt
 import math
 import scipy
 import scipy.optimize
+import time
 
-import time
-from matplotlib import pyplot as plt
 from PIL import Image
-import time
+import cv2 as cv
+
 
 def __init__():
     pass
@@ -34,12 +34,9 @@ def __init__():
 INLINE_MODE = 1
 OFFAXIS_MODE = 2
 
-########## Holo Class #############
+############################# Holo Class ####################################
 
 class Holo:
-    
-
-    
     
     def __init__(self, mode, wavelength, pixelSize, **kwargs):
         
@@ -75,8 +72,7 @@ class Holo:
         self.depth = depth
         
     def setBackground(self, background):
-        self.background  = background
-      
+        self.background  = background      
         
     def clearBackground(self):
         self.background = None        
@@ -91,8 +87,7 @@ class Holo:
     def autoFindOffAxisMod(self):
         if self.background is not None:
             self.cropCentre = offAxisFindMod(self.background)
-            self.cropRadius = offAxisFindCropRadius(self.background)
-         
+            self.cropRadius = offAxisFindCropRadius(self.background)         
     
     def offAxisBackgroundField(self):
         self.backgroundField = offAxisDemod(self.background, self.cropCentre, self.cropRadius)
@@ -154,7 +149,7 @@ class Holo:
 
         
 
-###### Lower-level functions ##########
+######################## Lower-level functions ##############################
 
 
 # Creates Fourier domain propagator for angular spectrum meethod. GridSize
@@ -220,6 +215,12 @@ def preProcess(img, **kwargs):
             
     return imgOut
 
+
+
+
+
+
+
     
 # Produce a circular cosine window mask on grid of imgSize * imgSize. Mask
 # is 0 for radius > circleSize and 1 for radius < (circleSize - skinThickness)
@@ -232,6 +233,11 @@ def circCosineWindow(imgSize, circleRadius, skinThickness):
     mask[imgRad < innerRad ] = 1
     mask[imgRad > innerRad + skinThickness] = 0
     return mask
+
+
+
+
+
 
 
 # Returns score of how 'in focus' an image is based on selected method.
@@ -260,10 +266,31 @@ def focusScore(img, method, **kwargs):
         ySobel = scipy.signal.convolve2d(img, filtY)
         sobel = xSobel**2 + ySobel**2
         focusScore = -np.mean(sobel)
+        
+    if method == 'SobelVariance':
+        filtX = np.array( [ [ 1, 0, -1] , [ 2, 0, -2], [ 1,  0, -1]] )
+        filtY = np.array( [ [ 1, 2,  1] , [ 0, 0,  0], [-1, -2, -1]] )
+        xSobel = scipy.signal.convolve2d(img, filtX)
+        ySobel = scipy.signal.convolve2d(img, filtY)
+        sobel = xSobel**2 + ySobel**2
+        focusScore = -(np.std(sobel)**2)
     
     if method == 'Var':
         focusScore = np.std(img)
-    
+        
+        
+    # https://doi.org/10.1016/j.optlaseng.2020.106195
+    if method == 'DarkFocus':
+        kernelX = np.array([[-1,0,1]])
+        kernelY = kernelX.transpose()
+        gradX = cv.filter2D(img, -1, kernelX)
+        gradY = cv.filter2D(img, -1, kernelY)
+        mean, stDev = cv.meanStdDev(gradX**2 + gradY**2)
+        
+        return -(stDev[0,0]**2)
+        
+        
+        
     return focusScore
 
 
@@ -278,25 +305,27 @@ def refocusAndScore(depth, imgFFT, pixelSize, wavelength, method, scoreROI, prop
     else:
         prop = propLUT.propagator(depth)        
     
-    # We are working with the FFT of the hologram    
-    #t0 = time.time()
+    # We are working with the FFT of the hologram for speed 
     refocImg = np.abs(refocus(imgFFT, prop, FourierDomain = True))
-    #print("FFT Time: ", time.time() - t0)
+
+    # If we are running focus metric only on a ROI, extract the ROI
     if scoreROI is not None:  
         refocImg = scoreROI.crop(refocImg)
     
-    #t0 = time.time()
-    score = focusScore(refocImg, method)
-    #print("Score Time: ", time.time() - t0)
-
-   
     
+    score = focusScore(refocImg, method)
+  
+    #print(depth, score)
     return score
 
 
 
 
-# Determine optimal depth to maximise sharpness in img
+
+
+
+
+# Determine optimal depth to maximise focus metric in image
 def findFocus(img, wavelength, pixelSize, depthRange, method, **kwargs):
         
     background = kwargs.get('background', None)
@@ -304,12 +333,15 @@ def findFocus(img, wavelength, pixelSize, depthRange, method, **kwargs):
     scoreROI = kwargs.get('roi', None)
     margin = kwargs.get('margin', None)  
     propLUT = kwargs.get('propagatorLUT', None)
+    coarseSearchInterval = kwargs.get('coarseSearchInterval', None)
     
     if background is not None:
         cHologram = img.astype('float32') - background.astype('float32')
     else:
         cHologram  = img.astype('float32')
 
+    # If a margin is specified, this means we only refocus the ROI plus a 
+    # margin around it for speed. Define the ROI here.
     if margin is not None and scoreROI is not None:
         refocusROI = roi(scoreROI.x - margin, scoreROI.y - margin, scoreROI.width + margin *2, scoreROI.height + margin *2)
         refocusROI.constrain(0,0,np.shape(img)[0], np.shape(img)[1])
@@ -320,15 +352,26 @@ def findFocus(img, wavelength, pixelSize, depthRange, method, **kwargs):
     if window is not None:
         cHologram = cHologram * window
         
-    if refocusROI != None:
+    # If we are only refocusing around a ROI, crop to the ROI + margn    
+    if refocusROI is not None:
         cropImg = refocusROI.crop(cHologram)
-        scoreROI.constrain(0,0,np.shape(cropImg)[0], np.shape(cropImg)[1])
-        
+        scoreROI.constrain(0,0,np.shape(cropImg)[0], np.shape(cropImg)[1])        
     else:
-        cropImg = cHologram
+        cropImg = cHologram   # otherwise use whole image
         
     # Pre-compute the FFT of the hologram since we need this for every trial depth    
     imgFFT = np.fft.fftshift(np.fft.fft2(cropImg))
+    
+    if coarseSearchInterval is not None:
+        startDepth = coarseFocusSearch(imgFFT, depthRange, coarseSearchInterval, pixelSize, wavelength, method, scoreROI, propLUT)
+        intervalSize = (depthRange[1] - depthRange[0]) / coarseSearchInterval
+        minBound = max(depthRange[0], startDepth - intervalSize)
+        maxBound = min(depthRange[1], startDepth + intervalSize)
+        depthRange = [minBound, maxBound]
+    else:
+        startDepth = (max(depthRange) - min(depthRange))/2
+
+    # Find the depth using optimiser
     depth =  scipy.optimize.minimize_scalar(refocusAndScore, method = 'bounded', bounds = depthRange, args= (imgFFT ,pixelSize, wavelength, method, scoreROI, propLUT) )
 
     return depth.x 
@@ -337,7 +380,27 @@ def findFocus(img, wavelength, pixelSize, depthRange, method, **kwargs):
 
 
 
-# Produce a plot of focus score against depth
+
+
+
+# An initial check for approxiamte location of good focus depths prior to a finer serrch. Called
+# by findFocus
+def coarseFocusSearch(imgFFT, depthRange, nIntervals, pixelSize, wavelength, method, scoreROI, propLUT):
+    
+    searchDepths = np.linspace(depthRange[0], depthRange[1], nIntervals)
+    focusScore = np.zeros_like(searchDepths)
+    for idx, depth in enumerate(searchDepths):
+        focusScore[idx] = refocusAndScore(depth, imgFFT, pixelSize, wavelength, method, scoreROI, propLUT)
+    
+    bestInterval = np.argmin(focusScore)
+    bestDepth = searchDepths[bestInterval]
+    return bestDepth
+    
+    
+    
+
+# Produce a plot of focus score against depth, mainly useful for debugging
+# erroneous focusing
 def focusScoreCurve(img, wavelength, pixelSize, depthRange, nPoints, method, **kwargs):
         
     background = kwargs.get('background', None)
@@ -349,8 +412,7 @@ def focusScoreCurve(img, wavelength, pixelSize, depthRange, nPoints, method, **k
         cHologram = img.astype('float32') - background.astype('float32')
     else:
         cHologram  = img.astype('float32')
-    #plt.figure()
-    #plt.imshow(cHologram, cmap='gray')     
+     
         
     if margin is not None and scoreROI is not None:
         refocusROI = roi(scoreROI.x - margin, scoreROI.y - margin, scoreROI.width + margin *2, scoreROI.height + margin *2)
@@ -379,6 +441,9 @@ def focusScoreCurve(img, wavelength, pixelSize, depthRange, nPoints, method, **k
     return score, depths
 
 
+
+
+
 # Numerical refocusing of a hologram to produce a depth stack. 'depthRange' is a tuple
 # defining the min and max depths, the resulting stack will have 'nDepths' images
 # equally spaced between these limits. Specify 'imgisFFT' = true if the provided
@@ -393,6 +458,11 @@ def refocusStack(img, wavelength, pixelSize, depthRange, nDepths, **kwargs):
         prop = propagator(np.shape(img)[0], wavelength, pixelSize, depth)
         imgStack.addIdx(refocus(img, prop, **kwargs), idx)
     return imgStack
+
+
+
+
+
 
 
 # Removes spatial modulation from off axis hologram. cropCentre is the location of
@@ -425,13 +495,10 @@ def offAxisDemod(cameraImage, cropCentre, cropRadius, **kwargs):
     t4 = time.time()
     #print(round(t4-t3,4))
 
-
-
     # Shift the ROI to the centre
     shiftedFFT = maskedFFT[round(cropCentre[1] - cropRadius): round(cropCentre[1] + cropRadius),round(cropCentre[0] - cropRadius): round(cropCentre[0] + cropRadius)]
     #t5 = time.time()
     #print(round(t5-t4,4))
-
 
     # Reconstruct complex field
     reconField = np.fft.ifft2(np.fft.fftshift(shiftedFFT));
@@ -440,20 +507,27 @@ def offAxisDemod(cameraImage, cropCentre, cropRadius, **kwargs):
     # Remove phase information where amplitude is very low
     #reconThresh = angle(reconField) .* (abs(reconField) > max(abs(reconField(:))) / threshold );
     
-   # plt.figure()
-   # plt.imshow(np.log(np.abs(maskedFFT)))
-   # plt.title('Shifted FFT')
+    # plt.figure()
+    # plt.imshow(np.log(np.abs(maskedFFT)))
+    # plt.title('Shifted FFT')
     if returnFFT:
         return reconField, np.log(np.abs(cameraFFT))
     else:
         return reconField
+    
+    
+    
+    
+    
+    
 
 # Finds the location of the off-axis holography modulation peak in the FFT. Finds
 # the peak in the positive x region.
 def offAxisFindMod(cameraImage):
     
     # Apply 2D FFT
-    cameraFFT = np.abs(np.fft.fftshift(np.fft.fft2(cameraImage)) )     
+    cameraFFT = np.abs(np.fft.fftshift(np.fft.fft2(cameraImage)) )    
+ 
 
     # Mask central region
     imSize = min(np.shape(cameraImage))
@@ -461,10 +535,17 @@ def offAxisFindMod(cameraImage):
     cy = np.shape(cameraImage)[1] / 2
     cameraFFT[round(cx - imSize / 8): round(cx + imSize / 8), round(cy - imSize / 8): round(cy + imSize / 8)  ] = 0
     cameraFFT[0: round(cx), :  ] = 0
+  
 
     peakLoc = np.unravel_index(cameraFFT.argmax(), cameraFFT.shape)
     
     return peakLoc
+
+
+
+
+
+
 
 
 # Estimates the correct off axis crop radius based on modulation peak position
@@ -484,7 +565,12 @@ def offAxisFindCropRadius(cameraImage):
     
     
     return cropRadius
+   
+
     
+
+
+
 
 # Predicts the location of the modulation peak (i.e. carrer frequency) in the
 # FFT. Returns the distance of the peak from the centre (dc) of the FFT in pixels.
@@ -504,6 +590,13 @@ def offAxisPredictMod(wavelength, pixelSize, tiltAngle):
     modFreqPx = 2 / refFreqPx
     
     return modFreqPx
+
+
+
+
+
+
+
 
 
 # Predicts the reference beam tilt based on the modulation of the camera image
@@ -534,7 +627,11 @@ def offAxisPredictTiltAngle(cameraImage, wavelength, pixelSize):
     
 
 
-# Remove global phase from using reference (background) images
+
+
+
+
+# Remove global phase from complex image using reference (background) images
 def relativePhase(img, background):
     
     fieldOut = img * np.exp(1j * -np.angle(background))
@@ -542,21 +639,27 @@ def relativePhase(img, background):
     return fieldOut
 
 
+
+
+
+
+
+# Return a log-scale Fourier plane for display
 def fourierPlaneDisplay(img):
     
     cameraFFT = np.log(np.abs(np.fft.fftshift(np.fft.fft2(img)) ) )
     return cameraFFT    
 
 
+
 # Generates a simple, non-rigorous DIC-style image for display. The image
 # should appear similar to a relief map, with dark and light regions
 # correspnding to positive and negative phase gradients along the
 # shear angle direction (default is horizontal = 0 rad). Phase gradient
-# is multiple by the image intensity. 'img' should be a complex numpy array.
+# is multiplied by the image intensity. 'img' should be a complex numpy array.
 def syntheticDIC(img, **kwargs):
     
     shearAngle = kwargs.get('shearAngle', 0)
-
     
     # Calculate gradient on original image and image phase shifted by pi. Using
     # the smallest phase gradient avoids effects due to phase wrapping
@@ -568,18 +671,24 @@ def syntheticDIC(img, **kwargs):
     sobelC1[np.invert(use1)] = 0
     sobelC2[use1] = 0
     sobelC = sobelC1 + sobelC2
-    
     # Rotate the gradient to shear angle
     sobelC = sobelC * np.exp(1j * shearAngle)
        
     # DIC is product of phase gradient along one direction and image intensity
-    DIC = np.real(sobelC) * (np.max(np.abs(img)) - np.abs(img))
-    
+    DIC = np.real(sobelC) * (np.max(np.abs(img)) - np.abs(img)) 
+    # Not sure how best to invovel amplitude here
+    # DIC = np.real(sobelC) * (-np.abs(img))
+
         
     return DIC
 
 
 
+
+
+
+
+# Returns the ampitude of the phase gradient
 def phaseGradientAmp(img):
     
     # Phase gradient in x and y directions
@@ -588,6 +697,12 @@ def phaseGradientAmp(img):
     sobelC = sobelx + 1j * sobely
 
     return sobelC
+
+
+
+
+
+
 
 # Produces a phase gradient (magnitude) image. img should be a complex numpy
 # array
@@ -603,11 +718,21 @@ def phaseGradient(img):
     return phaseGrad
 
 
+
+
+
+
+
+
 # Returns the mean phase in an image
 def meanPhase(img):
 
     meanPhase = np.angle(np.sum(img))
     return meanPhase
+
+
+
+
 
 
 # Makes the phase in an image relative to the mean phase in specified ROI
@@ -621,7 +746,53 @@ def relativePhaseROI(img, roi):
 
 
 
-############### Utility class for region of interest
+
+
+        
+# Extracts sqaure of size boxSize from centre of img
+def extractCentral(img, boxSize):
+       w = np.shape(img)[0]
+       h = np.shape(img)[1]
+
+       cx = w/2
+       cy = h/2
+       boxSemiSize = min(cx,cy,boxSize)
+        
+       img = img[math.floor(cx - boxSemiSize):math.floor(cx + boxSemiSize), math.ceil(cy- boxSemiSize): math.ceil(cy + boxSemiSize)]
+       return img
+   
+   
+def amplitude(img):
+    return np.abs(img)
+   
+    
+def phase(img):
+    return np.angle(img) % (2 * math.pi)  
+    
+
+
+    
+# Takes complex image and returns 8 bit representations of the amplitude and
+# phase for saving as 8 bit images   
+def get8bit(img):
+        
+    amp = np.abs(img).astype('double')
+    amp = amp - np.min(amp)
+    amp = amp / np.max(amp) * 255
+    amp = amp.astype('uint8')
+    
+    phase = np.angle(img).astype('double')
+    phase = phase % (2 * math.pi)
+    phase = phase / (2* math.pi) * 255
+    phase = phase.astype('uint8')
+    
+    return amp, phase
+
+
+
+
+
+############### Utility class for region of interest ########################
 class roi:
     
     def __init__(self, x, y, width, height):
@@ -646,10 +817,11 @@ class roi:
         return img[self.x: self.x + self.width, self.y:self.y + self.height]
     
 
-################## LUT of propagators
+################## Class for LUT of propagators ##############################
 class PropLUT:
     def __init__(self, imgSize, wavelength, pixelSize, depthRange, nDepths):
         self.depths = np.linspace(depthRange[0], depthRange[1], nDepths)
+        self.size = imgSize
         self.nDepths = nDepths
         self.wavelength = wavelength
         self.pixelSize = pixelSize
@@ -658,18 +830,20 @@ class PropLUT:
             self.propTable[idx,:,:] = propagator(imgSize, wavelength, pixelSize, depth)
             
     def __str__(self):
-        return "LUT of " + str(self.nDepths) + " propagators from depth of " + str(self.depths[0]) + " to " + str(self.depths[-1]) + ". Wavelength: " + str(self.wavelength) + ", Pixel Size: " + str(self.pixelSize)
+        return "LUT of " + str(self.nDepths) + " propagators from depth of " + str(self.depths[0]) + " to " + str(self.depths[-1]) + ". Wavelength: " + str(self.wavelength) + ", Pixel Size: " + str(self.pixelSize) + " ,Size:" + str(self.size)
             
     def propagator(self, depth): 
         
         # Find nearest propagator
         if depth < self.depths[0] or depth > self.depths[-1]:
             return - 1
-        idx = round((depth - self.depths[0]) / (self.depths[-1] - self.depths[0]) * self.nDepths)
+        idx = round((depth - self.depths[0]) / (self.depths[-1] - self.depths[0]) * (self.nDepths - 1))
         #print("Desired Depth: ", depth, "Used Depth:", self.depths[idx])
         return self.propTable[idx, :,:]
         
         
+        
+################### Class for stack of images focused at different depths ####       
 class FocusStack:
      
     def __init__(self, img, depthRange, nDepths):
@@ -732,29 +906,3 @@ class FocusStack:
         imlist[0].save(filename, compression="tiff_deflate", save_all=True,
                append_images=imlist[1:])
         
-         
-# Extracts sqaure of size boxSize from centre of img
-def extractCentral(img, boxSize):
-       w = np.shape(img)[0]
-       h = np.shape(img)[1]
-
-       cx = w/2
-       cy = h/2
-       boxSemiSize = min(cx,cy,boxSize)
-        
-       img = img[math.floor(cx - boxSemiSize):math.floor(cx + boxSemiSize), math.ceil(cy- boxSemiSize): math.ceil(cy + boxSemiSize)]
-       return img
-   
-def get8bit(img):
-        
-    amp = np.abs(img).astype('double')
-    amp = amp - np.min(amp)
-    amp = amp / np.max(amp) * 255
-    amp = amp.astype('uint8')
-    
-    phase = np.angle(img).astype('double')
-    phase = phase % (2 * math.pi)
-    phase = phase / (2* math.pi) * 255
-    phase = phase.astype('uint8')
-    
-    return amp, phase

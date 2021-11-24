@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 """
-Tests sim functionality
+Tests off-axis holography functionality.
 
 @author: Mike Hughes
+Applied Optics Group
+University of Kent
 """
 
 from matplotlib import pyplot as plt
@@ -13,28 +15,23 @@ import math
 import cmocean
 import cv2 as cv
 
-import context
-from pybundle import PyBundle
+import context    # relative paths
 
 import PyHoloscope as holo
 import PyHoloscope.sim as sim
 
 
+# Experimental Parameters
 wavelength = 630e-9
 pixelSize = .3e-6
-tiltAngle = .2
-cropRadius = 120
 
 
-hologram = cv.imread("test data\\embryo_holo.png")
-hologram = hologram[:,:,1]
+# Load images
+hologram = cv.imread("test data\\tissue_paper_oa.tif",-1)
+background = cv.imread("test data\\tissue_paper_oa_background.tif",-1)
 
 
-background = cv.imread("test data\\embryo_back.png")
-background = background[:,:,1]
-
-
-
+# Determine Modulation
 cropCentre = holo.offAxisFindMod(background)
 cropRadius = holo.offAxisFindCropRadius(background)
 
@@ -65,7 +62,6 @@ plt.title('Corrected Phase')
 plt.figure(dpi = 150)
 plt.imshow(np.angle(relativeField), cmap = cmocean.cm.phase)
 plt.title('Relative Phase')
-
 
 plt.figure(dpi = 150)
 plt.imshow(np.abs(reconField), cmap = 'gray')

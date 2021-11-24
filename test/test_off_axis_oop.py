@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 """
-Tests sim functionality
+Tests object oriented off axis holography functionality
 
 @author: Mike Hughes
+Applied Optics Group
+University of Kent
 """
 
 from matplotlib import pyplot as plt
@@ -13,36 +15,30 @@ import math
 import cmocean
 import cv2 as cv
 
-import context
-from pybundle import PyBundle
+import context              # Load paths       
 
 import PyHoloscope as holo
-import PyHoloscope.sim as sim
 
-
+# Experimental Parameters
 wavelength = 630e-9
 pixelSize = .3e-6
-tiltAngle = .2
-cropRadius = 120
 
+
+# Load images
+hologram = cv.imread("test data\\tissue_paper_oa.tif",-1)
+background = cv.imread("test data\\tissue_paper_oa_background.tif",-1)
+
+
+# Create object
 mHolo = holo.Holo(holo.INLINE_MODE, wavelength, pixelSize)
 
 
-hologram = cv.imread("test data\\embryo_holo.png")
-hologram = hologram[:,:,1]
-
-
-background = cv.imread("test data\\embryo_back.png")
-background = background[:,:,1]
-
 mHolo.setBackground(background)
-mHolo.autoFindOffAxisMod()
-mHolo.cropRadius =120
-mHolo.offAxisBackgroundField()
+mHolo.autoFindOffAxisMod()            # Finds modulation frequency
+mHolo.offAxisBackgroundField()        # Processes background image to obtain background phase
+
+
 reconField = mHolo.offAxisRecon(hologram)
-
-
-
 
 
 plt.figure(dpi = 150)
@@ -52,7 +48,6 @@ plt.title('Hologram')
 plt.figure(dpi = 150)
 plt.imshow(np.angle(reconField), cmap = cmocean.cm.phase)
 plt.title('Phase')
-
 
 
 plt.figure(dpi = 150)
@@ -69,6 +64,3 @@ plt.figure(dpi = 150)
 plt.imshow(phaseGrad, cmap='gray')
 plt.title('Phase Gradient')
 
-
-mHolo.setBackground(background)
-mHolo.autoFindOffAxisMod()
