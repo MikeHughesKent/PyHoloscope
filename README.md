@@ -5,6 +5,8 @@ A on-going project to develop tools for holographic microscopy in Python. The ai
 
 As of now, this is very in-development, there are lots of bugs and not much documentation. If you would like to use the library, there are some examples in the test folder that will get you started.
 
+Most of the functionality is in PyHoloscope\general.py.
+
 The following is currently implemented for general holography:
 * Refocus using angular spectrum method 
 * Cosine window to avoid edge effects - (done for circular window for bundle holograpy, need rectangular for general purpose)
