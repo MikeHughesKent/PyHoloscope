@@ -5,25 +5,32 @@ A on-going project to develop tools for holographic microscopy in Python. The ai
 
 As of now, this is very in-development, there are lots of bugs and not much documentation. If you would like to use the library, there are some examples in the test folder that will get you started.
 
-Most of the functionality is in PyHoloscope\general.py.
+Functionality can be accessed directly via static methods or, in most cases, via the Holo class.
 
-The following is currently implemented for general holography:
+Examples are provided in the *tests* folder.
+
+Off Axis Holography
+* Complex image recovery by FFT, shifting modulated signal to centre and iFFT (CPU Acceleration available)
+* Auto detect modulation frequency
+* Predict tilt angle from modulation frequency
+
+General holography
 * Refocus using angular spectrum method 
 * Cosine window to avoid edge effects - (done for circular window for bundle holograpy, need rectangular for general purpose)
 * Generate stack of images at different focal positions
-* Focus metrics (Brenner, Sobel, Peak Intensity, DarkFocus, SobelVariance 
+* Focus metrics (Brenner, Sobel, Peak Intensity, DarkFocus, SobelVariance)
 * Auto focus whole image or ROI by optimising focus metric, through fast bounded search and (optionally) initial coarse search to narrow search range.
 * Generate LUT of propagators for faster auto-focus or repeated geberation of focus stacks.
 
-For off-axis holography:
-* Complex image recovery by FFT, shifting modulated signal to centre and iFFT
-* Auto detect modulation frequency
+Phase Visualation
 * Remove background phase 
+* Remove 1D phase tilt
 * Phase relative to some region of interest 
-* Synthetic DIC/phase contrast from QPI (partially done, some bugs)
+* Synthetic DIC/phase contrast
 
-Other things to do in longer timer:
+Other things to do in longer term:
 * Port tracking code from Matlab (or maybe try and integrate with TrackPy?)
 * Iterative phase recovery for inline holography
-* GPU acceleration
+* GPU acceleration of refocusing
 * Phase recovery techniques (from inline holography)
+

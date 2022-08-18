@@ -17,6 +17,7 @@ import cv2 as cv
 import context               # Loads paths
 
 import PyHoloscope as holo
+from pybundle import PyBundle
 
 
 hologramFile = 'test data\\microspheres_holo.tif'

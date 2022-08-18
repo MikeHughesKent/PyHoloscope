@@ -27,30 +27,30 @@ background = cv.imread(backgroundFile)[:,:,0]
 
 # Bundle pattern removal
 loc = (640,512,512)      # Fibre bundle location (x,y,radius)
-imgSize = 300            # Image size after fibre core removal
+imgSize = 512           # Image size after fibre core removal
 rad = imgSize/2          # Image radius after fibre core removal
 
 # Holography
 skinThickness = 20       # Feathering of circular window
 wavelength = 0.45e-6                  # Blue LED
 pixelSize = 0.44e-6 / imgSize * 1024
-
 # Focus finding
 roi = holo.roi(100,100,50,50) # Region of interest containing object to be focused on
-depthRange = (0.0002,0.0008)  # Refocusing only within this depth range
+#depthRange = (0.0002,0.0008)  # Refocusing only within this depth range
+depthRange = (0.0000200, 0.0000800)
 marginSize = 20               # When ROI is used, only an area with this margin 
                                    # around the ROI will be refocused
 nDepths =  200               # Number of depths in propagator LUT
 focusMetric = 'DarkFocus'
 
 # Create masks and propagator
-mask = PyBundle.getMask(hologram, loc)
+mask = PyBundle.get_mask(hologram, loc)
 window = holo.circCosineWindow(imgSize,rad, skinThickness)
 
 
 # Pre-process bundle images
-holoProc = PyBundle.cropFilterMask(hologram, loc, mask, 2.5, resize = imgSize)
-backgroundProc = PyBundle.cropFilterMask(background, loc, mask, 2.5, resize = imgSize)
+holoProc = PyBundle.crop_filter_mask(hologram, loc, mask, 2.5, resize = imgSize)
+backgroundProc = PyBundle.crop_filter_mask(background, loc, mask, 2.5, resize = imgSize)
 
 
 # Build propagator table for subsequent focusing speed

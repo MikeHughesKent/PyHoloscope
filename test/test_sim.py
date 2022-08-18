@@ -45,17 +45,17 @@ cameraImage = sim.offAxis(objectField, wavelength, pixelSize, tiltAngle)
 
 # Using the peak in the FFT, determine the modulation frequency and hence the
 # ROI to use
-cropCentre = holo.offAxisFindMod(backgroundImage)
-cropRadius = holo.offAxisFindCropRadius(backgroundImage)
+cropCentre = holo.off_axis_find_mod(backgroundImage)
+cropRadius = holo.off_axis_find_crop_radius(backgroundImage)
 
 
 # Off-axis reconstruction for background and object
-backgroundField = holo.offAxisDemod(backgroundImage, cropCentre, cropRadius)
-reconField = holo.offAxisDemod(cameraImage, cropCentre, cropRadius)
+backgroundField = holo.off_axis_demod(backgroundImage, cropCentre, cropRadius)
+reconField = holo.off_axis_demod(cameraImage, cropCentre, cropRadius)
 
 
 # Subtract background phase
-correctedField = holo.relativePhase(reconField, backgroundField)
+correctedField = holo.relative_phase(reconField, backgroundField)
 
 
 plt.figure(dpi = 300)

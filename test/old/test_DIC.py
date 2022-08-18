@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
 """
-Created on Tue Oct 26 23:14:14 2021
-
 Tests synthetic DIC and phase gradient.
 
 @author: Mike Hughes
@@ -12,12 +10,12 @@ import numpy as np
 import math
 from matplotlib import pyplot as plt
 
-import context      # Load paths
+import context            # Load paths
 
 import PyHoloscope as holo
 
 
-
+# Create simulate phase image
 imageField = np.ones((100,100), dtype = complex)
 phaseField = np.zeros((100,100), dtype = complex)
 
@@ -29,8 +27,8 @@ plt.imshow(np.angle(imageField))
 plt.title('Phase')
 
 
-#DIC
-dic= holo.syntheticDIC(imageField)
+# Generate DIC
+dic= holo.synthetic_DIC(imageField)
 
 plt.figure()
 plt.imshow(dic)
@@ -38,7 +36,7 @@ plt.title('DIC')
 
 
 # Phase Gradient
-phaseGrad = holo.phaseGradient(imageField)
+phaseGrad = holo.phase_gradient(imageField)
 
 plt.figure()
 plt.imshow(phaseGrad)

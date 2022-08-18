@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Tests object oriented off axis holography functionality
+Tests object oriented off axis holography functionality of PyHoloscope
 
 @author: Mike Hughes
 Applied Optics Group
@@ -30,16 +30,21 @@ background = cv.imread("test data\\tissue_paper_oa_background.tif",-1)
 
 
 # Create object
-mHolo = holo.Holo(holo.INLINE_MODE, wavelength, pixelSize)
+mHolo = holo.Holo(holo.OFFAXIS_MODE, wavelength, pixelSize)
 
+# Apply background
+mHolo.set_background(background)         
 
-mHolo.setBackground(background)
-mHolo.autoFindOffAxisMod()            # Finds modulation frequency
-mHolo.offAxisBackgroundField()        # Processes background image to obtain background phase
+# Find modulation frequency
+mHolo.auto_find_off_axis_mod()           
 
+# Processes background image to obtain background phase
+mHolo.off_axis_background_field()        
 
-reconField = mHolo.offAxisRecon(hologram)
+# Remove modulation
+reconField = mHolo.process(hologram)
 
+# Display results
 
 plt.figure(dpi = 150)
 plt.imshow(hologram, cmap = 'gray')
@@ -54,12 +59,12 @@ plt.figure(dpi = 150)
 plt.imshow(np.abs(reconField), cmap = 'gray')
 plt.title('Intensity')
 
-DIC = holo.syntheticDIC(reconField, shearAngle = 0)
+DIC = holo.synthetic_DIC(reconField, shearAngle = 0)
 plt.figure(dpi = 150)
 plt.imshow(DIC, cmap='gray')
 plt.title('Synthetic DIC')
 
-phaseGrad = holo.phaseGradient(reconField)
+phaseGrad = holo.phase_gradient(reconField)
 plt.figure(dpi = 150)
 plt.imshow(phaseGrad, cmap='gray')
 plt.title('Phase Gradient')
