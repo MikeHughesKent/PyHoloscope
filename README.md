@@ -3,6 +3,8 @@
 
 A on-going project to develop tools for holographic microscopy in Python. The aim is to make this optimised, fast and suitable for real-time use, including GPU acceleration. There is already a python library called [HoloPy](https://github.com/manoharan-lab/holopy) which implements a lot of useful functionality, so check that out if you need something that works now.
 
+This work is partially funded by Royal Society Grant RGS\R2\202225 (Ultrathin Inline Holographic Microscopy).
+
 As of now, this is very in-development, there are lots of bugs and not much documentation. If you would like to use the library, there are some examples in the test folder that will get you started.
 
 Functionality can be accessed directly via static methods or, in most cases, via the Holo class.
