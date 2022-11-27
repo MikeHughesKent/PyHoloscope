@@ -21,10 +21,10 @@ class Holo:
         
         self.depth = kwargs.get('depth', 0)
         self.background = kwargs.get('background',None)
+        self.applyWindow = False
         self.window = kwargs.get('window', None)        
         self.windowRadius = kwargs.get('windowRadius', None)
         self.windowThickness = kwargs.get('windowThickness', None)
-
         
         self.findFocusMethod = kwargs.get('findFocusMethod', 'Sobel')
         self.findFocusRoi = kwargs.get('findFocusRoi', None)
@@ -39,7 +39,6 @@ class Holo:
         self.propagator = None
         self.propagatorLUT = None
         
-        
         self.cropCentre = None
         self.cropRadius = None
         self.returnFFT = False
@@ -51,8 +50,10 @@ class Holo:
         self.cropCentre = (0,0)
         self.cropRadius = 0
         
-        
+        self.invert = False
         self.refocus = False
+        self.downsample = 1
+        self.stableROI = None
         
     def __str__(self):
         return "PyHoloscope Holo Class. Wavelength: " + str(self.wavelength) + ", Pixel Size: " + str(self.pixelSize)
@@ -67,7 +68,10 @@ class Holo:
         self.pixelSize = pixelSize        
         
     def set_background(self, background):
-        self.background  = background      
+        if background is not None:
+            self.background  = background.astype('uint16') 
+        else:
+            self.background = None
         
     def clear_background(self):
         self.background = None        
@@ -89,6 +93,10 @@ class Holo:
         self.cropCentre = cropCentre
         self.cropRadius = cropRadius
         
+    def set_stable_ROI(self, roi):
+        self.stableROI = roi
+       # print(f"holo_class_set_stableROI {roi}")
+        
     def auto_find_off_axis_mod(self):
         if self.background is not None:
             self.cropCentre = off_axis_find_mod(self.background)
@@ -98,41 +106,58 @@ class Holo:
         self.backgroundField = off_axis_demod(self.background, self.cropCentre, self.cropRadius)
                     
     def update_propagator(self, img):
-        self.propagator = propagator(np.shape(img)[0], self.wavelength, self.pixelSize, self.depth)
+        self.propagator = propagator(int(np.shape(img)[0] / self.downsample), self.wavelength, self.pixelSize * self.downsample, self.depth)
         self.propagatorWavelength = self.wavelength
         self.propagatorPixelSize = self.pixelSize
         self.propagatorDepth = self.depth
         
     def set_oa_centre(self, centre):
-        self.cropCentre = centre
-        
+        self.cropCentre = centre        
      
     def set_oa_radius(self, radius):
         self.cropRadius = radius
         
     def set_return_FFT(self, returnFFT):
         self.returnFFT = returnFFT
+        
+    def set_downsample(self, downsample):
+        self.downsample = downsample
+        self.propagator = None  #Force to be recreated when needed
+        
       
     def process(self, img):
         t0 = time.time()
+        #print(f"holo_class_process img {img}")
         if img is None: 
             return
         
         ################ INLINE HOLOGRAPHY PIPELINE #######################
         if self.mode is PyHoloscope.INLINE_MODE:
-            if self.propagatorDepth != self.depth or self.propagatorWavelength != self.wavelength or self.propagatorPixelSize != self.pixelSize:
+            if self.propagator is None or self.propagatorDepth != self.depth or self.propagatorWavelength != self.wavelength or self.propagatorPixelSize != self.pixelSize:
                 self.update_propagator(img)
+            
+            # Apply downsampling
+            imgScaled = cv.resize(img, (int(np.shape(img)[1]/ self.downsample), int(np.shape(img)[0] / self.downsample) )   )
+           
+            if self.background is not None:
+                backgroundScaled = cv.resize(self.background, (int(np.shape(self.background)[1]/ self.downsample), int(np.shape(self.background)[0] / self.downsample)))    
+            else:
+                backgroundScaled = None                                 
+            
             if np.shape(self.propagator) != np.shape(img):
                 self.update_propagator(img)
+                
             if self.window is not None:
-                if np.shape(self.window) != np.shape(img):
+                if np.shape(self.window) != np.shape(imgScaled):
                     if self.windowRadius is None:
                         self.windowRadius = np.shape(img)[0] / 2
-                    self.set_window(img, self.windowRadius, self.windowThickness)
-            img = pre_process(img, window = self.window, background = self.background)
-            imgOut = refocus(img, self.propagator)
+                    self.set_window(imgScaled, self.windowRadius / self.downsample, self.windowThickness / self.downsample)
+            imgScaled = pre_process(imgScaled, window = self.window, background = backgroundScaled)
+            imgOut = refocus(imgScaled, self.propagator, cuda = self.cuda)
             if imgOut is not None:
-                imgOut = post_process(imgOut, window = self.window)            
+                imgOut = post_process(imgOut, window = self.window)      
+                if self.invert is True:
+                    imgOut = np.max(imgOut) - imgOut
                 return imgOut
             else:
                 return None
@@ -162,8 +187,8 @@ class Holo:
             if self.relativePhase == True and self.backgroundField is not None:
                 demod = relative_phase(demod, self.backgroundField)
             
-            if self.stablePhase == True:
-                demod = stable_phase(demod)
+            #if self.stablePhase == True:
+            #    demod = stable_phase(demod, roi = self.stableROI)
            
             if self.refocus is True:
               
@@ -173,7 +198,7 @@ class Holo:
                 if np.shape(self.propagator) != np.shape(demod):
                     self.update_propagator(demod)
                 
-                if self.window is not None:
+                if self.window is not None or self.applyWindow is True:
                     if np.shape(self.window) != np.shape(demod):
                         if self.windowRadius is not None and self.windowThickness is not None:
                             self.set_window(demod, self.windowRadius, self.windowThickness)
@@ -183,7 +208,7 @@ class Holo:
                 else:
                     background = None
                 demod = pre_process(demod, window = self.window, background = background)  # background is done elsewhere
-                demod = refocus(demod, self.propagator)
+                demod = refocus(demod, self.propagator, cuda = self.cuda)
                 
                 if demod is not None:
                     demod = post_process(demod, window = self.window)            

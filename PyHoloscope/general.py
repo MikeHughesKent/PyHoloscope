@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 PyHoloscope
+Python package for holgoraphic microscopy
 
 Mike Hughes, Applied Optics Group, University of Kent
 
@@ -45,17 +46,15 @@ OFFAXIS_MODE = 2
 
       
 
-# Creates Fourier domain propagator for angular spectrum meethod. GridSize
-# is size of image (in pixels) to refocus.
+
 def propagator(gridSize, wavelength, pixelSize, depth):
-    
+    """ Creates Fourier domain propagator for angular spectrum meethod. GridSize
+    is size of image (in pixels) to refocus. 
+    """
     
     area = gridSize * pixelSize
 
     (xM, yM) = np.meshgrid(range(gridSize), range(gridSize))
-    
-   
-    
     
     delta0 = 1/area;
     u = delta0*(xM - gridSize/2 -1);
@@ -68,36 +67,47 @@ def propagator(gridSize, wavelength, pixelSize, depth):
 
 
 
-
-# Refocus using angular spectrum method. Takes a hologram (with any pre-processing
-# such as background removal already performed) and a pre-computed propagator. 
-def refocus(img, propagator, **kwargs):
+def refocus(img, propagator, **kwargs):    
+    """ Refocus using angular spectrum method. Takes a hologram (with any pre-processing
+    such as background removal already performed) and a pre-computed propagator. 
+    """
     
-   
     imgIsFourier = kwargs.get('FourierDomain', False)
+    cuda = kwargs.get('cuda', False)
     if np.shape(img) != np.shape(propagator):
-        #print("shapre mismatch")
         return None
     
     # If we have been sent the FFT of image, used when repeatedly calling refocus
     # (for example when finding best focus) we don't need to do FFT or shift for speed
     if imgIsFourier:  
-        
-       return np.fft.ifft2(np.fft.fftshift(img * propagator))
+        if cuda is True:
+            img2 = cp.array(img)
+            propagator2 = cp.array(propagator)
+           
+            return cp.asnumpy(cp.fft.ifft2(cp.fft.fftshift(img2 * propagator2)))
+        else:
+            return np.fft.ifft2(np.fft.fftshift(img * propagator))
 
     else:   # If we are sent the spatial domain image
         cHologram = pre_process(img, **kwargs)
-    
-        return np.fft.ifft2(np.fft.fftshift(np.fft.fftshift(np.fft.fft2((cHologram))) * propagator))
+        if cuda is True:
+            cHologram2 = cp.array(cHologram)
+            propagator2 = cp.array(propagator)
+            return cp.asnumpy(cp.fft.ifft2(cp.fft.fftshift(cp.fft.fftshift(cp.fft.fft2((cHologram2))) * propagator2)))
+        else:
+            return np.fft.ifft2(np.fft.fftshift(np.fft.fftshift(np.fft.fft2((cHologram))) * propagator))
 
    
 
-# Processing prior to refocus - background subtraction and windowing
 def pre_process(img, **kwargs):
-    
+    """ Carries out steps required prior to refocus - background correction and 
+    windowing. Also coverts image to either float32 (if input img is real) or
+    complex64 (if input img is complex). Finally, image is cropped to a square
+    as non-square images are not currently supported.
+    """    
+
     background = kwargs.get('background', None)
     window = kwargs.get('window', None)
-    #imgIsFourier = kwargs.get('FourierDomain', False)
     
     if np.iscomplex(img[0,0]):
         imType = 'complex64'
@@ -109,6 +119,9 @@ def pre_process(img, **kwargs):
         imgOut = img.astype(imType) - background.astype(imType)
     else:
         imgOut  = img.astype(imType)
+        
+    minSize = np.min(np.shape(imgOut))
+    imgOut = imgOut[:minSize, :minSize]
             
     if window is not None:
         if np.iscomplex(img[0,0]):
@@ -119,11 +132,9 @@ def pre_process(img, **kwargs):
     return imgOut
 
 
-
-
-# Processing after refocus - background subtraction and windowing
 def post_process(img, **kwargs):
-    
+    """ Processing after refocus - background subtraction and windowing"""
+
     background = kwargs.get('background', None)
     window = kwargs.get('window', None)
     
@@ -142,14 +153,13 @@ def post_process(img, **kwargs):
             
     return imgOut
 
-
-
-
     
-# Produce a circular cosine window mask on grid of imgSize * imgSize. Mask
-# is 0 for radius > circleSize and 1 for radius < (circleSize - skinThickness)
-# The intermediate region is a smooth cosine function.
 def circ_cosine_window(imgSize, circleRadius, skinThickness):
+    """ Produce a circular cosine window mask on grid of imgSize * imgSize. Mask
+    is 0 for radius > circleSize and 1 for radius < (circleSize - skinThickness)
+    The intermediate region is a smooth cosine function.
+    """
+    
     innerRad = circleRadius - skinThickness
     xM, yM = np.meshgrid(range(imgSize),range(imgSize))
     imgRad = np.sqrt( (xM - imgSize/2) **2 + (yM - imgSize/2) **2)
@@ -158,16 +168,18 @@ def circ_cosine_window(imgSize, circleRadius, skinThickness):
     mask[imgRad > innerRad + skinThickness] = 0
     return mask
 
-# TODO
 def square_cosine_window(imgSize, circleRadius, skinThickness):
-    
+    """ TODO
+    """
     return circ_cosine_window(imgSize, circleRadius, skinThickness)
 
 
 
-# Returns score of how 'in focus' an image is based on selected method.
-# Brenner, Sobel or Peak
 def focus_score(img, method, **kwargs):
+    """ Returns score of how 'in focus' an image is based on selected method.
+    Method options are: Brenner, Sobel, SobelVariance, Var, DarkFcous or Peak
+    """
+
     focusScore = 0
     
     if method == 'Brenner':        
@@ -202,8 +214,7 @@ def focus_score(img, method, **kwargs):
     
     if method == 'Var':
         focusScore = np.std(img)
-        
-        
+                
     # https://doi.org/10.1016/j.optlaseng.2020.106195
     if method == 'DarkFocus':
         kernelX = np.array([[-1,0,1]])
@@ -212,21 +223,16 @@ def focus_score(img, method, **kwargs):
         gradY = cv.filter2D(img, -1, kernelY)
         mean, stDev = cv.meanStdDev(gradX**2 + gradY**2)
         
-        return -(stDev[0,0]**2)
-        
-        
+        focusScore = -(stDev[0,0]**2)
         
     return focusScore
 
 
-
-
-
-# Refocuses an image to specificed depth and returns focus score, used by
-# findFocus
 def refocus_and_score(depth, imgFFT, pixelSize, wavelength, method, scoreROI, propLUT):
+    """ Refocuses an image to specificed depth and returns focus score, used by
+    findFocus
+    """
     
-    t1 = time.perf_counter()
     # Whether we are using a look up table of propagators or calclating it each time  
     if propLUT is None:
         prop = propagator(np.shape(imgFFT)[0], wavelength, pixelSize, depth)
@@ -240,17 +246,15 @@ def refocus_and_score(depth, imgFFT, pixelSize, wavelength, method, scoreROI, pr
     if scoreROI is not None:  
         refocImg = scoreROI.crop(refocImg)
     
-    
-    score = focusScore(refocImg, method)
-    print(depth, score)
+    score = focus_score(refocImg, method)
+    #print(depth, score)
     #print(time.perf_counter() - t1)
     return score
 
 
-
-# Determine optimal depth to maximise focus metric in image
 def find_focus(img, wavelength, pixelSize, depthRange, method, **kwargs):
-        
+    """ Determine the refocus depth which maximise the focus metric on image
+    """   
     background = kwargs.get('background', None)
     window = kwargs.get('window', None)
     scoreROI = kwargs.get('roi', None)
@@ -260,7 +264,6 @@ def find_focus(img, wavelength, pixelSize, depthRange, method, **kwargs):
     
     cHologram = pre_process(img, background=background, window = window)
     
-
     # If a margin is specified, this means we only refocus the ROI plus a 
     # margin around it for speed. Define the ROI here.
     if margin is not None and scoreROI is not None:
@@ -270,8 +273,6 @@ def find_focus(img, wavelength, pixelSize, depthRange, method, **kwargs):
     else:
         refocusROI = None
    
-    
-        
     # If we are only refocusing around a ROI, crop to the ROI + margn    
     if refocusROI is not None:
         cropImg = refocusROI.crop(cHologram)
@@ -292,21 +293,16 @@ def find_focus(img, wavelength, pixelSize, depthRange, method, **kwargs):
         startDepth = (max(depthRange) - min(depthRange))/2
 
     # Find the depth using optimiser
-    depth =  scipy.optimize.minimize_scalar(refocusAndScore, method = 'bounded', bounds = depthRange, args= (imgFFT ,pixelSize, wavelength, method, scoreROI, propLUT) )
+    print(startDepth)
+    depth = scipy.optimize.minimize_scalar(refocus_and_score, method = 'bounded', bounds = depthRange, args= (imgFFT ,pixelSize, wavelength, method, scoreROI, propLUT) )
 
     return depth.x 
 
 
-
-
-
-
-
-
-# An initial check for approximate location of good focus depths prior to a finer serrch. Called
-# by findFocus
 def coarse_focus_search(imgFFT, depthRange, nIntervals, pixelSize, wavelength, method, scoreROI, propLUT):
-    
+    """ An initial check for approximate location of good focus depths prior to a finer search. Called
+     by findFocus    
+    """
     searchDepths = np.linspace(depthRange[0], depthRange[1], nIntervals)
     focusScore = np.zeros_like(searchDepths)
     for idx, depth in enumerate(searchDepths):
@@ -314,17 +310,16 @@ def coarse_focus_search(imgFFT, depthRange, nIntervals, pixelSize, wavelength, m
     
     bestInterval = np.argmin(focusScore)
     bestDepth = searchDepths[bestInterval]
+    print("best interval", bestInterval)
+    print("best depth", bestDepth)
+    
     return bestDepth
     
     
-    
-    
-    
-
-# Produce a plot of focus score against depth, mainly useful for debugging
-# erroneous focusing
 def focus_score_curve(img, wavelength, pixelSize, depthRange, nPoints, method, **kwargs):
-        
+    """ Produce a plot of focus score against depth, mainly useful for debugging
+    erroneous focusing
+    """     
     background = kwargs.get('background', None)
     window = kwargs.get('window', None)
     scoreROI = kwargs.get('roi', None)
@@ -333,8 +328,7 @@ def focus_score_curve(img, wavelength, pixelSize, depthRange, nPoints, method, *
     if background is not None:
         cHologram = img.astype('float32') - background.astype('float32')
     else:
-        cHologram  = img.astype('float32')
-     
+        cHologram  = img.astype('float32')     
         
     if margin is not None and scoreROI is not None:
         refocusROI = roi(scoreROI.x - margin, scoreROI.y - margin, scoreROI.width + margin *2, scoreROI.height + margin *2)
@@ -363,95 +357,68 @@ def focus_score_curve(img, wavelength, pixelSize, depthRange, nPoints, method, *
     return score, depths
 
 
-
-# Numerical refocusing of a hologram to produce a depth stack. 'depthRange' is a tuple
-# defining the min and max depths, the resulting stack will have 'nDepths' images
-# equally spaced between these limits. Specify 'imgisFFT' = true if the provided
-# 'img' is aready in Fourier domain.
 def refocus_stack(img, wavelength, pixelSize, depthRange, nDepths, **kwargs):
+
+    """ Numerical refocusing of a hologram to produce a depth stack. 'depthRange' is a tuple
+    defining the min and max depths, the resulting stack will have 'nDepths' images
+    equally spaced between these limits. Specify 'imgisFFT' = true if the provided
+    'img' is aready in Fourier domain.   
+    """
     window = kwargs.get('window', None)
     cHologram = pre_process(img, **kwargs)
     cHologramFFT = np.fft.fftshift(np.fft.fft2(cHologram))
     depths = np.linspace(depthRange[0], depthRange[1], nDepths)
     kwargs['imgIsFFT'] = True
-    #img = pre_process(img, **kwargs)
     imgStack = FocusStack(cHologram, depthRange, nDepths)
 
     for idx, depth in enumerate(depths):
         prop = propagator(np.shape(img)[0], wavelength, pixelSize, depth)
-        imgStack.addIdx(post_process(refocus(img, prop, **kwargs), window=window), idx)
+        imgStack.addIdx(post_process(refocus(cHologramFFT, prop, **kwargs), window=window), idx)
+   
     return imgStack
 
 
-
-
-# Removes spatial modulation from off axis hologram. cropCentre is the location of
-# the modulation frequency in the Fourier Domain, cropRadius is the size of
-# the spatial frequency range to keep around the modulation frequency (in FFT pixels)
 def off_axis_demod(cameraImage, cropCentre, cropRadius, **kwargs):
-    
+    """ Removes spatial modulation from off axis hologram. cropCentre is the location of
+    the modulation frequency in the Fourier Domain, cropRadius is the size of
+    the spatial frequency range to keep around the modulation frequency (in FFT pixels)    
+    """
     
     returnFFT = kwargs.get('returnFFT', False)
     mask = kwargs.get('mask', None)
     cuda = kwargs.get('cuda', False)
-
     
     #cameraImage = cameraImage[0:]
 
     # Size of image in pixels (assume square);
     nPoints = np.min(np.shape(cameraImage))
-    cameraImage = cameraImage[0:nPoints, 0:nPoints]
-       
+    cameraImage = cameraImage[0:nPoints, 0:nPoints]       
      
     # Make a circular mask
     if mask is None:
-        #t1 = time.time()
         [xM, yM] = np.meshgrid(range(cropRadius * 2), range(cropRadius *2))
         mask = (xM - cropRadius)**2 + (yM - cropRadius)**2 < cropRadius**2
         mask = mask.astype('complex')
-        #t2 = time.time()
-        #print("generate mask", round(t2-t1,4))
-  
   
     # Apply 2D FFT
-    #t2 = time.time()
-    #print(cameraImage.dtype)
     if cuda is False:
         cameraFFT = np.fft.fftshift(np.fft.fft2(cameraImage))
     else:
-        cameraFFT = cp.fft.fftshift(cp.fft.fft2(cp.array(cameraImage)))
-    #t3 = time.time()
-    #print("fft", round(t3-t2,4))
-    
+        cameraFFT = cp.fft.fftshift(cp.fft.fft2(cp.array(cameraImage)))    
    
     # Shift the ROI to the centre
     shiftedFFT = cameraFFT[round(cropCentre[1] - cropRadius): round(cropCentre[1] + cropRadius),round(cropCentre[0] - cropRadius): round(cropCentre[0] + cropRadius)]
-    #t4 = time.time()
-    #print("crop", round(t4-t3,4))
 
     # Apply the mask
-    #maskedFFT = cameraFFT * mask
     if cuda is True:
         mask = cp.array(mask)
     maskedFFT = shiftedFFT * mask
-    #t5 = time.time()
-    #print("apply mask", round(t5-t4,4))
-
 
     # Reconstruct complex field
     if cuda is False:
         reconField = np.fft.ifft2(np.fft.fftshift(shiftedFFT))
     else:
         reconField = cp.asnumpy(cp.fft.ifft2(cp.fft.fftshift(shiftedFFT)))
-
-    #t6 = time.time()
-    #print("inverse FFT", round(t6-t5,4))
-    # Remove phase information where amplitude is very low
-    #reconThresh = angle(reconField) .* (abs(reconField) > max(abs(reconField(:))) / threshold );
-    
-    # plt.figure()
-    # plt.imshow(np.log(np.abs(maskedFFT)))
-    # plt.title('Shifted FFT')
    
     if returnFFT:
         if cuda is True:
@@ -464,48 +431,34 @@ def off_axis_demod(cameraImage, cropCentre, cropRadius, **kwargs):
     else:
         return reconField
     
-    
-    
-    
-    
-    
 
-# Finds the location of the off-axis holography modulation peak in the FFT. Finds
-# the peak in the positive x region.
 def off_axis_find_mod(cameraImage):
+    """ Finds the location of the off-axis holography modulation peak in the FFT. Finds
+    the peak in the positive x region.    
+    """
     
     # Apply 2D FFT
     cameraFFT = np.transpose(np.abs(np.fft.fftshift(np.fft.fft2(cameraImage)) ) )  
  
-
     # Mask central region
     imSize = min(np.shape(cameraImage))
     cx = np.shape(cameraImage)[0] / 2
     cy = np.shape(cameraImage)[1] / 2
     cameraFFT[round(cy - imSize / 8): round(cy + imSize / 8), round(cx - imSize / 8): round(cx + imSize / 8)  ] = 0
     cameraFFT[round(cy):, :  ] = 0
-    #plt.imshow(np.log(cameraFFT + 0.001))
-
+ 
     peakLoc = np.unravel_index(cameraFFT.argmax(), cameraFFT.shape)
-    #print(peakLoc)
     
     return peakLoc
 
 
-
-
-
-
-
-
-# Estimates the correct off axis crop radius based on modulation peak position
 def off_axis_find_crop_radius(cameraImage):
-    
+    """ Estimates the correct off axis crop radius based on modulation peak position
+    """
     peakLoc = off_axis_find_mod(cameraImage)
     cx = np.shape(cameraImage)[0] / 2
     cy = np.shape(cameraImage)[1] / 2
     peakDist = np.sqrt((peakLoc[0] - cx)**2 + (peakLoc[1] - cy)**2)
-    
     
     # In the optimal case, the radius is 1/3rd of the modulation position
     cropRadius = math.floor(peakDist / 3)
@@ -513,22 +466,16 @@ def off_axis_find_crop_radius(cameraImage):
     # Ensure it doesn't run off edge of image
     cropRadius = min (cropRadius, peakLoc[0], np.shape(cameraImage)[0] - peakLoc[0], peakLoc[1], np.shape(cameraImage)[1] - peakLoc[1] )
     
-    
     return cropRadius
-   
-
-    
 
 
-
-
-# Predicts the location of the modulation peak (i.e. carrer frequency) in the
-# FFT. Returns the distance of the peak from the centre (dc) of the FFT in pixels.
 def off_axis_predict_mod(wavelength, pixelSize, tiltAngle): 
+    """ Predicts the location of the modulation peak (i.e. carrer frequency) in the
+    FFT. Returns the distance of the peak from the centre (dc) of the FFT in pixels.
+    """
            
     # Convert wavelength to wavenumber
     k = 2 * math.pi / wavelength     
-
      
     # Spatial frequency of mdulation
     refFreq = k * math.sin(tiltAngle)
@@ -542,17 +489,10 @@ def off_axis_predict_mod(wavelength, pixelSize, tiltAngle):
     return modFreqPx
 
 
-
-
-
-
-
-
-
-# Predicts the reference beam tilt based on the modulation of the camera image
-# and specified wavelength and pixel size.
 def off_axis_predict_tilt_angle(cameraImage, wavelength, pixelSize):
-    
+    """ Predicts the reference beam tilt based on the modulation of the camera image
+    and specified wavelength and pixel size.
+    """    
     
     # Wavenumber
     k = 2 * math.pi / wavelength    
@@ -565,22 +505,17 @@ def off_axis_predict_tilt_angle(cameraImage, wavelength, pixelSize):
     
     hPixelSF = 1 / (2 * pixelSize * np.shape(cameraImage)[0])
     vPixelSF = 1 / (2 * pixelSize * np.shape(cameraImage)[1])
-
     
     spatialFreq = np.sqrt( (hPixelSF * (peakLoc[0] - cx))**2  + (vPixelSF * (peakLoc[1] - cy) )**2)
-
    
     tiltAngle = math.asin(spatialFreq / k)
-    
     
     return tiltAngle
     
 
-
-
-# Remove global phase from complex image using reference (background) field 
 def relative_phase(img, background):
-    
+    """ Remove global phase from complex image using reference (background) field 
+    """    
     
     if np.iscomplexobj(img):
         phase = np.angle(img)
@@ -598,25 +533,37 @@ def relative_phase(img, background):
         return np.abs(img) * np.exp(1j * phaseOut)
     else:     
         return phaseOut
-     
         
-# Subtracts the mean phase from the phase map, removing global phase
-# fluctuations. Can accept complex img, as a field, or a real img, which
-# is unwrapped phase in radians
-def stable_phase(img):
-    
+
+def stable_phase(img, roi = None):
+    """ Subtracts the mean phase from the phase map, removing global phase
+    fluctuations. Can accept complex img, as a field, or a real img, which
+    is unwrapped phase in radians 
+    """
+   
+    if roi is not None:
+        imgCrop = roi.crop(img)
+    else:
+        imgCrop = img 
+   
     if np.iscomplexobj(img):
         phase = np.angle(img)
-        t1 = time.perf_counter()
-        av = np.sum(img)
-        #print(time.perf_counter() - t1)
-        avPhase = np.angle(av)
+        phaseCrop = np.angle(imgCrop)
     else:
         phase = img
-        #field = np.ones_like(img) * np.exp(1j * img)
-        #av = np.sum(field)
-        avPhase = np.mean(phase)
+        phaseCrop = imgCrop   
+    
+        
+    avPhase = mean_phase(imgCrop)
+    #avPhase = np.mean(imgCrop)
+    #print(f"general_stable_phase_ROI, {roi}, Average phase b4: {avPhase}")
+
     phaseOut = phase - avPhase
+
+    #avPhase = mean_phase(phaseOut)
+    #avPhase = np.mean(phaseOut)
+    #print(f"general_stable_phase_ROI, {roi}, Average phase af: {mean_phase(phaseOut)}")
+
 
     if np.iscomplexobj(img):             
         return np.abs(img) * np.exp(1j * phaseOut)
@@ -624,9 +571,10 @@ def stable_phase(img):
         return phaseOut
 
 
-# Estimates the global tilt in the 2D unwrapped phase (e.g. caused by tilt in coverglass). img
-# should be unwrapped phase (real)
 def obtain_tilt(img):
+    """ Estimates the global tilt in the 2D unwrapped phase (e.g. caused by tilt in coverglass). img
+    should be unwrapped phase (real)
+    """
     
     tiltX, tiltY = np.gradient(img)
     tiltX = np.mean(tiltX)
@@ -639,30 +587,29 @@ def obtain_tilt(img):
     return tilt
  
     
-# 2D phase unwrapping. img should be wrapped phase (real)
 def phase_unwrap(img):
-    
+    """ 2D phase unwrapping. img should be wrapped phase (real)
+    """    
     img = unwrap_phase(img)
 
     return img
 
 
-    
-
-# Return a log-scale Fourier plane for display
 def fourier_plane_display(img):
-    
+    """ Return a log-scale Fourier plane for display
+    """
     cameraFFT = np.log(np.abs(np.fft.fftshift(np.fft.fft2(img)) ) )
     return cameraFFT    
 
 
-
-# Generates a simple, non-rigorous DIC-style image for display. The image
-# should appear similar to a relief map, with dark and light regions
-# correspnding to positive and negative phase gradients along the
-# shear angle direction (default is horizontal = 0 rad). Phase gradient
-# is multiplied by the image intensity. 'img' should be a complex numpy array.
 def synthetic_DIC(img, **kwargs):
+
+    """ Generates a simple, non-rigorous DIC-style image for display. The image
+    should appear similar to a relief map, with dark and light regions
+    correspnding to positive and negative phase gradients along the
+    shear angle direction (default is horizontal = 0 rad). Phase gradient
+    is multiplied by the image intensity. 'img' should be a complex numpy array.    
+    """
     
     shearAngle = kwargs.get('shearAngle', 0)
     
@@ -681,20 +628,15 @@ def synthetic_DIC(img, **kwargs):
        
     # DIC is product of phase gradient along one direction and image intensity
     DIC = np.real(sobelC) * (np.max(np.abs(img)) - np.abs(img)) 
-    # Not sure how best to invovel amplitude here
+    # Not sure how best to involvw amplitude here
     # DIC = np.real(sobelC) * (-np.abs(img))
-
         
     return DIC
 
 
-
-
-
-
-
-# Returns the ampitude of the phase gradient
 def phase_gradient_amp(img):
+    """ Returns the ampitude of the phase gradient
+    """
     
     # Phase gradient in x and y directions
     sobelx = cv.Sobel(np.angle(img),cv.CV_64F,1,0)                  # Find x and y gradients
@@ -704,56 +646,43 @@ def phase_gradient_amp(img):
     return sobelC
 
 
-
-
-
-
-
-# Produces a phase gradient (magnitude) image. img should be a complex numpy
-# array
 def phase_gradient(img):
+    """ Produces a phase gradient (magnitude) image. img should be a complex numpy
+    array
+    """
     
     # Phase gradient in x and y directions
-   
     phaseGrad1 = np.abs(phase_gradient_amp(img))
     phaseGrad2 = np.abs(phase_gradient_amp(img * np.exp(1j * math.pi)))
+   
     phaseGrad = np.minimum(phaseGrad1, phaseGrad2)
     
     return phaseGrad
 
 
-
-
-
-# Returns the mean phase in a complex field
 def mean_phase(img):
+    """Returns the mean phase in a complex field
+    """
     if np.iscomplexobj(img):
         meanPhase = np.angle(np.sum(img))
     else:
-        meanPhase = np.angle(np.sum(exp(1j * img)))
+        meanPhase = np.mean(img)
     return meanPhase
 
 
-
-
-
-
-# Makes the phase in an image relative to the mean phase in specified ROI
 def relative_phase_ROI(img, roi):    
-    
+    """ Makes the phase in an image relative to the mean phase in specified ROI
+    """
     avPhase = mean_phase(roi.crop(img))
-  
     outImage = img / np.exp(1j * avPhase)
     
     return outImage
 
-
-
-
-
         
 # Extracts sqaure of size boxSize from centre of img
 def extract_central(img, boxSize):
+       """ Extracts sqaure of size boxSize from centre of img
+       """
        w = np.shape(img)[0]
        h = np.shape(img)[1]
 
@@ -766,19 +695,21 @@ def extract_central(img, boxSize):
    
    
 def amplitude(img):
+    """ Returns amplitude of complex image
+    """
     return np.abs(img)
    
-    
+     
 def phase(img):
+    """ Returns phase of complex image
+    """ 
     return np.angle(img) % (2 * math.pi)  
     
 
-    
-    
-# Takes complex image and returns 8 bit representations of the amplitude and
-# phase for saving as 8 bit images   
 def get8bit(img):
-        
+    """ Takes complex image and returns 8 bit representations of the amplitude and
+    phase for saving as 8 bit images          
+    """
     amp = np.abs(img).astype('double')
     amp = amp - np.min(amp)
     amp = amp / np.max(amp) * 255
@@ -791,10 +722,11 @@ def get8bit(img):
     
     return amp, phase
 
-# Takes complex image and returns 16 bit representations of the amplitude and
-# phase for saving as 8 bit images   
+
 def get16bit(img):
-        
+    """ Takes complex image and returns 16 bit representations of the amplitude and
+    phase for saving as 8 bit images           
+    """
     amp = np.abs(img).astype('double')
     amp = amp - np.min(amp)
     amp = amp / np.max(amp) * 255
@@ -808,6 +740,18 @@ def get16bit(img):
     return amp, phase
 
 
-       
+def save_phase_image(img, filename):
+    """ Saves phase information as 16 bit tiff scaled so that 2pi = 256
+    """
+    
+    if np.iscomplexobj(img):
+        phase = np.angle(img).astype('double')
+    else:
+        phase = img.astype('double')
+    phase = phase - np.min(phase)    
+    phase = ((phase / (2 * math.pi)) * 256).astype('uint16')
+
+    im = Image.fromarray(phase)
+    im.save(filename)
         
         
