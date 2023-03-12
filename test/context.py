@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 """
-Created on Sat Jul  3 21:23:46 2021
+Adds folder containing source of PyHoloscope to path.
 
-@author: AOG
+@author: Mike Hughes, Applied Optics Group, University of Kent
 """
 
 import sys, os
 testdir = os.path.dirname(__file__)
-srcdir = '../'
+srcdir = '../src'
 sys.path.insert(0, os.path.abspath(os.path.join(testdir, srcdir)))

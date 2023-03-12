@@ -1,0 +1,172 @@
+----------------------------------
+Off-Axis Holography Basics
+----------------------------------
+
+^^^^^^^^^^^^^^^^^^^^^^^^^
+Getting Started using OOP
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Begin by importing the package::
+
+    import pyholoscope as pyh
+    
+and then instantiate an object. At this point we need to provide the image size, pixel size, wavelength and initialise
+off-axis mode::
+
+    imageSize = 512
+    pixelSize = 2e-6
+    wavelength = 0.5e-6
+    holo = pyh.Holo(pyholoscope.OFFAXIS_MODE, imageSize, pixelSize, wavelength)
+    
+Off-axis holography benefits from a background image for good quality phase recovery. Assuming the 
+background image is stored in the 2D numpy array ``backgroundImg``, use::
+
+    holo.set_background(backgroundImg)
+    
+We know need to know the spatial frequency of the modulation. We can determine this automtically using::
+
+    holo.auto_find_off_axis_mod(backgroundImg)         
+    
+It is possible to use the image hologram as well for this purpose, but this may be unreliable if there
+is another strong spatial frequency. 
+
+We can then demoodulate to obtain the complex field at focus using::
+
+    reconField = hol.process()
+    
+To obtain the amplitude and phase, we can then use::
+
+    amplitude = pyh.amplitude(reconField)
+    phase = pyh.phase(reconField) 
+
+Note that the first refocusing to a particular depth will be slower due to the need to create a propagator. This is particularly noticable when
+using GPU acceleration as the propagator creation may become the rate limiting step. Subsequent refocusing to the same depth will
+be faster providing no parameters are changed that force a new propagator to be created (depth, pixel size, wavelength or grid size). 
+
+If we would like to also refocus to a different depth we can specify::
+
+    holo.set_refocus = True
+    depth = 0.001
+    holo.set_depth(depth)
+        
+Then when we call::
+
+    reconField = holo.process()
+
+Both the demodulation and the refocusing will take place in a single step.
+
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Manually specifying the modulation frequency
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+If we know the spatial frequency in advance, rather than using ``auto_find_off_axis_mod`` we can set
+the demodulation parameters manually. We need to specify the spatial frequency of the modulation frequency
+in terms of the pixel location of the peak in the 2D Fourier transform of the hologram. For example::
+    
+    centre = (200,220)
+    holo.set_oa_centre(centre)
+
+We also need to set the size of the cropped sqaure in the Fourier domain (called ``radius``)::
+    
+    radius = 200
+    holo.set_oa_radius(radius)
+   
+    
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Getting Started Using Lower-Level Functions
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Begin by importing the library::
+    
+    import pyholoscope as pyh
+    
+We will assume we have a hologram ``hologram`` and a background image ``backgroundImg`` which are both 2D numpy arrays of the same size. If we do not 
+know the modulation in advance we can use::
+
+    cropCentre = pyh.off_axis_find_mod(backgroundImg)
+    cropRadius = pyh.off_axis_find_crop_radius(backgroundImg)  
+    
+We can then demodulate using::
+
+    reconField = pyh.off_axis_demod(hologram, cropCentre, cropRadius)
+    
+To remove the background, recover the background field using::
+
+    backgroundField = pyh.off_axis_demod(background, cropCentre, cropRadius)  
+    
+Remove the background phase (for example to due to aberrations in the imaging system) using::
+
+    correctedField = pyh.relative_phase(reconField, backgroundField)
+    
+The numpy array ``correctedField`` is complex, to obtain the amplitude and phase, use::
+
+    amplitude = pyh.amplitude(reconField)
+    phase = pyh.phase(reconField) 
+  
+If we would like to numerically refocus, we first refocus we define a propagator for use with the angular spectrum method. 
+This requires specification of the hologram size, wavelength, pixel size and the depth we wish to refocus to::
+
+    gridSize = cropRadius * 2
+    wavelength = 0.5e-6
+    pixelSize = 2e-6
+    depth = 1e-3
+    prop = pyh.propagator(gridSize, wavelength, pixelSize, depth)
+    
+Note here that the ``gridSize`` is the size of the reconstructed field which is smaller than the original image. The pixel size must also be specified
+as the pixel size in the reconstructed field, not the pixel size in the original hologram.
+ 
+We can then refocus using::
+
+    refocusedImg = pyh.refocus(correctedField, propagator)
+
+Note that there is generally no need to specify a background (as we would do in inline holography) because the reconstructed field from off-axis holography
+already has the background removed.
+    
+The numpy array ``refocusedField`` is complex, to obtain the amplitude and phase, use::
+
+      amplitude = pyh.amplitude(refocusedField)
+      phase = pyh.phase(refocusedField)
+
+
+
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Phase Unwrapping and Corrections
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The output from ``Holo.process`` and ``pyholoscope.off_axis_demod`` are complex fields and
+``pyholoscope.phase`` returns the wrapped phase. To unwrap the phase use::
+
+    unwrappedPhase = pyh.phase_unwrap(phase)
+    
+It is sometimes the case that a tilt is added to the phase due to, for example, the coverslip being slightly angled with respect to the microscope slide. Assuming that the background image was acquired with the slide removed, using background correction as described above does not help with this. Instead use::
+
+    phaseTilt = pyh.obtain_tilt(phase)
+    
+For this to work, ``phase`` must be unwrapped phase, i.e. the output from  ``pyholoscope.phase_unwrap``. This returns a phase correction map to remove the tilt which can then be applied using::
+
+    phaseTilt = pyh.obtain_tilt(phase)
+
+The corrected phase map can then be obtained using::
+
+    correctedPhase = relative_phase(phase, phaseTilt)
+     
+     
+     
+             
+^^^^^^^^^^^^^^^^
+GPU acceleration
+^^^^^^^^^^^^^^^^
+To enable GPU acceleration for off axis demodulation refocusing using OOP, use::
+
+    holo.set_cuda(True)
+
+This requires the CuPy package and a compatible GPU.  
+
+If using the lower level functions, specify ``cuda = True`` when demodulating and refocusing e.g. ::
+
+    reconField = holo.off_axis_demod(hologram, cropCentre, cropRadius, cuda = True)
+    holo.refocus(hologram, propagator, cuda = True)
+
+
+    
+    
+    

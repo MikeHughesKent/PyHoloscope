@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Tests simulation and recovery of phase in off-axis holography.
+Tests sim package of PyHoloscope - simulation and recovery of phase in off-axis holography.
 
 @author: Mike Hughes
 Applied Optics Group
@@ -17,8 +17,8 @@ import cv2 as cv
 
 import context    # Load paths
 
-import PyHoloscope as holo
-import PyHoloscope.sim as sim
+import pyholoscope as holo
+import pyholoscope.sim as sim
 
 
 # Simulated experimental parameters
@@ -39,8 +39,8 @@ objectField = objectField * np.exp(1j * phaseField)
 
 
 # Simulate holograms from background and object
-backgroundImage = sim.offAxis(backgroundField, wavelength, pixelSize, tiltAngle)
-cameraImage = sim.offAxis(objectField, wavelength, pixelSize, tiltAngle)
+backgroundImage = sim.off_axis(backgroundField, wavelength, pixelSize, tiltAngle)
+cameraImage = sim.off_axis(objectField, wavelength, pixelSize, tiltAngle)
 
 
 # Using the peak in the FFT, determine the modulation frequency and hence the
