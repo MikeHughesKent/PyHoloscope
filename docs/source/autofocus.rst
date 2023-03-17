@@ -14,12 +14,12 @@ Getting Started
 
 Begin by importing the package::
 
-    import PyHoloscope as pyh
+    import pyholoscope as pyh
     
 We will assume we have a hologram ``hologram`` stored as a 2D numpy array. This can either be a raw inline hologram, in 
 which case ``hologram`` will be real, or a demodulated off-axis hologram, in which case ``hologram`` will be complex.
     
-For refocusing we need to define the image size, in pixels, pixel size and wavelength::
+For refocusing we need to define the image size, in pixels, pixel size and wavelength, for example::
 
     imageSize = 512
     pixelSize = 2e-6
@@ -37,7 +37,7 @@ We then call ``find_focus``::
    
 This returns the best refocus depth.
 
-If we would like to find the best focus for a specific region of the image only, we defined a ROI such as::
+If we would like to find the best focus for a specific region of the image only, we define a ROI such as::
 
     x = 20
     y = 30
@@ -57,7 +57,7 @@ A speed-up can be obtained by refocusing only the ROI plus a small margin around
     focusDepth = pyh.find_focus(hologram, wavelength, pixelSize, depthRange, method, roi = focusRoi, margin = 20)
 
 
-If the hologram has not had a background subtracted or a window previously applied, we can also request these are applied prior to refocsuing by passing them as optional arguments::
+If the hologram has not had a background subtracted or a window previously applied, we can also request these are applied prior to refocusing by passing them as optional arguments::
 
     window = pyh.circ_cosine_window(imageSize, imageSize / 2, 20)
     focusDepth = pyh.find_focus(hologram, wavelength, pixelSize, depthRange, method, roi = focusRoi, margin = 20, background = backgroundImg, window = window)      
@@ -101,7 +101,7 @@ The lut is then passed to the ``find_focus`` function::
     focusDepth = pyh.find_focus(hologram, wavelength, pixelSize, depthRange, method, propagatorLUT = lut)      
 
 If also attempting to speed-up by refocusing only a ROI (i.e. the margin is specified) then it is necessary to create a propagator LUT of the correct size for 
-this ROI + margin. This must currently be done manually by adjusing the gridSize input to be the ROI.
+this ROI + margin. This must currently be done manually by adjusing the ``gridSize`` input to be the ROI.
     
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Performing a prior coarse search

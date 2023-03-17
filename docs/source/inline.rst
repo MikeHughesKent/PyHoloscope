@@ -55,7 +55,19 @@ Here we have also provided an optional background hologram, ``backgroundImg``. T
 
     refocusedAmp = pyh.amplitude(refocusedAmp)
     
+    
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Numba JIT acceleration
+^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+If the numba package is installed, this will be employed for faster generation of propagators by default when using OOP.  It can be enabled/disabled using:: 
         
+    holo.set_numba(True/False)
+    
+If using the lower level functions, numba versions must be called explicitly, currently only::
+
+    pyh.propagator_numba(gridSize, wavelength, pixelSize, depth)    
+    
+
 ^^^^^^^^^^^^^^^^
 GPU acceleration
 ^^^^^^^^^^^^^^^^
