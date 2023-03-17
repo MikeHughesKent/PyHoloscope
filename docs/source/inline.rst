@@ -59,9 +59,9 @@ Here we have also provided an optional background hologram, ``backgroundImg``. T
 ^^^^^^^^^^^^^^^^
 GPU acceleration
 ^^^^^^^^^^^^^^^^
-To enable GPU acceleration for refocusing using OOP, use::
+GPU acceleration is used by default when using OOP, it can be enabled/disabled using::
 
-    holo.set_cuda(True)
+    holo.set_cuda(True/False)
 
 This requires the CuPy package and a compatible GPU, otherwise pyholoscope will revert to CPU processing.  
 

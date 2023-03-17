@@ -52,6 +52,7 @@ def pre_process(img, **kwargs):
                 
     
     if background is not None:
+        print("back sub")
         imgOut = img.astype(imType) - background.astype(imType)
     else:
         imgOut  = img.astype(imType)

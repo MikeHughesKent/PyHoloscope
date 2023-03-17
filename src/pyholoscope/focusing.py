@@ -22,28 +22,54 @@ import cv2 as cv
 import scipy
 
 from pyholoscope.focus_stack import FocusStack
+from pyholoscope.focusing_numba import propagator_numba
 from pyholoscope.roi import Roi
 import pyholoscope.general 
 
 
-def propagator(gridSize, wavelength, pixelSize, depth):
-    """ Creates Fourier domain propagator for angular spectrum meethod. GridSize
-    is size of image (in pixels) to refocus. 
+def propagator_slow(gridSize, wavelength, pixelSize, depth):
+    """ 
+    Slow version of propagator. Creates Fourier domain propagator for angular 
+    spectrum meethod. GridSize is size of image (in pixels) to refocus. Retained only
+    for testing purposes, use propagator instead.
     """
     
     area = gridSize * pixelSize
 
     (xM, yM) = np.meshgrid(range(gridSize), range(gridSize))
     
-    delta0 = 1/area;
-    u = delta0*(xM - gridSize/2 -1);
-    v = delta0*(yM - gridSize/2 -1);
+    delta0 = 1/area
+    u = delta0*(xM - gridSize/2 +.5)
+    v = delta0*(yM - gridSize/2 +.5)
     prop= np.exp(1j*math.pi*wavelength*depth*(u**2 + v**2))
-    #prop[(alpha**2 + beta**2) > 1] = 0
 
     
     return prop
 
+
+def propagator(gridSize, wavelength, pixelSize, depth):
+    """ Creates Fourier domain propagator for angular spectrum meethod. Speeds
+    up process by only calculating top left quadrant and then duplicating (with flips)
+    to create the other three quadrants.
+    """
+    assert gridSize % 2 == 0, "Grid size must be even"
+    
+    area = gridSize * pixelSize
+    midPoint = int(gridSize/2)
+
+    (xM, yM) = np.meshgrid(range(int(gridSize/2)), range(int(gridSize/2)))
+    
+    delta0 = 1/area
+    u = delta0*(xM - gridSize/2 +.5)
+    v = delta0*(yM - gridSize/2 +.5)
+    propCorner = np.exp(1j*math.pi*wavelength*depth*(u**2 + v**2))
+    
+    prop = np.zeros((gridSize, gridSize), dtype ='complex64')
+    prop[:midPoint, :midPoint] = propCorner
+    prop[midPoint:, :midPoint] = np.flip(propCorner,0)
+    prop[:, midPoint:] = np.flip(prop[:, :midPoint],1)
+
+    return prop
 
 
 def refocus(img, propagator, **kwargs):    
@@ -77,8 +103,6 @@ def refocus(img, propagator, **kwargs):
             return np.fft.ifft2(np.fft.fftshift(np.fft.fftshift(np.fft.fft2((cHologram))) * propagator))
 
    
-
-
 def focus_score(img, method):
     """ Returns score of how 'in focus' an image is based on selected method.
     Method options are: Brenner, Sobel, SobelVariance, Var, DarkFcous or Peak
@@ -268,14 +292,20 @@ def refocus_stack(img, wavelength, pixelSize, depthRange, nDepths, **kwargs):
     'img' is aready in Fourier domain.   
     """
     window = kwargs.get('window', None)
-    cHologram = pyholoscope.pre_process(img, **kwargs)
+    useNumba = kwargs.get('numba', False)
+    #cHologram = pyholoscope.pre_process(img, **kwargs)
+    cHologram = img
     cHologramFFT = np.fft.fftshift(np.fft.fft2(cHologram))
     depths = np.linspace(depthRange[0], depthRange[1], nDepths)
-    kwargs['imgIsFFT'] = True
-    imgStack = FocusStack(cHologram, depthRange, nDepths)
+    kwargs['FourierDomain'] = True
+    imgStack = FocusStack(cHologramFFT, depthRange, nDepths)
 
     for idx, depth in enumerate(depths):
-        prop = propagator(np.shape(img)[0], wavelength, pixelSize, depth)
-        imgStack.addIdx(pyholoscope.post_process(refocus(cHologramFFT, prop, **kwargs), window=window), idx)
-   
+        if useNumba:
+            prop = propagator_numba(np.shape(img)[0], wavelength, pixelSize, depth)
+        else:
+            prop = propagator(np.shape(img)[0], wavelength, pixelSize, depth)
+
+        imgStack.add_idx(pyholoscope.post_process(refocus(cHologramFFT, prop, **kwargs), window=window), idx)
+
     return imgStack

@@ -18,7 +18,6 @@ The package is designed to be fast enough for use in imaging GUIs as well as for
    inline
    off_axis
    autofocus
-   sim
    functions
 
 

@@ -28,7 +28,11 @@ We know need to know the spatial frequency of the modulation. We can determine t
     holo.auto_find_off_axis_mod(backgroundImg)         
     
 It is possible to use the image hologram as well for this purpose, but this may be unreliable if there
-is another strong spatial frequency. 
+is another strong spatial frequency. Alternatively it can be specified manually using::
+
+    holo.set_off_axis_mod(cropCentre, cropRadius)
+   
+where ``cropCentre`` is a tupled of (x,y), specifying the pixel at the centre of the modulation in the FFT of the hologram, and ``cropRadius`` is half the size of the box around the modulation centre which is demodulated.    
 
 We can then demoodulate to obtain the complex field at focus using::
 
@@ -39,8 +43,8 @@ To obtain the amplitude and phase, we can then use::
     amplitude = pyh.amplitude(reconField)
     phase = pyh.phase(reconField) 
 
-Note that the first refocusing to a particular depth will be slower due to the need to create a propagator. This is particularly noticable when
-using GPU acceleration as the propagator creation may become the rate limiting step. Subsequent refocusing to the same depth will
+Note that the first time a hologram is refocused to a particular depth the process will be slower due to the need to create a propagator for that depth. This is particularly noticable when
+using GPU acceleration as the propagator creation will often the rate limiting step. Subsequent refocusing to the same depth will
 be faster providing no parameters are changed that force a new propagator to be created (depth, pixel size, wavelength or grid size). 
 
 If we would like to also refocus to a different depth we can specify::
@@ -155,9 +159,9 @@ The corrected phase map can then be obtained using::
 ^^^^^^^^^^^^^^^^
 GPU acceleration
 ^^^^^^^^^^^^^^^^
-To enable GPU acceleration for off axis demodulation refocusing using OOP, use::
+If a compatible GPU is available, GPU acceleration for off axis demodulation and refocusing using OOP is enabled by default. Explicitly turn this on or off using::
 
-    holo.set_cuda(True)
+    holo.set_cuda(True/False)
 
 This requires the CuPy package and a compatible GPU.  
 

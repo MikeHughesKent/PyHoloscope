@@ -7,7 +7,7 @@ The Holo Class provides an object-oriented interface to a subset of the
 PyHoloscope functionality.
 
 @author: Mike Hughes
-Applied Optics Group, Physics & Astronomy, University of Kent
+Applied Optics Group, Physics & Astrfonomy, University of Kent
 """
 
 import numpy as np
@@ -26,6 +26,13 @@ try:
 except:
     cudaAvailable = False
     
+    
+try:
+    import numba
+    from pyholoscope.focusing_numba import propagator_numba
+    numbaAvailable = True
+except:
+    numbaAvailable = False    
 
 class Holo:
         
@@ -39,6 +46,9 @@ class Holo:
         self.pixelSize = pixelSize
         self.oaPixelSize = pixelSize
         
+        self.useNumba = kwargs.get('numba', True)
+        self.cuda = kwargs.get('cuda', True)
+        
         self.depth = kwargs.get('depth', 0)
         self.background = kwargs.get('background',None)
         self.applyWindow = False
@@ -49,7 +59,6 @@ class Holo:
         self.findFocusMethod = kwargs.get('findFocusMethod', 'Sobel')
         self.findFocusRoi = kwargs.get('findFocusRoi', None)
         self.findFocusMargin = kwargs.get('findFocusMargin', None)
-        self.cuda = kwargs.get('cuda', True)
        
         self.backgroundField = None
         self.propagatorDepth = 0
@@ -157,10 +166,16 @@ class Holo:
         self.propagatorDepth = self.depth
 
         if self.mode == self.INLINE_MODE:
-            self.propagator = propagator(int(np.shape(img)[0] / self.downsample), self.wavelength, self.pixelSize * self.downsample, self.depth)
+            if numbaAvailable and self.useNumba:
+                self.propagator = propagator_numba(int(np.shape(img)[0] / self.downsample), self.wavelength, self.pixelSize * self.downsample, self.depth)
+            else:
+                self.propagator = propagator(int(np.shape(img)[0] / self.downsample), self.wavelength, self.pixelSize * self.downsample, self.depth)
             self.propagatorPixelSize = self.pixelSize
         elif self.mode == self.OFFAXIS_MODE:
-            self.propagator = propagator(int(np.shape(img)[0] / self.downsample), self.wavelength, self.oaPixelSize * self.downsample, self.depth)
+            if numbaAvailable and self.useNumba:
+                self.propagator = propagator_numba(int(np.shape(img)[0] / self.downsample), self.wavelength, self.oaPixelSize * self.downsample, self.depth)
+            else:
+                self.propagator = propagator(int(np.shape(img)[0] / self.downsample), self.wavelength, self.oaPixelSize * self.downsample, self.depth)
             self.propagatorPixelSize = self.oaPixelSize
      
         
@@ -217,7 +232,7 @@ class Holo:
                         self.windowRadius = np.shape(img)[0] / 2
                     self.set_window(imgScaled, self.windowRadius / self.downsample, self.windowThickness / self.downsample)
             imgScaled = pre_process(imgScaled, window = self.window, background = backgroundScaled)
-            imgOut = refocus(imgScaled, self.propagator, cuda = self.cuda)
+            imgOut = refocus(imgScaled, self.propagator, cuda = (self.cuda and cudaAvailable))
             if imgOut is not None:
                 imgOut = post_process(imgOut, window = self.window)      
                 if self.invert is True:
@@ -274,12 +289,24 @@ class Holo:
                     background = None
                     
                 demod = pre_process(demod, window = self.window, background = background)  # background is done elsewhere
-                demod = refocus(demod, self.propagator, cuda = self.cuda)
+                demod = refocus(demod, self.propagator, cuda = (self.cuda and cudaAvailable))
                 
                 if demod is not None:
                     demod = post_process(demod, window = self.window)     
                 
             return demod 
+    
+        
+    def set_use_cuda(self, useCuda):
+        """ Set whether to use GPU if available, useCuda is True to use GPU or False to not use GPU.
+        """
+        self.cuda = useCuda
+        
+    def set_use_numba(self, useNumba):
+        """ Set whether to use Numba JIT if available, useNumba is True to use Numba or False to not use Numba.
+        """
+        self.useNumba = useNumba    
+        
         
         
     def set_find_focus_parameters(self, depthRange = (0,0.1), roi = None, method = 'Peak', margin = 0):
@@ -292,7 +319,7 @@ class Holo:
         
     def make_propagator_LUT(self, img, depthRange, nDepths):
         """ Creates a LUT of propagators for faster finding of focus """
-        self.propagatorLUT = PropLUT(np.shape(img)[0], self.wavelength, self.pixelSize, depthRange, nDepths)
+        self.propagatorLUT = PropLUT(np.shape(img)[0], self.wavelength, self.pixelSize, depthRange, nDepths, numba = (numbaAvailable and self.useNumba))
      
         
     def clear_propagator_LUT(self):
@@ -306,6 +333,7 @@ class Holo:
                 "window": self.window,
                 "roi": self.findFocusRoi,
                 "margin": self.findFocusMargin,
+                "numba": numbaAvailable and self.numba,
                 "propagatorLUT": self.propagatorLUT}
         
         return find_focus(img, self.wavelength, self.pixelSize, self.findFocusDepthRange, self.findFocusMethod, **args)
@@ -317,11 +345,15 @@ class Holo:
         """
         
         if self.mode == self.INLINE_MODE:
-            background = self.background
-        else:
-            background = None
-        args = {'background': background,
-                "window": self.window}
+            preBackground = self.background
+            postBackground = None
+        else:            
+            preBackground = None
+            postBackground = None
+        args = {'preBackground': preBackground,
+                'postBackground': postBackground,
+                "window": self.window,
+                "numba": numbaAvailable and self.useNumba}
                 
         return refocus_stack(img, self.wavelength, self.pixelSize, depthRange, nDepths, **args)
 
