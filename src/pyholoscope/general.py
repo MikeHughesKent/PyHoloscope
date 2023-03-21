@@ -52,7 +52,6 @@ def pre_process(img, **kwargs):
                 
     
     if background is not None:
-        print("back sub")
         imgOut = img.astype(imType) - background.astype(imType)
     else:
         imgOut  = img.astype(imType)
@@ -80,11 +79,11 @@ def post_process(img, **kwargs):
     else:
         imType = 'float32'
     
-    if background is not None:
-        imgOut = img.astype(imType) - background.astype(imType)
-    else:
-        imgOut  = img.astype(imType)
-            
+    #if background is not None:
+    #    imgOut = img.astype(imType) - background.astype(imType)
+    #else:
+    #    imgOut  = img.astype(imType)
+    imgOut  = img.astype(imType)       
     if window is not None:
         imgOut = imgOut * window
             

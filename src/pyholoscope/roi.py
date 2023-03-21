@@ -34,3 +34,18 @@ class Roi:
         """ img is cropped to ROI  """  
         return img[self.y: self.y + self.height, self.x:self.x + self.width]
     
+    def clear_outside(self, img):
+        """Set pixels in img to be zero if outside ROI"""
+        imgOut = img.copy()
+        imgOut[:self.y, :] = 0                      # set pixels above ROI to zero
+        imgOut[self.y + self.height:, :] = 0        # set pixels below ROI to zero
+        imgOut[:, :self.x] = 0                      # set pixels to the left of ROI to zero
+        imgOut[:, self.x + self.width:] = 0         # set pixels to the right of ROI to zero
+        
+        return imgOut
+
+    def clear_inside(self, img):
+        """Set pixels in img to be zero if inside ROI"""
+        img[self.y:self.y + self.height, self.x:self.x + self.width] = 0
+
+        return img

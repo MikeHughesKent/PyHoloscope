@@ -24,7 +24,6 @@ def propagator_numba(gridSize, wavelength, pixelSize, depth):
     Uses Numba and quadrant method for speed.
     """
     assert gridSize % 2 == 0, "Grid size must be even"
-
     area = gridSize * pixelSize
     propCorner = np.zeros((int(gridSize/2), int(gridSize/2)), dtype = 'complex64')
     delta0 = 1/area

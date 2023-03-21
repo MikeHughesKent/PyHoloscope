@@ -68,7 +68,7 @@ class FocusStack:
     
     def depth_to_index(self, depth):
         """ Return the index closest to the specified depth """
-        idx = round((depth - self.minDepth) / (self.maxDepth - self.minDepth) * self.nDepths)
+        idx = round((depth - self.minDepth) / (self.maxDepth - self.minDepth) * (self.nDepths-1))
         if idx < 0:
             idx = 0
         if idx > self.nDepths - 1:

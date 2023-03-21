@@ -56,9 +56,11 @@ class Holo:
         self.windowRadius = kwargs.get('windowRadius', None)
         self.windowThickness = kwargs.get('windowThickness', None)
         
-        self.findFocusMethod = kwargs.get('findFocusMethod', 'Sobel')
+        self.findFocusMethod = kwargs.get('findFocusMethod', 'Brenner')
         self.findFocusRoi = kwargs.get('findFocusRoi', None)
         self.findFocusMargin = kwargs.get('findFocusMargin', None)
+        self.findFocusCoarseSearchInterval = kwargs.get('findFocusCoarseSearchInterval', None)
+        self.findFocusDepthRange = kwargs.get('findFocusDepthRange', (0,1))
        
         self.backgroundField = None
         self.propagatorDepth = 0
@@ -216,8 +218,11 @@ class Holo:
                 self.update_propagator(img)
             
             # Apply downsampling
-            imgScaled = cv.resize(img, (int(np.shape(img)[1]/ self.downsample), int(np.shape(img)[0] / self.downsample) )   )
-           
+            if self.downsample != 1:                
+                imgScaled = cv.resize(img, (int(np.shape(img)[1]/ self.downsample), int(np.shape(img)[0] / self.downsample) )   )
+            else:
+                imgScaled = img
+                
             if self.background is not None:
                 backgroundScaled = cv.resize(self.background, (int(np.shape(self.background)[1]/ self.downsample), int(np.shape(self.background)[0] / self.downsample)))    
             else:
@@ -309,13 +314,14 @@ class Holo:
         
         
         
-    def set_find_focus_parameters(self, depthRange = (0,0.1), roi = None, method = 'Peak', margin = 0):
+    def set_find_focus_parameters(self, **kwargs):
         """ Sets the parameters used by the find_focus method """
-        self.findFocusMethod = method
-        self.findFocusRoi = roi
-        self.findFocusMargin = margin
-        self.findFocusDepthRange = depthRange
-        
+        self.findFocusDepthRange = kwargs.get('depthRange', (0,0.1))
+        self.findFocusRoi = kwargs.get('roi', None)
+        self.findFocusMethod = kwargs.get('method', 'Brenner')
+        self.findFocusMargin = kwargs.get('margin', None)
+        self.coarseSearchInterval = kwargs.get('coarseSearchInterval', None)       
+              
         
     def make_propagator_LUT(self, img, depthRange, nDepths):
         """ Creates a LUT of propagators for faster finding of focus """
@@ -329,12 +335,15 @@ class Holo:
         
     def find_focus(self, img):    
         """ Automatically finds the best focus position using defined parameters"""
-        args = {'background': self.background,
+        args = {"background": self.background,
                 "window": self.window,
                 "roi": self.findFocusRoi,
                 "margin": self.findFocusMargin,
-                "numba": numbaAvailable and self.numba,
-                "propagatorLUT": self.propagatorLUT}
+                "numba": numbaAvailable and self.useNumba,
+                "cuda": cudaAvailable and self.cuda,
+                "propagatorLUT": self.propagatorLUT,
+                "coarseSearchInterval": self.findFocusCoarseSearchInterval}
+        
         
         return find_focus(img, self.wavelength, self.pixelSize, self.findFocusDepthRange, self.findFocusMethod, **args)
     
@@ -350,8 +359,7 @@ class Holo:
         else:            
             preBackground = None
             postBackground = None
-        args = {'preBackground': preBackground,
-                'postBackground': postBackground,
+        args = {"background": self.background,
                 "window": self.window,
                 "numba": numbaAvailable and self.useNumba}
                 
@@ -367,11 +375,12 @@ class Holo:
     def auto_focus(self, img, **kwargs):
         """ Customisable auto-focus """
         focusDepth = find_focus(img, self.wavelength, self.pixelSize, 
-                               kwargs.get('depthRange',  (100,1000) ), \
+                               kwargs.get('depthRange',  (0,1) ), \
                                kwargs.get('method', 'Brenner'),  \
                                background = self.background,  \
                                window = self.window,  \
-                               scoreROI = kwargs.get('scoreROI', None), \
+                               numba = self.useNumba and numbaAvailable, \
+                               cuda = self.cuda and cudaAvailable, \
                                margin = kwargs.get('margin', None), \
                                propLUT = kwargs.get('propagatorLUT', None),  \
                                coarseSearchInterval = kwargs.get('coarseSearchInterval', None), \

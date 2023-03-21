@@ -20,6 +20,7 @@ except:
 from PIL import Image
 import cv2 as cv
 import scipy
+import time
 
 from pyholoscope.focus_stack import FocusStack
 from pyholoscope.focusing_numba import propagator_numba
@@ -76,12 +77,10 @@ def refocus(img, propagator, **kwargs):
     """ Refocus using angular spectrum method. Takes a hologram (with any pre-processing
     such as background removal already performed) and a pre-computed propagator. 
     """
-    
     imgIsFourier = kwargs.get('FourierDomain', False)
     cuda = kwargs.get('cuda', True)
     if np.shape(img) != np.shape(propagator):
         return None
-    
     # If we have been sent the FFT of image, used when repeatedly calling refocus
     # (for example when finding best focus) we don't need to do FFT or shift for speed
     if imgIsFourier:  
@@ -107,6 +106,8 @@ def focus_score(img, method):
     """ Returns score of how 'in focus' an image is based on selected method.
     Method options are: Brenner, Sobel, SobelVariance, Var, DarkFcous or Peak
     """
+
+
 
     focusScore = 0
     
@@ -141,7 +142,7 @@ def focus_score(img, method):
         focusScore = -(np.std(sobel)**2)
     
     if method == 'Var':
-        focusScore = np.std(img)
+        focusScore = -np.std(img)
                 
     # https://doi.org/10.1016/j.optlaseng.2020.106195
     if method == 'DarkFocus':
@@ -156,26 +157,30 @@ def focus_score(img, method):
     return focusScore
 
 
-def refocus_and_score(depth, imgFFT, pixelSize, wavelength, method, scoreROI, propLUT):
+def refocus_and_score(depth, imgFFT, pixelSize, wavelength, method, scoreROI, propLUT, useNumba, useCuda):
     """ Refocuses an image to specificed depth and returns focus score, used by
     findFocus
     """
     
-    # Whether we are using a look up table of propagators or calclating it each time  
+    # Whether we are using a look up table of propagators or calculating it each time  
     if propLUT is None:
-        prop = propagator(np.shape(imgFFT)[0], wavelength, pixelSize, depth)
+        if useNumba:
+            prop = propagator_numba(np.shape(imgFFT)[0], wavelength, pixelSize, depth)
+        else:
+            prop = propagator(np.shape(imgFFT)[0], wavelength, pixelSize, depth)
+
     else:
         prop = propLUT.propagator(depth)        
     
     # We are working with the FFT of the hologram for speed 
-    refocImg = np.abs(refocus(imgFFT, prop, FourierDomain = True))
+    refocImg = np.abs(refocus(imgFFT, prop, FourierDomain = True, cuda = useCuda))
 
     # If we are running focus metric only on a ROI, extract the ROI
     if scoreROI is not None:  
         refocImg = scoreROI.crop(refocImg)
     
     score = focus_score(refocImg, method)
-    #print(depth, score)
+    print(depth, score)
     #print(time.perf_counter() - t1)
     return score
 
@@ -189,6 +194,8 @@ def find_focus(img, wavelength, pixelSize, depthRange, method, **kwargs):
     margin = kwargs.get('margin', None)  
     propLUT = kwargs.get('propagatorLUT', None)
     coarseSearchInterval = kwargs.get('coarseSearchInterval', None)
+    useNumba = kwargs.get('numba', False)
+    useCuda = kwargs.get('cuda', False)
     
     cHologram = pyholoscope.pre_process(img, background=background, window = window)
     
@@ -221,7 +228,8 @@ def find_focus(img, wavelength, pixelSize, depthRange, method, **kwargs):
         startDepth = (max(depthRange) - min(depthRange))/2
 
     # Find the depth using optimiser
-    depth = scipy.optimize.minimize_scalar(refocus_and_score, method = 'bounded', bounds = depthRange, args= (imgFFT ,pixelSize, wavelength, method, scoreROI, propLUT) )
+    print(depthRange)
+    depth = scipy.optimize.minimize_scalar(refocus_and_score, method = 'Bounded', bounds = depthRange, bracket = depthRange, options = {'xtol': 0.00001, 'maxiter': 20}, args= (imgFFT ,pixelSize, wavelength, method, scoreROI, propLUT, useNumba, useCuda) )
 
     return depth.x 
 
@@ -293,11 +301,19 @@ def refocus_stack(img, wavelength, pixelSize, depthRange, nDepths, **kwargs):
     """
     window = kwargs.get('window', None)
     useNumba = kwargs.get('numba', False)
-    #cHologram = pyholoscope.pre_process(img, **kwargs)
-    cHologram = img
-    cHologramFFT = np.fft.fftshift(np.fft.fft2(cHologram))
+    background = kwargs.get('preBackground', None)
+    
     depths = np.linspace(depthRange[0], depthRange[1], nDepths)
+    
+    
+    # Apply pre-processing and then take 2D FFT
+    cHologram = pyholoscope.pre_process(img, **kwargs)
+    cHologramFFT = np.fft.fftshift(np.fft.fft2(cHologram))
+    
+    # Tell refocus that we are providing the FFT
     kwargs['FourierDomain'] = True
+    
+    
     imgStack = FocusStack(cHologramFFT, depthRange, nDepths)
 
     for idx, depth in enumerate(depths):
@@ -306,6 +322,6 @@ def refocus_stack(img, wavelength, pixelSize, depthRange, nDepths, **kwargs):
         else:
             prop = propagator(np.shape(img)[0], wavelength, pixelSize, depth)
 
-        imgStack.add_idx(pyholoscope.post_process(refocus(cHologramFFT, prop, **kwargs), window=window), idx)
+        imgStack.add_idx( pyholoscope.post_process( refocus(cHologramFFT, prop, **kwargs), window=window), idx)
 
     return imgStack
