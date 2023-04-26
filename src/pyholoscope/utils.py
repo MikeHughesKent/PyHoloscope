@@ -156,3 +156,23 @@ def save_amplitude_image16(img, filename):
      
     im = Image.fromarray(get16bit(img)[0])
     im.save(filename)
+    
+def extract_central(img, boxSize):
+    """ Extract a central square from an image. The extracted square is centred
+    on the input image, with size 2 * boxSize if possible, otherwise the largest
+    sqaure that can be extracted.
+    :param img: input image as 2D numpy array
+    :param boxSize: size of cropping square
+    :return: cropped image as 2D numpy array
+    """
+
+    w = np.shape(img)[0]
+    h = np.shape(img)[1]
+
+    cx = w/2
+    cy = h/2
+    boxSemiSize = min(cx,cy,boxSize)
+    
+    imgOut = img[math.floor(cx - boxSemiSize):math.floor(cx + boxSemiSize), math.ceil(cy- boxSemiSize): math.ceil(cy + boxSemiSize)]
+    
+    return imgOut

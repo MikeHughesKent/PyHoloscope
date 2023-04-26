@@ -8,23 +8,23 @@ Classes
 
 .. py:function:: Holo()
 
-Provides object-oriented access to core functionality of PyHoloscope. See :ref:`class documentation <holo>` for details.
+Provides object-oriented access to core functionality of PyHoloscope. See `Holo class <holo.html>`_ for details.
 
 .. py:function:: PropLUT(imgSize, wavelength, pixelSize, depthRange, nDepths)
 
-Stores a propagator look up table for faster refocusing across multple depths. See class documentation for details.
+Stores a propagator look up table for faster refocusing across multple depths. See `PropLUT class <propLUT.html>`_ for details.
 
 .. py:function:: Roi(x, y, width, height)
 
 Region of interest, a rectangle with top left co-ordinates (``x``, ``y``) with width ``width`` and height ``height``. ``crop`` method is used to extract the ROI
-from an image and ``constrain`` method is used to limit co-ordinates to adjust the ROI to fit within an image. See class documentation for details.
+from an image and ``constrain`` method is used to limit co-ordinates to adjust the ROI to fit within an image. See `Roi class <roi.html>`_ for details.
 
 
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 General Utility Functions
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. py:function:: fourier_plane_display(img):
+.. py:function:: fourier_plane_display(img)
 
 Returns a log-scale Fourier transform of ``img`` for display purposes as 2D real numpy array.
 
@@ -76,7 +76,7 @@ The phase gradient is multiplied by the image intensity.
 Off-axis Holography
 ^^^^^^^^^^^^^^^^^^^
 
-.. py:function:: off_axis_demod(hologram, cropCentre, cropRadius, **kwargs)
+.. py:function:: off_axis_demod(hologram, cropCentre, cropRadius, [optional arguments])
 
 Removes spatial modulation from off axis hologram ``hologram``. ``cropCentre`` is the location of
 the modulation frequency in the Fourier Domain as tuple (x,y), ``cropRadius`` is the size of

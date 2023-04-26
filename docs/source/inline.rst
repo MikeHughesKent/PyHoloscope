@@ -2,40 +2,52 @@
 Inline Holography Basics
 --------------------------------
 
-^^^^^^^^^^^^^^^^^^^^^^^^^
-Getting Started using OOP
-^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Getting Started using OOP (Holo class)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Begin by importing the package::
 
     import pyholoscope as pyh
     
-And instantiate an object. At this point we need to provide the image size, pixel size, wavelength, and initialise for inline holography::
+And instantiate a ``Holo`` object. We need to provide the input hologram image size in pixels (the hologram must be square), 
+the physical pixels size and the wavelength. The pixel size and wavelength should be specified in the same units, 
+and subsequently the refocu depth must be in the same units.::
 
     imageSize = 512
     pixelSize = 2e-6
     wavelength = 0.5e-6
     holo = pyh.Holo(pyh.INLINE_MODE, imageSize, pixelSize, wavelength)
     
-Inline holography requires a background image for good quality reconstructions. Assuming the 
-background image is stored in the 2D numpy array ``backgroundImg``, use::
+Inline holography requires a background image, acquired with no object in the field-of-view, for good quality reconstructions. 
+Assuming the background image is stored in the 2D numpy array ``backgroundImg``, use::
 
     holo.set_background(backgroundImg)
     
-We can now numerically refocus a hologram ``hologram``, again a 2D numpy array::
+We can now numerically refocus a hologram ``hologram``, again a 2D numpy array, using the angular spectrum method by first
+setting the depth::
+ 
+    holo.set_depth(depth)
+
+and then calling::
 
     refocusedImg = holo.process(hologram)
 
-The output, ``refocusedImg``, is complex, we can obtain the amplitude using::
+The output, ``refocusedImg``, is a 2D complex numpy array, we can obtain the amplitude as a 2D float numpy array using::
 
     refocusedAmp = pyh.amplitude(refocusedIm)
     
+Note that the first time a hologram is refocused to a particular depth the process will be slower due to the need to create a propagator for that 
+depth. This is particularly noticable when using GPU acceleration as the propagator creation will often be the rate limiting step. 
+Subsequent refocusing to the same depth will be faster providing no parameters are changed that force a new propagator to be created (depth, pixel size, wavelength or grid size). 
+
+For a complete example see 'examples/inline_example.py' in the Github repository.
     
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Getting Started Using Lower-Level Functions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Begin by importing the library::
+As an alternative to using the ``Holo`` class, low-level functions can be called directly. Begin by importing the library::
     
     import pyholoscope as pyh
 
@@ -47,11 +59,12 @@ Before we can refocus we define a propagator. This requires specification of the
     depth = 1e-3
     prop = pyh.propagator(gridSize, wavelength, pixelSize, depth)
 
-Assuming we have an inline hologram ``hologram`` we can then refocus using::
+Assuming we have an inline hologram as a 2D numpy array ``hologram`` we can then refocus using::
 
     refocusedImg = pyh.refocus(hologram, propagator, background = backgroundImg)
 
-Here we have also provided an optional background hologram, ``backgroundImg``. The returned image is complex, to obtain the amplitude we use::
+Here we have also provided an optional background hologram, ``backgroundImg``, again a 2D numpy array. 
+The returned image is a 2D complex numpy array, to obtain the amplitude image as 2D numpy array use::
 
     refocusedAmp = pyh.amplitude(refocusedAmp)
     
@@ -59,11 +72,12 @@ Here we have also provided an optional background hologram, ``backgroundImg``. T
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Numba JIT acceleration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
-If the numba package is installed, this will be employed for faster generation of propagators by default when using OOP.  It can be enabled/disabled using:: 
+If the Numba package is installed, this will be employed for faster generation of propagators by default when using the ``Holo`` class.  
+Use of Numba can be explicitly enabled/disabled using:: 
         
     holo.set_numba(True/False)
     
-If using the lower level functions, numba versions must be called explicitly, currently only::
+If using the lower-level functions, the Numba variant of the propagator generator function must be called explicitly::
 
     pyh.propagator_numba(gridSize, wavelength, pixelSize, depth)    
     
@@ -71,13 +85,13 @@ If using the lower level functions, numba versions must be called explicitly, cu
 ^^^^^^^^^^^^^^^^
 GPU acceleration
 ^^^^^^^^^^^^^^^^
-GPU acceleration is used by default when using OOP, it can be enabled/disabled using::
+GPU acceleration is used by default when using the ``Holo`` class, it can be explictly enabled/disabled using::
 
     holo.set_cuda(True/False)
 
-This requires the CuPy package and a compatible GPU, otherwise pyholoscope will revert to CPU processing.  
+This requires the CuPy package and a compatible GPU, otherwise ``Holo`` will revert to CPU processing.  
 
-If using the lower level functions, specify ``cuda = True`` when refocusing, e.g. ::
+If using the lower-level functions, it is necessary to specify ``cuda = True`` when refocusing, e.g.::
 
     holo.refocus(hologram, propagator, cuda = True)
 

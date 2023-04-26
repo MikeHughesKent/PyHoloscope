@@ -19,7 +19,7 @@ Begin by importing the package::
 We will assume we have a hologram ``hologram`` stored as a 2D numpy array. This can either be a raw inline hologram, in 
 which case ``hologram`` will be real, or a demodulated off-axis hologram, in which case ``hologram`` will be complex.
     
-For refocusing we need to define the image size, in pixels, pixel size and wavelength, for example::
+For refocusing we need to define the image size, in pixels, pixel size, and wavelength, for example::
 
     imageSize = 512
     pixelSize = 2e-6
@@ -53,9 +53,7 @@ The entire hologram will still be refocused, but only the focus metric will only
 
 A speed-up can be obtained by refocusing only the ROI plus a small margin around it. This is activated by specifying the margin in pixels::
 
-    margin = 20
     focusDepth = pyh.find_focus(hologram, wavelength, pixelSize, depthRange, method, roi = focusRoi, margin = 20)
-
 
 If the hologram has not had a background subtracted or a window previously applied, we can also request these are applied prior to refocusing by passing them as optional arguments::
 
@@ -107,11 +105,10 @@ this ROI + margin. This must currently be done manually by adjusing the ``gridSi
 Performing a prior coarse search
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The standard method of finding focus uses a golden-section based minimisation algorithm which can be prone to finding local minima. The reduce this problem, 
+The standard method of finding focus uses a golden-section based minimisation algorithm which can be prone to finding local minima. To reduce this problem, 
 an initial exhaustive coarse search can be made to identify the most likely depth region containing focus, and the standard method is then applied only within 
 this region. We specify the number of regularly spaced points within the depth range to check the focus for, a fine search using golden section is then performed
-in an interval around the point with the best focus score::
+in an interval around the point with the best focus score, for example::
 
-    coarseSearchInterval = 10
-    focusDepth = pyh.find_focus(hologram, wavelength, pixelSize, depthRange, method, coarseSearchInterval = coarseSearchInterval)      
+    focusDepth = pyh.find_focus(hologram, wavelength, pixelSize, depthRange, method, coarseSearchInterval = 10)      
 

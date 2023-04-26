@@ -10,5 +10,5 @@ from pyholoscope.roi import *
 from pyholoscope.holo_class import *
 from pyholoscope.focusing import *
 from pyholoscope.focusing_numba import *
-
+from pyholoscope.focus_shift import *
 

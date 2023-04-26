@@ -296,7 +296,7 @@ def refocus_stack(img, wavelength, pixelSize, depthRange, nDepths, **kwargs):
 
     """ Numerical refocusing of a hologram to produce a depth stack. 'depthRange' is a tuple
     defining the min and max depths, the resulting stack will have 'nDepths' images
-    equally spaced between these limits. Specify 'imgisFFT' = true if the provided
+    equally spaced between these limits. Specify 'imgisFFT = true' if the provided
     'img' is aready in Fourier domain.   
     """
     window = kwargs.get('window', None)
@@ -313,7 +313,6 @@ def refocus_stack(img, wavelength, pixelSize, depthRange, nDepths, **kwargs):
     # Tell refocus that we are providing the FFT
     kwargs['FourierDomain'] = True
     
-    
     imgStack = FocusStack(cHologramFFT, depthRange, nDepths)
 
     for idx, depth in enumerate(depths):
@@ -325,3 +324,5 @@ def refocus_stack(img, wavelength, pixelSize, depthRange, nDepths, **kwargs):
         imgStack.add_idx( pyholoscope.post_process( refocus(cHologramFFT, prop, **kwargs), window=window), idx)
 
     return imgStack
+
+
