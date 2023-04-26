@@ -1,38 +1,42 @@
 # PyHoloscope : Holographic Microscopy Utilities for Python
-*Mainly developed by [Mike Hughes](https://research.kent.ac.uk/applied-optics/hughes/), Applied Optics Group, University of Kent. Pull requests welcome.*
 
-A on-going project to develop tools for holographic microscopy in Python. The aim is to make this optimised, fast and suitable for real-time use, including GPU acceleration. There is already a python library called [HoloPy](https://github.com/manoharan-lab/holopy) which implements a lot of useful functionality, so check that out if you need something that works now.
+PyHoloscope is a Python package for holographic microscopy. 
 
-This work is partially funded by Royal Society Grant RGS\R2\202225 (Ultrathin Inline Holographic Microscopy).
+Development is by [Mike Hughes](https://research.kent.ac.uk/applied-optics/hughes/)' lab in the 
+[Applied Optics Group](https://research.kent.ac.uk/applied-optics), School of Physics & Astronomy, University of Kent. Bug reports, contributions and pull requests are welcome. 
 
-As of now, this is very in-development, there are lots of bugs and not much documentation. If you would like to use the library, there are some examples in the test folder that will get you started.
+The package was originally developed mostly for applications in Mike Hughes' lab, including compact and fibre-based holography, 
+but it is general enough for a variety of applications. It supports inline and off-axis holography, including numerical refocusing and phase correction (e.g. removing tilts). The package is designed to be fast enough for use in imaging GUIs as well as for offline research. GPU acceleration is supported. 
 
-Functionality can be accessed directly via static methods or, in most cases, via the Holo class.
+Full documentation is on [Read the docs](https://pyholoscope.readthedocs.io/en/latest/index.html). Also see the examples in the examples folder and the test folder.
 
-Examples are provided in the *tests* folder.
+Development is active and there may be bugs and future changes to the API.
 
-Off Axis Holography
-* Complex image recovery by FFT, shifting modulated signal to centre and iFFT (CPU Acceleration available)
+## Features
+
+### Off Axis Holography
+* Complex image recovery by FFT, shifting modulated signal to centre and iFFT (GPU acceleration available)
 * Auto detect modulation frequency
 * Predict tilt angle from modulation frequency
 
-General holography
+### General and Inline holography
 * Refocus using angular spectrum method 
 * Cosine window to avoid edge effects - (done for circular window for bundle holograpy, need rectangular for general purpose)
 * Generate stack of images at different focal positions
 * Focus metrics (Brenner, Sobel, Peak Intensity, DarkFocus, SobelVariance)
 * Auto focus whole image or ROI by optimising focus metric, through fast bounded search and (optionally) initial coarse search to narrow search range.
-* Generate LUT of propagators for faster auto-focus or repeated geberation of focus stacks.
+* Generate LUT of propagators for faster auto-focus or repeated generation of focus stacks.
 
-Phase Visualation
+### Phase Visualation
 * Remove background phase 
 * Remove 1D phase tilt
 * Phase relative to some region of interest 
 * Synthetic DIC/phase contrast
 
-Other things to do in longer term:
+## Planned Developments (help welcome!)
+* Support non-square holograms
+* Better auto-focusing
+* Improved optimisation for speed
 * Port tracking code from Matlab (or maybe try and integrate with TrackPy?)
-* Iterative phase recovery for inline holography
-* GPU acceleration of refocusing
-* Phase recovery techniques (from inline holography)
+* Phase recovery for inline holography
 
