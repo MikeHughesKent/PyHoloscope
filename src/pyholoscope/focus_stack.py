@@ -2,9 +2,7 @@
 """
 PyHoloscope: focus_stack
 
-
-Class for stack of images numerically refocused to different depths.
-
+Class to store stack of images numerically refocused to different depths.
 
 @author: Mike Hughes
 Applied Optics Group, Physics & Astronomy, University of Kent
@@ -20,9 +18,9 @@ class FocusStack:
      
     def __init__(self, img, depthRange, nDepths):
         """ Initialise stack.
-        :param img : example image of the correct size, 2D numpy array
-        :param depthRange : tuple of min depth and max depth in stack
-        :param nDepths : number of images to be stored in stack
+        img : example image of the correct size, 2D numpy array
+        depthRange : tuple of min depth and max depth in stack
+        nDepths : number of images to be stored in stack
         """
         self.stack = np.zeros((nDepths, np.shape(img)[0], np.shape(img)[1]), dtype = img.dtype)
         self.depths = np.linspace(depthRange[0], depthRange[1], nDepths)

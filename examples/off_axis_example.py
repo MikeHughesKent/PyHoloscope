@@ -1,14 +1,12 @@
 # -*- coding: utf-8 -*-
 """
 Example of processing off axis holography with numerical refocusing
-functionality of pyholoscope using OOP
+functionality of pyholoscope using Holo class
 
-@author: Mike Hughes
-Applied Optics Group
-University of Kent
+@author: Mike Hughes, Applied Optics Group, University of Kent
 """
 
-import context
+import context         # Paths
 
 from matplotlib import pyplot as plt
 
@@ -23,19 +21,20 @@ hologram = pyh.load_image("..\\test\\test data\\paramecium_oa_oof.tif")
 background = pyh.load_image("..\\test\\test data\\paramecium_oa_oof_background.tif")
 
 # Create Holo object
-holo = pyh.Holo(pyh.OFFAXIS_MODE, wavelength, pixelSize)
+holo = pyh.Holo(mode = pyh.OFFAXIS_MODE, 
+                wavelength = wavelength, 
+                pixelSize = pixelSize,
+                background = background,
+                relativePhase = True,       # We will remove the background phase
+                refocus = True,             # We will numerically refocus
+                depth = -0.0012)            # Refocus distance in m
 
-holo.set_background(background)         # Supply the background image/phase
-holo.auto_find_off_axis_mod()           # Finds modulation frequency
-holo.off_axis_background_field()        # Processes background image to obtain background phase
-holo.relativePhase = True               # We will remove the background phase
-holo.refocus = True                     # We will numerically refocus
-holo.depth = -0.0012                    # Refocus distance in m
+holo.auto_find_off_axis_mod()               # Finds modulation frequency
+holo.off_axis_background_field()            # Processes background image to obtain background phase
 
 
-# In a single step we remove the off axis modulation and refocus
+# In a single step we remove the off-axis modulation and refocus
 reconField = holo.process(hologram)
-
 
 # Display intensity and phase
 plt.figure(dpi = 150)
@@ -72,7 +71,7 @@ plt.title('Unwrapped Phase')
 
 
 # Detect a global tilt in the phase and remove it (note we must supply the
-#unwrapped phase here)
+# unwrapped phase here)
 tilt = pyh.obtain_tilt(phaseUnwrapped)
 phaseUntilted = pyh.relative_phase(phaseUnwrapped, tilt)
 

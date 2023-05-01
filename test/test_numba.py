@@ -1,13 +1,9 @@
 # -*- coding: utf-8 -*-
 """
 Tests speed increase from using Numba and qaudrant version of angular spectrum
-propagator generator.
+propagator generator in PyHoloscope.
 
-Part of PyHoloscope
-
-@author: Mike Hughes
-Applied Optics Group
-University of Kent
+@author: Mike Hughes, Applied Optics Group, University of Kent
 """
 
 from matplotlib import pyplot as plt

@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-Created on Wed Jul  7 21:20:10 2021
+Placeholder
 
-@author: AOG
+@author: Mike Hughes, Applied Optics Group, University of Kent
 """
 
 class Tracker:
@@ -13,12 +13,8 @@ class Tracker:
     def __str__(self):
         return "Tracker"
     
-    def test(self):
-        print("hello world") 
-        
-        
+ 
 
-def findParticles(img, ):
     
     
     

@@ -31,8 +31,16 @@ import pyholoscope.general
 def propagator_slow(gridSize, wavelength, pixelSize, depth):
     """ 
     Slow version of propagator. Creates Fourier domain propagator for angular 
-    spectrum meethod. GridSize is size of image (in pixels) to refocus. Retained only
-    for testing purposes, use propagator instead.
+    spectrum meethod. Retained only for testing purposes, use propagator instead.
+  
+    Parameters:
+        gridSize: size of image (in pixels) to refocus.
+        pixelSize: physical size of pixels
+        wavelength: in same units as pixelSize
+        depth: refocus depth in same units as pixelSize
+        
+    Returns:
+        propagator as complex 2D numpy array
     """
     
     area = gridSize * pixelSize
@@ -52,6 +60,15 @@ def propagator(gridSize, wavelength, pixelSize, depth):
     """ Creates Fourier domain propagator for angular spectrum meethod. Speeds
     up process by only calculating top left quadrant and then duplicating (with flips)
     to create the other three quadrants.
+    
+    Parameters:
+        gridSize: size of image (in pixels) to refocus.
+        pixelSize: physical size of pixels
+        wavelength: in same units as pixelSize
+        depth: refocus depth in same units as pixelSize
+        
+    Returns:
+        propagator as complex 2D numpy array
     """
     assert gridSize % 2 == 0, "Grid size must be even"
     
@@ -66,6 +83,9 @@ def propagator(gridSize, wavelength, pixelSize, depth):
     propCorner = np.exp(1j*math.pi*wavelength*depth*(u**2 + v**2))
     
     prop = np.zeros((gridSize, gridSize), dtype ='complex64')
+    
+    # Duplicate the top left quadrant into the other three quadrants as
+    # this is quicker then explicitly calculating the values
     prop[:midPoint, :midPoint] = propCorner
     prop[midPoint:, :midPoint] = np.flip(propCorner,0)
     prop[:, midPoint:] = np.flip(prop[:, :midPoint],1)
@@ -74,11 +94,22 @@ def propagator(gridSize, wavelength, pixelSize, depth):
 
 
 def refocus(img, propagator, **kwargs):    
-    """ Refocus using angular spectrum method. Takes a hologram (with any pre-processing
-    such as background removal already performed) and a pre-computed propagator. 
+    """ 
+    Refocus a hologram using angular spectrum method. 
+    
+    Parameters:
+        img           : hologram as 2D numpy array (with any pre-processing 
+                        such as background removal already performed) 
+        propagator    : as returned from propagator().
+        FourierDomain : optional, set to True if img is the FFT of the hologram (default = False)
+        cuda          : optional, set to True to use GPU (default = False)
+    Returns:
+        refocused hologram as complex 2D numpy array
+        
     """
     imgIsFourier = kwargs.get('FourierDomain', False)
     cuda = kwargs.get('cuda', True)
+    
     if np.shape(img) != np.shape(propagator):
         return None
     # If we have been sent the FFT of image, used when repeatedly calling refocus
@@ -86,8 +117,7 @@ def refocus(img, propagator, **kwargs):
     if imgIsFourier:  
         if cuda is True and cudaAvailable is True:
             img2 = cp.array(img)
-            propagator2 = cp.array(propagator)
-           
+            propagator2 = cp.array(propagator)           
             return cp.asnumpy(cp.fft.ifft2(cp.fft.fftshift(img2 * propagator2)))
         else:
             return np.fft.ifft2(np.fft.fftshift(img * propagator))
@@ -104,10 +134,14 @@ def refocus(img, propagator, **kwargs):
    
 def focus_score(img, method):
     """ Returns score of how 'in focus' an image is based on selected method.
-    Method options are: Brenner, Sobel, SobelVariance, Var, DarkFcous or Peak
+    
+    Parameters:
+        img    : image as 2D numpy array
+        method : string, scoring method, options are: Brenner, Sobel, 
+                         SobelVariance, Var, DarkFcous or Peak
+    Returns:
+        Focus score, float                     
     """
-
-
 
     focusScore = 0
     
@@ -119,13 +153,11 @@ def focus_score(img, method):
         BrennY[:,0:-2] = img[:,2:]-img[:,0:-2] 
         scoreMap = np.maximum(BrennY**2, BrennX**2)    
         focusScore = -np.mean(scoreMap)
-       
+           
+    elif method == 'Peak':
+        focusScore = -np.max(img)    
     
-    if method == 'Peak':
-        focusScore = -np.max(img)
-    
-    
-    if method == 'Sobel':
+    elif method == 'Sobel':
         filtX = np.array( [ [ 1, 0, -1] , [ 2, 0, -2], [ 1,  0, -1]] )
         filtY = np.array( [ [ 1, 2,  1] , [ 0, 0,  0], [-1, -2, -1]] )
         xSobel = scipy.signal.convolve2d(img, filtX)
@@ -133,7 +165,7 @@ def focus_score(img, method):
         sobel = xSobel**2 + ySobel**2
         focusScore = -np.mean(sobel)
         
-    if method == 'SobelVariance':
+    elif method == 'SobelVariance':
         filtX = np.array( [ [ 1, 0, -1] , [ 2, 0, -2], [ 1,  0, -1]] )
         filtY = np.array( [ [ 1, 2,  1] , [ 0, 0,  0], [-1, -2, -1]] )
         xSobel = scipy.signal.convolve2d(img, filtX)
@@ -141,18 +173,20 @@ def focus_score(img, method):
         sobel = xSobel**2 + ySobel**2
         focusScore = -(np.std(sobel)**2)
     
-    if method == 'Var':
+    elif method == 'Var':
         focusScore = -np.std(img)
                 
     # https://doi.org/10.1016/j.optlaseng.2020.106195
-    if method == 'DarkFocus':
+    elif method == 'DarkFocus':
         kernelX = np.array([[-1,0,1]])
         kernelY = kernelX.transpose()
         gradX = cv.filter2D(img, -1, kernelX)
         gradY = cv.filter2D(img, -1, kernelY)
         mean, stDev = cv.meanStdDev(gradX**2 + gradY**2)
-        
         focusScore = -(stDev[0,0]**2)
+    
+    else:
+        raise Exception("Invalid scoring method.")
         
     return focusScore
 
@@ -186,7 +220,7 @@ def refocus_and_score(depth, imgFFT, pixelSize, wavelength, method, scoreROI, pr
 
 
 def find_focus(img, wavelength, pixelSize, depthRange, method, **kwargs):
-    """ Determine the refocus depth which maximise the focus metric on image
+    """ Determine the refocus depth which maximises the focus metric on image
     """   
     background = kwargs.get('background', None)
     window = kwargs.get('window', None)
@@ -293,18 +327,15 @@ def focus_score_curve(img, wavelength, pixelSize, depthRange, nPoints, method, *
 
 
 def refocus_stack(img, wavelength, pixelSize, depthRange, nDepths, **kwargs):
-
     """ Numerical refocusing of a hologram to produce a depth stack. 'depthRange' is a tuple
     defining the min and max depths, the resulting stack will have 'nDepths' images
-    equally spaced between these limits. Specify 'imgisFFT = true' if the provided
-    'img' is aready in Fourier domain.   
+    equally spaced between these limits. 
     """
     window = kwargs.get('window', None)
     useNumba = kwargs.get('numba', False)
     background = kwargs.get('preBackground', None)
     
-    depths = np.linspace(depthRange[0], depthRange[1], nDepths)
-    
+    depths = np.linspace(depthRange[0], depthRange[1], nDepths)    
     
     # Apply pre-processing and then take 2D FFT
     cHologram = pyholoscope.pre_process(img, **kwargs)

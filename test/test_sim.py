@@ -1,19 +1,14 @@
 # -*- coding: utf-8 -*-
 """
-Tests sim package of PyHoloscope - simulation and recovery of phase in off-axis holography.
+Tests sim modulation of PyHoloscope - simulation and recovery of phase in off-axis holography.
 
-@author: Mike Hughes
-Applied Optics Group
-University of Kent
+@author: Mike Hughes, Applied Optics Group, University of Kent
 """
 
 from matplotlib import pyplot as plt
 import numpy as np
 import time
 import math
-
-import cmocean    # For circular colormap
-import cv2 as cv
 
 import context    # Load paths
 
@@ -60,7 +55,7 @@ correctedField = holo.relative_phase(reconField, backgroundField)
 
 plt.figure(dpi = 300)
 plt.title('Object Phase')
-plt.imshow(holo.phase(objectField), cmap = cmocean.cm.phase, vmin = 0, vmax = 2 * math.pi)
+plt.imshow(holo.phase(objectField), cmap = 'twilight', vmin = 0, vmax = 2 * math.pi)
 
 plt.figure(dpi = 300)
 plt.title('Hologram')
@@ -68,7 +63,7 @@ plt.imshow(cameraImage, cmap = 'gray')
 
 plt.figure(dpi = 300)
 plt.title('Reconstructed Phase')
-plt.imshow(holo.phase(correctedField), cmap = cmocean.cm.phase, vmin = 0, vmax = 2 * math.pi)
+plt.imshow(holo.phase(correctedField), cmap = 'twilight', vmin = 0, vmax = 2 * math.pi)
 
 plt.figure(dpi = 300)
 plt.title('Reconstructed Amplitude')

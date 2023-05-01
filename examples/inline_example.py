@@ -1,10 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-Example of how to use inline holography functionality of PyHoloscope
+Minimal example of how to use inline holography functionality of PyHoloscope.
 
-@author: Mike Hughes
-Applied Optics Group
-University of Kent
+@author: Mike Hughes, Applied Optics Group, University of Kent
 """
 
 from matplotlib import pyplot as plt
@@ -23,9 +21,11 @@ hologram = pyh.load_image("..\\test\\test data\\inline_example_holo.tif")
 background = pyh.load_image("..\\test\\test data\\inline_example_back.tif")
 
 # Set up PyHoloscope
-holo = pyh.Holo(pyh.INLINE_MODE, wavelength, pixelSize)
-holo.set_background(background)
-holo.set_depth(depth)
+holo = pyh.Holo(mode = pyh.INLINE_MODE, 
+                wavelength = wavelength, 
+                pixelSize = pixelSize,
+                background = background,
+                depth = depth)
 
 # Refocus
 recon = holo.process(hologram)

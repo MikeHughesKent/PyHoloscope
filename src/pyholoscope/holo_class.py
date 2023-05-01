@@ -1,13 +1,12 @@
 ## -*- coding: utf-8 -*-
 """
-PyHoloscope
-Python package for holographic microscopy
+PyHoloscope - Fast Holographic Microscopy in Python
 
 The Holo Class provides an object-oriented interface to a subset of the 
 PyHoloscope functionality.
 
 @author: Mike Hughes
-Applied Optics Group, Physics & Astrfonomy, University of Kent
+Applied Optics Group, Physics & Astronomy, University of Kent
 """
 
 import numpy as np
@@ -20,26 +19,30 @@ from pyholoscope.focusing import propagator, refocus, find_focus, refocus_stack
 from pyholoscope.general import pre_process, post_process, relative_phase
 from pyholoscope.prop_lut import PropLUT
 
+
+# Check if cupy is available
 try:
-    import cupy
+    import cupy as cp
     cudaAvailable = True
 except:
     cudaAvailable = False
     
-    
+# Check if numba is available 
 try:
     import numba
     from pyholoscope.focusing_numba import propagator_numba
     numbaAvailable = True
+    testProg = propagator_numba(5,1,1,1)
 except:
     numbaAvailable = False    
+    
 
 class Holo:
         
     INLINE_MODE = 1
     OFFAXIS_MODE = 2
     
-    def __init__(self, mode, wavelength, pixelSize, **kwargs):
+    def __init__(self, mode = None, wavelength = None, pixelSize = None, **kwargs):
         
         self.mode = mode
         self.wavelength = wavelength
@@ -50,8 +53,8 @@ class Holo:
         self.cuda = kwargs.get('cuda', True)
         
         self.depth = kwargs.get('depth', 0)
-        self.background = kwargs.get('background',None)
-        self.applyWindow = False
+        self.background = kwargs.get('background', None)
+        self.applyWindow = kwargs.get('applyWindow', False)
         self.window = kwargs.get('window', None)        
         self.windowRadius = kwargs.get('windowRadius', None)
         self.windowThickness = kwargs.get('windowThickness', None)
@@ -62,6 +65,21 @@ class Holo:
         self.findFocusCoarseSearchInterval = kwargs.get('findFocusCoarseSearchInterval', None)
         self.findFocusDepthRange = kwargs.get('findFocusDepthRange', (0,1))
        
+       
+        self.cropCentre = kwargs.get('cropCentre', False)
+        self.cropRadius = kwargs.get('cropRadius', False)
+        self.returnFFT = kwargs.get('returnFFT', False)
+        
+        self.relativePhase = kwargs.get('relativePhase', False)
+        self.stablePhase = kwargs.get('stablePhase', False)
+        self.stableROI = kwargs.get('stableROI', False)
+
+        
+        self.invert = kwargs.get('invert', False)
+        self.refocus = kwargs.get('refocus', False)
+        self.downsample = kwargs.get('downsample', 1)
+
+        
         self.backgroundField = None
         self.propagatorDepth = 0
         self.propagatorWavelength = 0
@@ -70,22 +88,120 @@ class Holo:
         self.propagator = None
         self.propagatorLUT = None
         
-        self.cropCentre = None
-        self.cropRadius = None
-        self.returnFFT = False
+    
         
-        self.relativePhase = False
-        self.stablePhase = False
+    def process(self, img):
+        """ Process an image using the currently selected parameters.
+        """
+      
+        img = img.astype(float)
+        self.background = self.background.astype(float)
+       
+        assert self.pixelSize is not None, "Pixel size not specified."
+        assert self.wavelength is not None, "Wavelength not specified."
+        assert (self.mode == self.INLINE_MODE or self.mode == self.OFFAXIS_MODE), "Processing mode not specified."
         
-        # Off-axis
-        self.cropCentre = (0,0)
-        self.cropRadius = 0
+        if img is None: 
+            return
         
-        self.invert = False
-        self.refocus = False
-        self.downsample = 1
-        self.stableROI = None
+        assert img.ndim == 2, "Input must be a 2D numpy array."
         
+        
+        ################ INLINE HOLOGRAPHY PIPELINE #######################
+        if self.mode is self.INLINE_MODE:
+          
+            
+            # Apply downsampling
+            if self.downsample != 1:                
+                imgScaled = cv.resize(img, (int(np.shape(img)[1]/ self.downsample), int(np.shape(img)[0] / self.downsample) )   )
+            else:
+                imgScaled = img
+
+            if self.background is not None:
+                if self.downsample !=1:
+                    backgroundScaled = cv.resize(self.background, (int(np.shape(self.background)[1]/ self.downsample), int(np.shape(self.background)[0] / self.downsample)))    
+                else:
+                    backgroundScaled = self.background
+            else:
+                backgroundScaled = None                                 
+            
+            # If the propagator is not the correct one for the current parameters, regenerate it
+            if np.shape(self.propagator) != np.shape(img) or self.propagator is None or self.propagatorDepth != self.depth or self.propagatorWavelength != self.wavelength or self.propagatorPixelSize != self.pixelSize:
+                self.update_propagator(img)
+              
+            # If we have a window, but it is not the right size, generated it    
+            if self.window is not None:
+                if np.shape(self.window) != np.shape(imgScaled):
+                    if self.windowRadius is None:
+                        self.windowRadius = np.shape(img)[0] / 2
+                    self.set_window(imgScaled, self.windowRadius / self.downsample, self.windowThickness / self.downsample)
+            
+            imgScaled = pre_process(imgScaled, window = self.window, background = backgroundScaled)
+            
+            imgOut = refocus(imgScaled, self.propagator, cuda = (self.cuda and cudaAvailable))
+            
+            if imgOut is not None:
+                imgOut = post_process(imgOut, window = self.window)      
+                if self.invert is True:
+                    imgOut = np.max(imgOut) - imgOut
+                return imgOut
+            else:
+                return None
+        
+        
+    
+        ################# OFF AXIS HOLOGRAPHY PIPELINE ############### 
+        if self.mode is self.OFFAXIS_MODE:
+            
+            assert self.cropCentre is not None, "Off-Axis demodulation frequency not defined."
+            assert self.cropRadius is not None, "Off-Axis demodulation radius not defined."
+              
+            ret = off_axis_demod(img, self.cropCentre, self.cropRadius, returnFFT = self.returnFFT, cuda = self.cuda)
+            if self.returnFFT:
+                demod = ret[0]
+                FFT = ret[1]
+            else:
+                demod = ret
+
+            if self.returnFFT:
+                return FFT
+            
+            if self.relativePhase == True and self.backgroundField is not None:
+                demod = relative_phase(demod, self.backgroundField)
+            
+            if self.refocus is True:
+                
+                # If we are doing OA we have changed the pixel size in the demodulation process.
+                # so here we calculate the corrected pizel size
+                self.oaPixelSize = self.pixelSize / float(np.shape(demod)[0]) * float(np.shape(img)[0])
+
+                # Check the propagator is valid, otherwise recreate it
+                if np.shape(self.propagator) != np.shape(demod) or self.propagator is None or self.propagatorDepth != self.depth or self.propagatorWavelength != self.wavelength or self.propagatorPixelSize != self.oaPixelSize:
+                    self.update_propagator(demod)
+               
+                # Apply the window if requested
+                if self.window is not None and self.applyWindow:
+                    if np.shape(self.window) != np.shape(demod):
+                        if self.windowRadius is not None and self.windowThickness is not None:
+                            self.set_window(demod, self.windowRadius, self.windowThickness)
+                
+                # Remove background if requested
+                if self.backgroundField is not None:
+                    background = np.abs(self.backgroundField)
+                    background= None
+                else:
+                    background = None
+                    
+                demod = pre_process(demod, window = self.window, background = background)  # background is done elsewhere
+               
+                demod = refocus(demod, self.propagator, cuda = (self.cuda and cudaAvailable))
+                
+                if demod is not None:
+                    demod = post_process(demod, window = self.window)     
+                
+            return demod 
+    
+    
     def __str__(self):
         return "PyHoloscope Holo Class. Wavelength: " + str(self.wavelength) + ", Pixel Size: " + str(self.pixelSize)
 
@@ -108,15 +224,13 @@ class Holo:
     def set_background(self, background):
         """ Set the background image. Use None to remove background. """
         if background is not None:
-            self.background  = background.astype('uint16') 
+            self.background  = background.astype(float) 
         else:
             self.background = None
             
-        
     def clear_background(self):
         """ Remove background """
         self.background = None  
-        
     
     def set_window(self, img, circleRadius, skinThickness, **kwargs):
         """ Sets the window used for pre and post processing. Use shape = 'circle' or shape = 'square' """
@@ -180,7 +294,11 @@ class Holo:
                 self.propagator = propagator(int(np.shape(img)[0] / self.downsample), self.wavelength, self.oaPixelSize * self.downsample, self.depth)
             self.propagatorPixelSize = self.oaPixelSize
      
-        
+        # If using CUDA we send propagator to GPU now to speed up refocusing later 
+        if self.cuda and cudaAvailable:
+           self.propagator = cp.array(self.propagator)
+           
+           
     def set_oa_centre(self, centre):
         """ Set the location of the modulation frequency in frequency domain. """
         self.cropCentre = centre        
@@ -202,117 +320,23 @@ class Holo:
         """ Set the downsample factor. This will cause the propagator to be
         recreated when next needed, call update_propagator to force this immediately.
         """
+        if downsample != self.downsample:
+            self.propagator = None  # Force to be recreated when needed
+            
         self.downsample = downsample
-        self.propagator = None  # Force to be recreated when needed
         
-      
-    def process(self, img):
-        """ Process an image using the currently selected options """
-        #print(self.wavelength, self.pixelSize)
-        if img is None: 
-            return
-        
-        ################ INLINE HOLOGRAPHY PIPELINE #######################
-        if self.mode is self.INLINE_MODE:
-            if self.propagator is None or self.propagatorDepth != self.depth or self.propagatorWavelength != self.wavelength or self.propagatorPixelSize != self.pixelSize:
-                self.update_propagator(img)
-            
-            # Apply downsampling
-            if self.downsample != 1:                
-                imgScaled = cv.resize(img, (int(np.shape(img)[1]/ self.downsample), int(np.shape(img)[0] / self.downsample) )   )
-            else:
-                imgScaled = img
-                
-            if self.background is not None:
-                backgroundScaled = cv.resize(self.background, (int(np.shape(self.background)[1]/ self.downsample), int(np.shape(self.background)[0] / self.downsample)))    
-            else:
-                backgroundScaled = None                                 
-            
-            if np.shape(self.propagator) != np.shape(img):
-                self.update_propagator(img)
-                
-            if self.window is not None:
-                if np.shape(self.window) != np.shape(imgScaled):
-                    if self.windowRadius is None:
-                        self.windowRadius = np.shape(img)[0] / 2
-                    self.set_window(imgScaled, self.windowRadius / self.downsample, self.windowThickness / self.downsample)
-            imgScaled = pre_process(imgScaled, window = self.window, background = backgroundScaled)
-            imgOut = refocus(imgScaled, self.propagator, cuda = (self.cuda and cudaAvailable))
-            if imgOut is not None:
-                imgOut = post_process(imgOut, window = self.window)      
-                if self.invert is True:
-                    imgOut = np.max(imgOut) - imgOut
-                return imgOut
-            else:
-                return None
-        
-        
-    
-        ################# OFF AXIS HOLOGRAPHY PIPELINE ############### 
-        if self.mode is self.OFFAXIS_MODE:
-                           
-            if self.cropCentre is not None and self.cropRadius is not None:
-                ret = off_axis_demod(img, self.cropCentre, self.cropRadius, returnFFT = self.returnFFT, cuda = self.cuda)
-                if self.returnFFT:
-                    demod = ret[0]
-                    FFT = ret[1]
-                else:
-                    demod = ret
-            else:
-                demod, FFT = None
-                return
-           
-            if self.returnFFT:
-                return FFT
-            
-            if self.relativePhase == True and self.backgroundField is not None:
-                demod = relative_phase(demod, self.backgroundField)
-            
-            if self.refocus is True:
-                
-                # If we are doing OA we have changed the pixel size in the demodulation process.
-                # so here we calculate the corrected pizel size
-                self.oaPixelSize = self.pixelSize / float(np.shape(demod)[0]) * float(np.shape(img)[0])
-
-                # Check the propagator is valid, otherwise recreate it
-                if self.propagator is None or self.propagatorDepth != self.depth or self.propagatorWavelength != self.wavelength or self.propagatorPixelSize != self.oaPixelSize:
-                    self.update_propagator(demod)
-                if np.shape(self.propagator) != np.shape(demod):
-                    self.update_propagator(demod)
-                
-                # Apply the window if requested
-                if self.window is not None or self.applyWindow is True:
-                    if np.shape(self.window) != np.shape(demod):
-                        if self.windowRadius is not None and self.windowThickness is not None:
-                            self.set_window(demod, self.windowRadius, self.windowThickness)
-                
-                # Remove background if requested
-                if self.backgroundField is not None:
-                    background = np.abs(self.backgroundField)
-                    background= None
-                else:
-                    background = None
-                    
-                demod = pre_process(demod, window = self.window, background = background)  # background is done elsewhere
-                demod = refocus(demod, self.propagator, cuda = (self.cuda and cudaAvailable))
-                
-                if demod is not None:
-                    demod = post_process(demod, window = self.window)     
-                
-            return demod 
-    
         
     def set_use_cuda(self, useCuda):
         """ Set whether to use GPU if available, useCuda is True to use GPU or False to not use GPU.
         """
         self.cuda = useCuda
         
+        
     def set_use_numba(self, useNumba):
         """ Set whether to use Numba JIT if available, useNumba is True to use Numba or False to not use Numba.
         """
         self.useNumba = useNumba    
-        
-        
+                
         
     def set_find_focus_parameters(self, **kwargs):
         """ Sets the parameters used by the find_focus method """
@@ -350,7 +374,10 @@ class Holo:
 
     def depth_stack(self, img, depthRange, nDepths):
         """ Create a depth stack using current parameters, producing a set of 
-        'nDepths' refocused images. 'depthRange' is a tuple of (min depth, max depth)
+        'nDepths' refocused images equally spaced within depthRange. 
+        Parameters:
+            depthRange : is a tuple of (min depth, max depth)
+            nDepths    : number of depths to create images for within range
         """
         
         if self.mode == self.INLINE_MODE:
