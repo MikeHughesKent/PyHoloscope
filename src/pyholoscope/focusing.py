@@ -56,7 +56,7 @@ def propagator_slow(gridSize, wavelength, pixelSize, depth):
     return prop
 
 
-def propagator(gridSize, wavelength, pixelSize, depth):
+def propagator(gridSize, wavelength, pixelSize, depth, realImage = False):
     """ Creates Fourier domain propagator for angular spectrum meethod. Speeds
     up process by only calculating top left quadrant and then duplicating (with flips)
     to create the other three quadrants.
@@ -81,17 +81,19 @@ def propagator(gridSize, wavelength, pixelSize, depth):
     u = delta0*(xM - gridSize/2 +.5)
     v = delta0*(yM - gridSize/2 +.5)
     propCorner = np.exp(1j*math.pi*wavelength*depth*(u**2 + v**2))
+    print(realImage)
+    if not realImage:
+        prop = np.zeros((gridSize, gridSize), dtype ='complex64')
+        
+        # Duplicate the top left quadrant into the other three quadrants as
+        # this is quicker then explicitly calculating the values
+        prop[:midPoint, :midPoint] = propCorner
+        prop[midPoint:, :midPoint] = np.flip(propCorner,0)
+        prop[:, midPoint:] = np.flip(prop[:, :midPoint],1)
     
-    prop = np.zeros((gridSize, gridSize), dtype ='complex64')
-    
-    # Duplicate the top left quadrant into the other three quadrants as
-    # this is quicker then explicitly calculating the values
-    prop[:midPoint, :midPoint] = propCorner
-    prop[midPoint:, :midPoint] = np.flip(propCorner,0)
-    prop[:, midPoint:] = np.flip(prop[:, :midPoint],1)
-
-    return prop
-
+        return prop
+    else:
+        return propCorner
 
 def refocus(img, propagator, **kwargs):    
     """ 
@@ -109,8 +111,9 @@ def refocus(img, propagator, **kwargs):
     """
     imgIsFourier = kwargs.get('FourierDomain', False)
     cuda = kwargs.get('cuda', True)
+    realImage = kwargs.get('realImage', False)
     
-    if np.shape(img) != np.shape(propagator):
+    if not realImage and np.shape(img) != np.shape(propagator):
         return None
     # If we have been sent the FFT of image, used when repeatedly calling refocus
     # (for example when finding best focus) we don't need to do FFT or shift for speed
@@ -123,13 +126,18 @@ def refocus(img, propagator, **kwargs):
             return np.fft.ifft2(np.fft.fftshift(img * propagator))
 
     else:   # If we are sent the spatial domain image
-        cHologram = pyholoscope.pre_process(img, **kwargs)
+        cHologram = img # pyholoscope.pre_process(img, **kwargs)
         if cuda is True and cudaAvailable is True:
             cHologram2 = cp.array(cHologram)
             propagator2 = cp.array(propagator)
             return cp.asnumpy(cp.fft.ifft2(cp.fft.fftshift(cp.fft.fftshift(cp.fft.fft2((cHologram2))) * propagator2)))
         else:
-            return np.fft.ifft2(np.fft.fftshift(np.fft.fftshift(np.fft.fft2((cHologram))) * propagator))
+            if not realImage:
+                return np.fft.ifft2(np.fft.fftshift(np.fft.fftshift(np.fft.fft2((cHologram))) * propagator))
+            else:
+                f = np.fft.rfft2(cHologram, axes = (0,1))
+                print(np.shape(f))
+                #return np.fft.irfft2(np.fft.fftshift(np.fft.fftshift(np.fft.rfft2((cHologram))) * propagator))
 
    
 def focus_score(img, method):

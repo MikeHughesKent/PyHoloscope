@@ -42,9 +42,9 @@ def off_axis_demod(cameraImage, cropCentre, cropRadius, **kwargs):
   
     # Apply 2D FFT
     if cuda is False or cudaAvailable is False:
-        cameraFFT = np.fft.fftshift(np.fft.fft2(cameraImage))
+        cameraFFT = np.fft.rfft2(cameraImage)
     else:
-        cameraFFT = cp.fft.fftshift(cp.fft.fft2(cp.array(cameraImage)))    
+        cameraFFT = cp.fft.rfft2(cp.array(cameraImage))
    
     # Shift the ROI to the centre
     shiftedFFT = cameraFFT[round(cropCentre[1] - cropRadius): round(cropCentre[1] + cropRadius),round(cropCentre[0] - cropRadius): round(cropCentre[0] + cropRadius)]
@@ -72,20 +72,28 @@ def off_axis_demod(cameraImage, cropCentre, cropRadius, **kwargs):
         return reconField
     
 
-def off_axis_find_mod(cameraImage):
+def off_axis_find_mod(cameraImage, maskFraction = 0.1):
     """ Finds the location of the off-axis holography modulation peak in the FFT. Finds
     the peak in the positive x region.    
     """
     
     # Apply 2D FFT
-    cameraFFT = np.transpose(np.abs(np.fft.fftshift(np.fft.fft2(cameraImage)) ) )  
+    cameraFFT = np.transpose(np.abs(np.fft.rfft2(cameraImage)) ) 
+    
  
     # Mask central region
-    imSize = min(np.shape(cameraImage))
+    imSize = min(np.shape(cameraImage)[:1])
     cx = np.shape(cameraImage)[0] / 2
-    cy = np.shape(cameraImage)[1] / 2
-    cameraFFT[round(cy - imSize / 8): round(cy + imSize / 8), round(cx - imSize / 8): round(cx + imSize / 8)  ] = 0
-    cameraFFT[round(cy):, :  ] = 0
+    cy = np.shape(cameraImage)[1] / 2    
+    
+    # Need to crop out DC otherwise we will find that. Set the areas around
+    # dc (for both quadrants) to zero. The size of the masked area is maskFraction * the
+    # size of the image (smallest dimension)
+    maskSize = int(np.min(np.shape(cameraImage)) * maskFraction)
+
+    cameraFFT[:maskSize,:maskSize] = 0
+    cameraFFT[:maskSize:,-maskSize:] = 0
+   
  
     peakLoc = np.unravel_index(cameraFFT.argmax(), cameraFFT.shape)
     
@@ -95,16 +103,25 @@ def off_axis_find_mod(cameraImage):
 def off_axis_find_crop_radius(cameraImage):
     """ Estimates the correct off axis crop radius based on modulation peak position
     """
+    
+    h = np.shape(cameraImage)[0]
+    w = np.shape(cameraImage)[1]
+    cx = w / 2
+    cy = h / 2
+
     peakLoc = off_axis_find_mod(cameraImage)
-    cx = np.shape(cameraImage)[0] / 2
-    cy = np.shape(cameraImage)[1] / 2
-    peakDist = np.sqrt((peakLoc[0] - cx)**2 + (peakLoc[1] - cy)**2)
+        
+    # Depending on quadrant could be relative to either top-left or
+    # top-right corner, so check both and use the closest distance
+    peakDist1 = np.sqrt((peakLoc[0])**2 + (peakLoc[1])**2)
+    peakDist2 = np.sqrt((peakLoc[0])**2 + (peakLoc[1] - w)**2)
+    peakDist = min(peakDist1, peakDist2)
     
     # In the optimal case, the radius is 1/3rd of the modulation position
     cropRadius = math.floor(peakDist / 3)
     
     # Ensure it doesn't run off edge of image
-    cropRadius = min (cropRadius, peakLoc[0], np.shape(cameraImage)[0] - peakLoc[0], peakLoc[1], np.shape(cameraImage)[1] - peakLoc[1] )
+    cropRadius = min (cropRadius, peakLoc[0], int(h / 2 )- peakLoc[0], peakLoc[1], w - peakLoc[1] )
     
     return cropRadius
 
