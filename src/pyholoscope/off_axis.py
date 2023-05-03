@@ -100,7 +100,7 @@ def off_axis_find_mod(cameraImage, maskFraction = 0.1):
     return peakLoc
 
 
-def off_axis_find_crop_radius(cameraImage):
+def off_axis_find_crop_radius(cameraImage, maskFraction = 0.1):
     """ Estimates the correct off axis crop radius based on modulation peak position
     """
     
@@ -109,7 +109,7 @@ def off_axis_find_crop_radius(cameraImage):
     cx = w / 2
     cy = h / 2
 
-    peakLoc = off_axis_find_mod(cameraImage)
+    peakLoc = off_axis_find_mod(cameraImage, maskFraction = maskFraction)
         
     # Depending on quadrant could be relative to either top-left or
     # top-right corner, so check both and use the closest distance
@@ -146,7 +146,7 @@ def off_axis_predict_mod(wavelength, pixelSize, tiltAngle):
     return modFreqPx
 
 
-def off_axis_predict_tilt_angle(cameraImage, wavelength, pixelSize):
+def off_axis_predict_tilt_angle(cameraImage, wavelength, pixelSize, maskFraction = 0.1):
     """ Predicts the reference beam tilt based on the modulation of the camera image
     and specified wavelength and pixel size.
     """    
@@ -158,7 +158,7 @@ def off_axis_predict_tilt_angle(cameraImage, wavelength, pixelSize):
     cy = np.shape(cameraImage)[1] / 2
     
     # Find the location of the peak
-    peakLoc = off_axis_find_mod(cameraImage)
+    peakLoc = off_axis_find_mod(cameraImage, maskFraction = maskFraction)
     
     hPixelSF = 1 / (2 * pixelSize * np.shape(cameraImage)[0])
     vPixelSF = 1 / (2 * pixelSize * np.shape(cameraImage)[1])

@@ -32,7 +32,7 @@ holo = pyh.Holo(pyh.OFFAXIS_MODE,
                     
 
 # Find modulation frequency
-holo.auto_find_off_axis_mod()           
+holo.calib_off_axis(background)     
 
 # Processes background image to obtain background phase
 holo.off_axis_background_field()        

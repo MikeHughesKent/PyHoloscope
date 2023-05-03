@@ -82,25 +82,25 @@ Removes spatial modulation from off axis hologram ``hologram``. ``cropCentre`` i
 the modulation frequency in the Fourier Domain as tuple (x,y), ``cropRadius`` is the size of
 the spatial frequency range to keep around the modulation frequency (in FFT pixels). Returns a 2D complex numpy array.
     
-.. py:function:: off_axis_find_mod(hologram)
+.. py:function:: off_axis_find_mod(hologram [, maskFraction  = 0.1])
 
 Finds the location of the off-axis holography modulation peak in the Fourier transform of ``hologram``. Finds
-the peak in the positive x region. Returns a tuple of (x,y).
+the peak in the positive x region. Optional argument maskFraction is the fraction of the image masked to avoid detecting the d.c. (default is 0.1). Returns a tuple of (x,y).
 
-.. py:function:: off_axis_find_crop_radius(hologram)
+.. py:function:: off_axis_find_crop_radius(hologram [, maskFraction  = 0.1])
 
-Estimates the correct off-axis holography crop radius based on modulation peak position in hologram ``hologram``. Returns a float.
+Estimates the correct off-axis holography crop radius based on modulation peak position in hologram ``hologram``. Optional argument maskFraction is the fraction of the image masked to avoid detecting the d.c. (default is 0.1). Returns a float.
  
 .. py:function:: off_axis_predict_mod(wavelength, pixelSize, tiltAngle)
 
 Predicts the location of the modulation peak (i.e. carrer frequency) in the
 Fourier transform of a hologram based on the ``wavelength``, camera ``pixelSize`` and the tilt angle of the reference beam ``tiltAngle``.
-Returns the distance of the peak from the centre (dc) of the Fourier transform in pixels.
+Returns the distance of the peak from the (dc) of the Fourier transform in pixels.
    
-.. py:function:: off_axis_predict_tilt_angle(hologram, wavelength, pixelSize)
+.. py:function:: off_axis_predict_tilt_angle(hologram, wavelength, pixelSize [, maskFraction  = 0.1])
 
 Predicts the reference beam tilt based on the modulation in the hologram ``hologram``
-and specified ``wavelength`` and camera ``pixelSize``. Returns the angle in radians.
+and specified ``wavelength`` and camera ``pixelSize``. Optional argument maskFraction is the fraction of the image masked to avoid detecting the d.c. (default is 0.1). Returns the angle in radians.
     
 ^^^^^^^^^^^^^^^^^^^^
 Numerical Refocusing

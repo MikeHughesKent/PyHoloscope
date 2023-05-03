@@ -18,6 +18,7 @@ import pyholoscope as pyh
 # Experimental Parameters
 wavelength = 630e-9
 pixelSize = 1e-6
+depth = -0.0012
 
 # Load images
 hologram = pyh.load_image("test data\\paramecium_oa_oof.tif")
@@ -30,7 +31,7 @@ holo = pyh.Holo(mode = pyh.OFFAXIS_MODE,
                 background = background,
                 relativePhase = True,
                 refocus = True,
-                depth = -0.0012)
+                depth = depth)
 
 holo.auto_find_off_axis_mod()           # Finds modulation frequency
 holo.off_axis_background_field()        # Processes background image to obtain background phase

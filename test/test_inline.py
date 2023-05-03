@@ -31,7 +31,9 @@ holo = pyh.Holo(mode = pyh.INLINE_MODE,
                 wavelength = wavelength, 
                 pixelSize= pixelSize,
                 background = background,
-                depth = depth)
+                depth = depth, 
+                windowRadius = 112,
+                windowThickness = 20)
 
 t1 = time.perf_counter()
 holo.update_propagator(hologram)    # To make timing below just for refocusing

@@ -56,7 +56,7 @@ def propagator_slow(gridSize, wavelength, pixelSize, depth):
     return prop
 
 
-def propagator(gridSize, wavelength, pixelSize, depth, realImage = False):
+def propagator(gridSize, wavelength, pixelSize, depth, realImage = False, geometry = 'plane'):
     """ Creates Fourier domain propagator for angular spectrum meethod. Speeds
     up process by only calculating top left quadrant and then duplicating (with flips)
     to create the other three quadrants.
@@ -75,25 +75,32 @@ def propagator(gridSize, wavelength, pixelSize, depth, realImage = False):
     area = gridSize * pixelSize
     midPoint = int(gridSize/2)
 
-    (xM, yM) = np.meshgrid(range(int(gridSize/2)), range(int(gridSize/2)))
+    (xM, yM) = np.meshgrid(range(int(gridSize/2) + 1 ), range(int(gridSize/2) + 1) )
     
-    delta0 = 1/area
-    u = delta0*(xM - gridSize/2 +.5)
-    v = delta0*(yM - gridSize/2 +.5)
-    propCorner = np.exp(1j*math.pi*wavelength*depth*(u**2 + v**2))
-    print(realImage)
-    if not realImage:
-        prop = np.zeros((gridSize, gridSize), dtype ='complex64')
-        
-        # Duplicate the top left quadrant into the other three quadrants as
-        # this is quicker then explicitly calculating the values
-        prop[:midPoint, :midPoint] = propCorner
-        prop[midPoint:, :midPoint] = np.flip(propCorner,0)
-        prop[:, midPoint:] = np.flip(prop[:, :midPoint],1)
+    delta0 = 1/area   
     
-        return prop
+    if geometry == 'point':
+        u = delta0*xM
+        v = delta0*yM
+        propCorner = np.exp(1j*math.pi*wavelength*depth*(u**2 + v**2))
+    elif geometry == 'plane':        
+        alpha = wavelength * xM/area
+        beta = wavelength * yM/area
+        propCorner = np.exp( (1j * 2 * math.pi * depth * np.sqrt(1 - alpha**2 - beta**2) /wavelength   ))
+        propCorner[alpha**2 + beta**2 > 1] = 0  
     else:
-        return propCorner
+        raise Exception("Invalid geometry.")               
+    
+    prop = np.zeros((gridSize, gridSize), dtype ='complex64')
+        
+    # Duplicate the top left quadrant into the other three quadrants as
+    # this is quicker then explicitly calculating the values
+    prop[:midPoint + 1, :midPoint + 1] = propCorner                  # top left
+    prop[:midPoint + 1, midPoint:] = (np.flip(propCorner[:, 1:],1) )     # top right
+    prop[midPoint:, :] = (np.flip(prop[1:midPoint + 1, :],0))  # bottom left
+
+
+    return prop
 
 def refocus(img, propagator, **kwargs):    
     """ 
@@ -111,33 +118,33 @@ def refocus(img, propagator, **kwargs):
     """
     imgIsFourier = kwargs.get('FourierDomain', False)
     cuda = kwargs.get('cuda', True)
-    realImage = kwargs.get('realImage', False)
     
-    if not realImage and np.shape(img) != np.shape(propagator):
+    if np.shape(img) != np.shape(propagator):
         return None
+    
     # If we have been sent the FFT of image, used when repeatedly calling refocus
     # (for example when finding best focus) we don't need to do FFT or shift for speed
     if imgIsFourier:  
         if cuda is True and cudaAvailable is True:
-            img2 = cp.array(img)
-            propagator2 = cp.array(propagator)           
-            return cp.asnumpy(cp.fft.ifft2(cp.fft.fftshift(img2 * propagator2)))
+            if type(img) is np.ndarray:
+                img = cp.array(img)
+            if type(propagator) is np.ndarray:
+                propagator = cp.array(propagator)
+            return cp.asnumpy(cp.fft.fftshift(img * propagator))
         else:
-            return np.fft.ifft2(np.fft.fftshift(img * propagator))
-
+            return np.fft.ifft2(img * propagator)
+     
     else:   # If we are sent the spatial domain image
-        cHologram = img # pyholoscope.pre_process(img, **kwargs)
+        cHologram = pyholoscope.pre_process(img, **kwargs)
+       
         if cuda is True and cudaAvailable is True:
-            cHologram2 = cp.array(cHologram)
-            propagator2 = cp.array(propagator)
-            return cp.asnumpy(cp.fft.ifft2(cp.fft.fftshift(cp.fft.fftshift(cp.fft.fft2((cHologram2))) * propagator2)))
+                if type(cHologram) is np.ndarray:
+                    cHologram = cp.array(cHologram)
+                if type(propagator) is np.ndarray:
+                    propagator = cp.array(propagator)
+                return cp.asnumpy(cp.fft.ifft2(cp.fft.fft2(cHologram) * propagator))
         else:
-            if not realImage:
-                return np.fft.ifft2(np.fft.fftshift(np.fft.fftshift(np.fft.fft2((cHologram))) * propagator))
-            else:
-                f = np.fft.rfft2(cHologram, axes = (0,1))
-                print(np.shape(f))
-                #return np.fft.irfft2(np.fft.fftshift(np.fft.fftshift(np.fft.rfft2((cHologram))) * propagator))
+                return np.fft.ifft2(np.fft.fft2(cHologram) * propagator)
 
    
 def focus_score(img, method):

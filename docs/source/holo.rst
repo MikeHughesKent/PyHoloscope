@@ -38,6 +38,13 @@ Detect and store the modulation parameters for off-axis demodulation.
 A more heavily customisable auto-focus, for most purposes used ``find_focus`` instead.
 
 
+
+.. py:function:: calib_off_axis(hologram)   
+
+Determines the modulation frequency and crop radius for off-axis holgraphy using ``hologram``, a 2D numpy array, and stores the results
+internally for when ``process()`` is called. 
+
+
      
 .. py:function:: clear_background()
 

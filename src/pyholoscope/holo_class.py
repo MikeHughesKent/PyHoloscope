@@ -32,10 +32,10 @@ try:
     import numba
     from pyholoscope.focusing_numba import propagator_numba
     numbaAvailable = True
-    testProg = propagator_numba(5,1,1,1)
+    testProg = propagator_numba(6,1.0,1.0,1.0)
 except:
     numbaAvailable = False    
-    
+   
 
 class Holo:
         
@@ -57,7 +57,7 @@ class Holo:
         self.applyWindow = kwargs.get('applyWindow', False)
         self.window = kwargs.get('window', None)        
         self.windowRadius = kwargs.get('windowRadius', None)
-        self.windowThickness = kwargs.get('windowThickness', None)
+        self.windowThickness = kwargs.get('windowThickness', 0)
         
         self.findFocusMethod = kwargs.get('findFocusMethod', 'Brenner')
         self.findFocusRoi = kwargs.get('findFocusRoi', None)
@@ -88,6 +88,8 @@ class Holo:
         self.propagator = None
         self.propagatorLUT = None
         
+        self.cudaAvailable = cudaAvailable
+        
     
         
     def process(self, img):
@@ -95,7 +97,8 @@ class Holo:
         """
       
         img = img.astype(float)
-        self.background = self.background.astype(float)
+        if self.background is not None:
+            self.background = self.background.astype(float)
        
         assert self.pixelSize is not None, "Pixel size not specified."
         assert self.wavelength is not None, "Wavelength not specified."
@@ -129,7 +132,7 @@ class Holo:
             if np.shape(self.propagator) != np.shape(img) or self.propagator is None or self.propagatorDepth != self.depth or self.propagatorWavelength != self.wavelength or self.propagatorPixelSize != self.pixelSize:
                 self.update_propagator(img)
               
-            # If we have a window, but it is not the right size, generated it    
+            # If we have a window, but it is not the right size, generate it    
             if self.window is not None:
                 if np.shape(self.window) != np.shape(imgScaled):
                     if self.windowRadius is None:
@@ -264,12 +267,18 @@ class Holo:
         self.stableROI = roi
 
         
-    def auto_find_off_axis_mod(self):
+    def auto_find_off_axis_mod(self, maskFraction = 0.1):
         """ Detect the modulation location in frequency domain. """
         if self.background is not None:
-            self.cropCentre = off_axis_find_mod(self.background)
+            self.cropCentre = off_axis_find_mod(self.background, maskFraction = 0.1)
             self.cropRadius = off_axis_find_crop_radius(self.background) 
             
+    
+    def calib_off_axis(self, hologram, maskFraction = 0.1):
+        """ Detect the modulation location in frequency domain using a provided hologram. """
+        self.cropCentre = off_axis_find_mod(hologram, maskFraction = 0.1)
+        self.cropRadius = off_axis_find_crop_radius(hologram) 
+    
     
     def off_axis_background_field(self):
         """ Demodulate the background hologram """
@@ -285,6 +294,7 @@ class Holo:
             if numbaAvailable and self.useNumba:
                 self.propagator = propagator_numba(int(np.shape(img)[0] / self.downsample), self.wavelength, self.pixelSize * self.downsample, self.depth)
             else:
+
                 self.propagator = propagator(int(np.shape(img)[0] / self.downsample), self.wavelength, self.pixelSize * self.downsample, self.depth)
             self.propagatorPixelSize = self.pixelSize
         elif self.mode == self.OFFAXIS_MODE:

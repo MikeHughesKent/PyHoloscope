@@ -10,14 +10,10 @@ Begin by importing the package::
 
     import pyholoscope as pyh
     
-And instantiate a ``Holo`` object. We need to provide the input hologram image size in pixels (the hologram must be square), 
-the physical pixels size and the wavelength. The pixel size and wavelength should be specified in the same units, 
-and subsequently the refocu depth must be in the same units.::
+And instantiate a ``Holo`` object for off axis mode. We need to provide the physical pixel size and the wavelength. The pixel size and wavelength should be specified in the same units, 
+and subsequently the refocus depth must be in the same units.::
 
-    imageSize = 512
-    pixelSize = 2e-6
-    wavelength = 0.5e-6
-    holo = pyh.Holo(pyh.OFFAXIS_MODE, imageSize, pixelSize, wavelength)
+       holo = pyh.Holo(mode = pyh.OFFAXIS_MODE, pixelSize = 2e-6, wavelength = 0.5e-6)
     
 Off-axis holography benefits from a background image for good quality phase recovery. Assuming the 
 background image is stored in the 2D numpy array ``backgroundImg``, use::
@@ -26,10 +22,10 @@ background image is stored in the 2D numpy array ``backgroundImg``, use::
     
 We also need to know the spatial frequency of the modulation. We can determine this automtically using::
 
-    holo.auto_find_off_axis_mod(backgroundImg)         
+    holo.calib_off_axis(backgroundImg)         
     
-It is possible to use the image hologram as well for this purpose, but this may be unreliable if there
-is another strong spatial frequency. Alternatively it can be specified manually using::
+where we have used the background hologram; it is possible to use the image hologram as well for this purpose, but this may be unreliable if there
+is another strong spatial frequency. Alternatively the parameters can be specified manually using::
 
     holo.set_off_axis_mod(cropCentre, cropRadius)
    
@@ -47,36 +43,24 @@ To obtain the amplitude and phase, use::
 
 If we would like to also refocus to a different depth we can specify::
 
-    holo.set_refocus = True
-    depth = 0.001
-    holo.set_depth(depth)
+    holo = pyh.Holo(mode = pyh.OFFAXIS_MODE, pixelSize = 2e-6, wavelength = 0.5e-6, refocus = True, depth = 0.001)
         
 Then when we call::
 
     reconField = holo.process()
-
+    
 Both the demodulation and the refocusing will take place in a single step.
+    
+We can change the refocus depth and whether or not to refocus witout recreating the ``Holo`` object using::
+
+    holo.set_depth(depth)
+    holo.set_refocus(True)    
 
 Note that the first time a hologram is refocused to a particular depth the process will be slower due to the need to create a propagator for that 
 depth. This is particularly noticable when using GPU acceleration as the propagator creation will often be the rate limiting step. 
 Subsequent refocusing to the same depth will be faster providing no parameters are changed that force a new propagator to be created (depth, pixel size, wavelength or grid size). 
 
-
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Manually specifying the modulation frequency
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-If we know the spatial frequency in advance, rather than using ``auto_find_off_axis_mod`` we can set
-the demodulation parameters manually. We need to specify the spatial frequency of the modulation frequency
-in terms of the pixel location of the peak corresponding to the modulation in the 2D Fourier transform of the hologram. For example::
-    
-    centre = (200,220)
-    holo.set_oa_centre(centre)
-
-We also need to set the size of the cropped square in the Fourier domain (called ``radius``)::
-    
-    radius = 200
-    holo.set_oa_radius(radius)
-   
+  
     
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Getting Started Using Lower-Level Functions
@@ -166,18 +150,19 @@ The corrected phase map can then be obtained using::
 ^^^^^^^^^^^^^^^^
 GPU acceleration
 ^^^^^^^^^^^^^^^^
-If a compatible GPU is available, GPU acceleration for off axis demodulation and refocusing using ``Hplo`` is enabled by default. 
+If a compatible GPU is available, GPU acceleration for off axis demodulation and refocusing using ``Holo`` is enabled by default. 
 Explicitly turn this on or off using::
 
     holo.set_cuda(True/False)
 
-This requires the CuPy package and a compatible GPU, otherwise processing will revert to the CPU.  
+This requires the CuPy package, a compatible GPU and CUDA drivers installed, otherwise processing will revert silently to the CPU.  
 
-If using the lower level functions, specify ``cuda = True`` when demodulating and refocusing e.g. ::
+If using the lower-level functions directly, specify ``cuda = True`` when demodulating and refocusing e.g. ::
 
     reconField = holo.off_axis_demod(hologram, cropCentre, cropRadius, cuda = True)
     holo.refocus(hologram, propagator, cuda = True)
 
+Note that in this case if CuPy or CUDA is not available this may cause an error.
 
     
     
