@@ -116,8 +116,8 @@ def refocus(img, propagator, **kwargs):
         refocused hologram as complex 2D numpy array
         
     """
-    imgIsFourier = kwargs.get('FourierDomain', False)
-    cuda = kwargs.get('cuda', True)
+    imgIsFourier = kwargs.pop('FourierDomain', False)
+    cuda = kwargs.pop('cuda', True)
     
     if np.shape(img) != np.shape(propagator):
         return None
@@ -145,7 +145,7 @@ def refocus(img, propagator, **kwargs):
                 return cp.asnumpy(cp.fft.ifft2(cp.fft.fft2(cHologram) * propagator))
         else:
                 return np.fft.ifft2(np.fft.fft2(cHologram) * propagator)
-
+           
    
 def focus_score(img, method):
     """ Returns score of how 'in focus' an image is based on selected method.

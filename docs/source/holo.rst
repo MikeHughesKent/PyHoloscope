@@ -9,7 +9,7 @@ and `Off-Axis Holography <off_axis.html>`_ getting started pages. The class is g
 Instantiatation
 ^^^^^^^^^^^^^^^
 
-.. py:function:: Holo(mode, wavelength, pixelSize, **kwargs)
+.. py:function:: Holo(mode, wavelength, pixelSize, optional arguments)
 
 Intantiation of a Holo object. ``mode`` determines the pipeline of processing to apply to images, either ``PyHoloscope.offaxis`` or ``PyHoloscope.inline``.
 ``wavelength`` is the light wavelength, ``pixelSize`` is the camera pixel size (as projected onto the object plane if magnification is present). 
@@ -93,7 +93,10 @@ Performs off-axis demodulation of a background hologram which has been provided 
 Process an image ``img`` using the currently selected options. RTeturns the processed image as 2D complex Numpy array.
 
 
+.. py:function:: set_auto_window(autoWindow)
 
+Sets whether a window will be created and applied prior to refocusing
+if one has not been specified. ``autoWindow`` is a Boolean.
 
 
 

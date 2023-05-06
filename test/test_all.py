@@ -8,7 +8,6 @@ Runs all tests of PyHoloscope.
 import context                    # Relative paths
 
 
-
 print("# Inline Holography")
 import test_inline
 
@@ -32,6 +31,9 @@ import test_estimate_tilt_angle
 
 print("# Find Mod Frequency and Radius")
 import test_find_mod_and_radius
+
+print("# Windowing")
+import test_window
 
 print("# Numba")
 import test_numba

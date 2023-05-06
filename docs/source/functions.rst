@@ -29,11 +29,24 @@ General Utility Functions
 Returns a log-scale Fourier transform of ``img`` for display purposes as 2D real numpy array.
 
 .. py:function:: mean_phase(img)
+
 Returns the mean phase in a complex field ``img``.
 
 .. py:function:: obtain_tilt(img)
+
 Estimates the global tilt in the 2D unwrapped phase (e.g. caused by tilt in coverglass). ``img``
 should be unwrapped phase (i.e. real). Returns a 2D real numpy array.
+
+.. py:function:: pre_process(img, background = None, normalise = None, window = None, downsample = 1)
+    
+Carries out processing steps prior to refocus - background correction, normalisation,
+downsampling and  windowing. Also coverts image to either float64 (if input img is real) or
+complex128 (if input img is complex). Finally, image is cropped to a square
+as non-square images are not currently supported. ``img`` is the raw hologram, a 2D
+numpy array, background is a background hologram (2D numpy array) to be subtracted, 
+``normalise`` is a background hologram (2D numpy array) to be divided by. ``window`` 
+is a window to multiply by (2D numpy array). The image will be downsampled by the
+factor given for ``downsample``.
 
 .. py:function:: phase_gradient(img)
 

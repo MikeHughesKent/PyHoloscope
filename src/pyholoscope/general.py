@@ -16,6 +16,7 @@ from matplotlib import pyplot as plt
 import math
 import scipy
 import scipy.optimize
+import warnings
 import time
 try:
     import cupy as cp
@@ -35,81 +36,92 @@ def __init__():
     pass
 
 
-def pre_process(img, **kwargs):
+def pre_process(img, background = None, normalise = None, window = None, downsample = 1.):
     """ Carries out steps required prior to refocus - background correction and 
     windowing. Also coverts image to either float32 (if input img is real) or
     complex64 (if input img is complex). Finally, image is cropped to a square
     as non-square images are not currently supported.
-    """    
-
-    background = kwargs.get('background', None)
-    window = kwargs.get('window', None)
-    
-    if np.iscomplex(img[0,0]):
-        imType = 'complex64'
-    else:
-        imType = 'float32'
-                
-    
-    if background is not None:
-        imgOut = img.astype(imType) - background.astype(imType)
-    else:
-        imgOut  = img.astype(imType)
+    Required Parameters:
+          img       :  raw hologram, 2D numpy array, real or complex
         
+    Optional Parameters:
+          background : backround hologram to be subtracted, 2D numpy array (real)
+          normalise  : background hologram to be divided, 2D numpy array (real)
+          window     : window to smooth edges, 2D numpy array (real). Will be resized if necessary.
+          downsample : factor to downsample image by
+    """    
+    
+    # We will make it float, or a complex float
+      
+      
+    if np.iscomplexobj(img):
+        imType = 'complex128'
+    else:
+        imType = 'float32'     
+       
+    # Background subtraction  
+    if background is not None:
+       
+        if np.iscomplexobj(img):
+            imgAmp = np.abs(img)
+            imgPhase = np.angle(img)
+            imgOut = np.zeros_like(img).astype(imType)
+            imgOut.real = (imgAmp - background) * np.cos(imgPhase)
+            imgOut.imag = (imgAmp - background) * np.sin(imgPhase)
+        else:
+            imgOut = img - background
+    else:
+        imgOut = img.astype(imType)
+    
+    
+    # Background normalisation 
+    if normalise is not None:
+        imgOut = imgOut / normalise 
+       
+    
+    # Apply downsampling
+    if downsample != 1:                
+        imgOut = cv.resize(imgOut, (int(np.shape(img)[1]/ downsample), int(np.shape(img)[0] / downsample) )   )
+    
+    # Ensure it is square
     minSize = np.min(np.shape(imgOut))
     imgOut = imgOut[:minSize, :minSize]
-            
+     
+    # Apply window
     if window is not None:
-        if np.iscomplex(img[0,0]):
-            imgOut = np.abs(imgOut) * window * np.exp(1j * np.angle(imgOut) * window)
+        
+        # If the window is the wrong size, reshape it to match hologram
+        if np.shape(window) != np.shape(imgOut):
+            warnings.warn('Window needed resizing, may effect processing speed.')
+            window = cv.resize(window, (np.shape(imgOut)[1],np.shape(imgOut)[0])  )
+
+        if np.iscomplexobj(img):
+            imgOut.imag = imgOut.imag * window
+            imgOut.real = imgOut.real * window
+            imgOut[imgOut == -0+0j] = 0j     # Otherwise phase angle looks weird when plotted
         else:
-            imgOut = imgOut * window.astype(imType)
+            imgOut = imgOut * window 
             
     return imgOut
 
-
-def post_process(img, **kwargs):
-    """ Processing after refocus - background subtraction and windowing"""
-
-    background = kwargs.get('background', None)
-    window = kwargs.get('window', None)
-    
-    if np.iscomplex(img[0,0]):
-        imType = 'complex64'
-    else:
-        imType = 'float32'
-    
-    #if background is not None:
-    #    imgOut = img.astype(imType) - background.astype(imType)
-    #else:
-    #    imgOut  = img.astype(imType)
-    imgOut  = img.astype(imType)       
-    if window is not None:
-        imgOut = imgOut * window
-            
-    return imgOut
  
 
 def relative_phase(img, background):
-    """ Remove global phase from complex image using reference (background) field 
+    """ Remove global phase from image using reference (background) field 
+    if img/background are real, they are both taken to be phases
+    if img/background are complex, they are both taken to be complex fields
     """    
     
-    if np.iscomplexobj(img):
-        phase = np.angle(img)
-    else:
-        phase = img
-        
-    if np.iscomplexobj(background):
-        backgroundPhase = np.angle(background)
-    else:
-        backgroundPhase = background
-        
-    phaseOut = phase - backgroundPhase    
     
-    if np.iscomplexobj(img):             
-        return np.abs(img) * np.exp(1j * phaseOut)
-    else:     
-        return phaseOut
+    # If both inputs are phases, simply subtract        
+    if not np.iscomplexobj(img) and not np.iscomplexobj(background):
+        return img - background
+    
+    # If both input are fields, divide
+    if np.iscomplexobj(img) and np.iscomplexobj(background):
+        return img / background * np.abs(background)
+    
+   
         
 
 def stable_phase(img, roi = None):

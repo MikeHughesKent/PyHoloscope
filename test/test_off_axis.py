@@ -22,20 +22,19 @@ pixelSize = .3e-6
 
 # Load images
 hologram = pyh.load_image("test data\\tissue_paper_oa.tif")
-background = pyh.load_image("test data\\tissue_paper_oa_background.tif")
+background = pyh.load_image("test data\\tissue_paper_oa_background.tif") 
 
 # Create object
-holo = pyh.Holo(pyh.OFFAXIS_MODE, 
+holo = pyh.Holo(pyh.OFF_AXIS, 
                 wavelength = wavelength, 
                 pixelSize = pixelSize, 
-                background = background)
+                background = background,
+                relativePhase = True)
+               
                     
+# Find modulation frequency and generate background and normalisation fields
+holo.calib_off_axis()     
 
-# Find modulation frequency
-holo.calib_off_axis(background)     
-
-# Processes background image to obtain background phase
-holo.off_axis_background_field()        
 
 # Remove modulation
 t1 = time.perf_counter()
@@ -49,12 +48,12 @@ plt.imshow(hologram, cmap = 'gray')
 plt.title('Hologram')
 
 plt.figure(dpi = 150)
-plt.imshow(np.angle(reconField), cmap = 'twilight')
-plt.title('Phase')
+plt.imshow(np.abs(reconField), cmap = 'gray')
+plt.title('Amplitude')
 
 plt.figure(dpi = 150)
-plt.imshow(np.abs(reconField), cmap = 'gray')
-plt.title('Intensity')
+plt.imshow(np.angle(reconField), cmap = 'twilight')
+plt.title('Phase')
 
 DIC = pyh.synthetic_DIC(reconField, shearAngle = 0)
 plt.figure(dpi = 150)

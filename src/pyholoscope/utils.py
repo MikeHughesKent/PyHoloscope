@@ -103,20 +103,64 @@ def circ_cosine_window(imgSize, circleRadius, skinThickness):
     is 0 for radius > circleSize and 1 for radius < (circleSize - skinThickness)
     The intermediate region is a smooth cosine function.
     """
-    
+    if type(imgSize) is np.ndarray:
+        (h,w) = np.shape(imgSize)[:1]       
+    elif type(imgSize) is tuple:
+        w,h = imgSize
+    else:
+        w = imgSize
+        h = imgSize
+        
     innerRad = circleRadius - skinThickness
-    xM, yM = np.meshgrid(range(imgSize),range(imgSize))
-    imgRad = np.sqrt( (xM - imgSize/2) **2 + (yM - imgSize/2) **2)
+    yM, xM = np.meshgrid(range(h),range(w))
+    imgRad = np.sqrt( (yM - h/2) **2 + (xM - w/2) **2)
     mask =  np.cos(math.pi / (2 * skinThickness) * (imgRad - innerRad))**2
     mask[imgRad < innerRad ] = 1
     mask[imgRad > innerRad + skinThickness] = 0
+
     return mask
 
 
-def square_cosine_window(imgSize, circleRadius, skinThickness):
-    """ TODO
+
+def square_cosine_window(imgSize, radius, skinThickness):
+    """ Produce a square cosine window mask on grid of imgSize * imgSize. Mask
+    is 0 for radius > circleSize and 1 for radius < (circleSize - skinThickness)
+    The intermediate region is a smooth cosine function.
     """
-    return circ_cosine_window(imgSize, circleRadius, skinThickness)
+   
+     
+    if type(imgSize) is np.ndarray:
+        (h,w) = np.shape(imgSize)[:2]       
+    elif type(imgSize) is tuple:
+        w,h = imgSize
+    else:
+        w = imgSize
+        h = imgSize
+
+    innerRad = radius - skinThickness
+
+    xCentre = int(w/2)
+    yCentre = int(h/2)
+
+    yR = np.arange(h)
+    xR = np.arange(w)
+
+    row = np.transpose(np.atleast_2d(np.cos(math.pi / (2 * skinThickness) * (xR - w / 2 - innerRad))**2))
+    row[np.abs(xR - xCentre) < innerRad] = 1
+    row[np.abs(xR - xCentre) > innerRad + skinThickness] = 0
+
+    col = np.cos(math.pi / (2 * skinThickness) * (yR - h / 2 - innerRad))**2
+    col[np.abs(yR - yCentre) < innerRad] = 1
+    col[np.abs(yR - yCentre) > innerRad + skinThickness] = 0
+
+
+    maskH = np.tile(col, (w, 1))
+    maskV = np.tile(row, (1,h))
+
+    mask = maskH * maskV
+    
+    
+    return mask
 
 
 def pil2np(im):

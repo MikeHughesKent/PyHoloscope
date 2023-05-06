@@ -25,16 +25,16 @@ hologram = pyh.load_image("test data\\paramecium_oa_oof.tif")
 background = pyh.load_image("test data\\paramecium_oa_oof_background.tif")
 
 # Create object
-holo = pyh.Holo(mode = pyh.OFFAXIS_MODE, 
+holo = pyh.Holo(mode = pyh.OFF_AXIS, 
                 wavelength = wavelength, 
                 pixelSize = pixelSize,
                 background = background,
+                autoWindow = True,
                 relativePhase = True,
                 refocus = True,
                 depth = depth)
 
-holo.auto_find_off_axis_mod()           # Finds modulation frequency
-holo.off_axis_background_field()        # Processes background image to obtain background phase
+holo.calib_off_axis()        # Finds modulation frequency and background field
 
 t1 = time.perf_counter()
 reconField = holo.process(hologram)
