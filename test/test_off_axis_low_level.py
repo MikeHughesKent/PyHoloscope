@@ -27,12 +27,11 @@ cropCentre = pyh.off_axis_find_mod(background)
 cropRadius = pyh.off_axis_find_crop_radius(background)
 
 # Remove modulation    
-reconField = pyh.off_axis_demod(hologram, cropCentre, cropRadius)
-backgroundField = pyh.off_axis_demod(background, cropCentre, cropRadius)
+reconField = pyh.off_axis_demod(hologram.astype(float), cropCentre, cropRadius)
+backgroundField = pyh.off_axis_demod(background.astype(float), cropCentre, cropRadius)
 
 # Apply background correction and phase offset correction
 correctedField = pyh.relative_phase(reconField, backgroundField)
-relativeField = pyh.relative_phase_ROI(correctedField, pyh.Roi(20,20,45,45))
 
 # Display results
 plt.figure(dpi = 150)
@@ -46,10 +45,6 @@ plt.title('Phase')
 plt.figure(dpi = 150)
 plt.imshow(pyh.phase(correctedField), cmap = 'twilight')
 plt.title('Corrected Phase')
-
-plt.figure(dpi = 150)
-plt.imshow(pyh.phase(relativeField), cmap = 'twilight')
-plt.title('Relative Phase')
 
 plt.figure(dpi = 150)
 plt.imshow(pyh.amplitude(reconField), cmap = 'gray')

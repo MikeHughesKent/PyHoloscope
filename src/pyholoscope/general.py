@@ -255,7 +255,8 @@ def relative_phase_ROI(img, roi):
     """ Makes the phase in an image relative to the mean phase in specified ROI
     """
     avPhase = mean_phase(roi.crop(img))
-    outImage = img / np.exp(1j * avPhase)
+    print(avPhase)
+    outImage = img * np.exp(1j * -1 * avPhase)
     
     return outImage
 

@@ -1,29 +1,39 @@
 --------------------------------
 Inline Holography Basics
 --------------------------------
+Inline Holography is performed using the ``Holo`` class of PyHoloscope by setting ``mode = pyholoscope.INLINE``. This allows
+numerical refocusing using the angular spectrum method, as well as optional backgroud subtraction, normalisation and windowing.
+See the `Holo class documentation <holo.html>`_ for a full list of methods and arguments. For code examples see the `Inline Holography Example <https://github.com/MikeHughesKent/PyHoloscope/blob/main/examples/inline_example.py>`_
+`Inline Holography Advanced Example <https://github.com/MikeHughesKent/PyHoloscope/blob/main/examples/inline_example_advanced.py>`_ on github.
 
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Getting Started using OOP (Holo class)
+Getting Started using the Holo class
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Begin by importing the package::
+Begin by importing the PyHoloscope package::
 
     import pyholoscope as pyh
     
-and instantiate a ``Holo`` object. As a minimum we need to set the mode to inline
-holography and provide the physical pixel size and the wavelength. The pixel size 
-and wavelength should be specified in the same units, and subsequently the refocus 
-depth must be in the same units.::
+and create an instance of the ``Holo`` class. At a minimum we need to set the mode to inline
+holography and provide the physical pixel size and the wavelength::
 
     holo = pyh.Holo(mode = pyh.INLINE, pixelSize = 2e-6, wavelength = 0.5e-6)
     
-Inline holography benefits from a background image, acquired with no object in 
-the field-of-view, for good quality reconstructions. 
-Assuming the background image is stored in the 2D numpy array ``backgroundImg``, use::
+The pixel size and wavelength can be in any units as long as they are the same, 
+and subsequently the refocus depth will be in the same units.
+    
+Better quality inline holography refocusing is normally achieved if we first
+subtract a background image, acquired with no object in the field-of-view.
+Assuming the background image is stored in the 2D numpy array ``backgroundImg``, 
+a background can be specified using::
 
     holo.set_background(backgroundImg)
     
-or pass ``background = backgroundImg`` as an argument when creating the ``Holo`` object. 
+or by passing ``background = backgroundImg`` as an argument when creating the ``Holo`` object. 
+If we would like to divide through by a background image, to correct for
+intensity variations, we can pass ``normalise = backgroundImg`` or call
+``set_normalise(backgroundImg)``.
+
 We can now numerically refocus a hologram ``hologram``, again a 2D numpy array, 
 using the angular spectrum method by first setting the depth to refocus to, for example::
  
@@ -33,13 +43,16 @@ using the angular spectrum method by first setting the depth to refocus to, for 
 
     refocusedImg = holo.process(hologram)
 
-The output, ``refocusedImg``, is a 2D complex numpy array, we can obtain the amplitude as a 2D float numpy array using::
+The output, ``refocusedImg``, is a 2D complex numpy array; we can obtain the amplitude as a 2D float numpy array using::
 
     refocusedAmp = pyh.amplitude(refocusedIm)
     
-Note that the first time a hologram is refocused to a particular depth the process will be slower due to the need to create a propagator for that 
-depth. This is particularly noticable when using GPU acceleration as the propagator creation will often be the rate limiting step. 
-Subsequent refocusing to the same depth will be faster providing no parameters are changed that force a new propagator to be created (depth, pixel size, wavelength or grid size). 
+Note that the first time a hologram is refocused to a particular depth the process 
+will be slower due to the need to create a propagator for that depth. This is 
+particularly noticable when using GPU acceleration as the propagator creation 
+will often be the rate limiting step. Subsequent refocusing to the same depth 
+will be faster providing no parameters are changed that force a new propagator 
+to be created (depth, pixel size, wavelength or grid size). 
 
 If we would like to smooth the edges of the hologram, we can apply a window before
 refocusing by calling:: 
@@ -47,15 +60,11 @@ refocusing by calling::
     holo.set_auto_window(True)
  
 The angular spectrum propagator and the window are both created the first time
-``process`` is called. If you would prefer to pre-generate these, you can call
+``process`` is called. If we prefer to pre-generate these, we can call::
 
     holo.update_propagator()
     holo_update_auto_window()
-
-
-For a minimal example see 'examples/inline_example.py' in the Github repository.
-
-For a more detailed example see 'examples/inline_example_advanced.py' in the Github repository.
+    
 
 
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^

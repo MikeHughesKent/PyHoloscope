@@ -126,11 +126,15 @@ class Holo:
         on mode.
         """
       
-        assert self.pixelSize is not None, "Pixel size not specified."
-        assert self.wavelength is not None, "Wavelength not specified."
+        # If we are refocusing we must have a wavelength, pixel size and depth specified
+        if self.mode == self.INLINE or (self.mode == self.OFF_AXIS and self.refocus == True):
+            assert self.pixelSize is not None, "Pixel size not specified."
+            assert self.wavelength is not None, "Wavelength not specified."
+            assert self.depth is not None, "Refocus depth not specified."
+
         
         if img is None: 
-            warnings.warn('Image provided to process was None.')
+            warnings.warn('Image provided to process was None, output will be None.')
             return None
         
         assert img.ndim == 2, "Input must be a 2D numpy array."
@@ -225,7 +229,8 @@ class Holo:
            
         # Off axis demodulation changes the pixel size,
         # so here we calculate the corrected pizel size
-        self.oaPixelSize = self.pixelSize / float(np.shape(demod)[0]) * float(np.shape(img)[0])
+        if self.pixelSize is not None:
+            self.oaPixelSize = self.pixelSize / float(np.shape(demod)[0]) * float(np.shape(img)[0])
                        
  
         # Apply background, normalisation, windowing, downsampling    

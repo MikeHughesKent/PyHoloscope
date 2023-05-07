@@ -1,19 +1,23 @@
 ----------------------------------
 Off-Axis Holography Basics
 ----------------------------------
+Off-axis Holography is performed using the ``Holo`` class of PyHoloscope by setting ``mode = pyholoscope.OFFAXIS``. This allows
+demodulation of the off-axis carrier frequency to recover the quantitative phase as well numerical refocusing. See the 
+`Holo class documentation <holo.html>`_  for a full list of methods and arguments. For code examples see the `Off-axis Holography Example <https://github.com/MikeHughesKent/PyHoloscope/blob/main/examples/off_axis_example.py>`_ and the
+`Off-axis Holography with Refocusing Example <https://github.com/MikeHughesKent/PyHoloscope/blob/main/examples/off_axis_refocus_example.py>`_ on github.
 
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Getting Started using OOP (Holo Class)
+Getting Started using Holo Class
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Begin by importing the package::
 
     import pyholoscope as pyh
     
-And instantiate a ``Holo`` object for off axis mode. We need to provide the physical pixel size and the wavelength. The pixel size and wavelength should be specified in the same units, 
-and subsequently the refocus depth must be in the same units.::
+and create an instance of the ``Holo`` class. At a minimum we need to set the mode to off-axis
+holography and, if we would like to perform numerical refocusing, provide the physical pixel size and the wavelength::
 
-    holo = pyh.Holo(mode = pyh.OFFAXIS, pixelSize = 2e-6, wavelength = 0.5e-6)
+    holo = pyh.Holo(mode = pyh.OFF_AXIS, pixelSize = 2e-6, wavelength = 0.5e-6)
     
 We also need to know the spatial frequency of the modulation. We can determine this automtically using::
 
@@ -25,8 +29,8 @@ is another strong spatial frequency.  If a background images has first been set 
 
     holo.set_background(backgroundImg)
     
-or by passing ``background = backgroundImage`` when creating the ``Holo`` object, then     
-if ``calib_off_axis`` it will use this background image.
+or by passing ``background = backgroundImage`` when creating the ``Holo`` object, then
+this will be used for the calibration if ``calib_off_axis`` is called with no argument.
 
 Alternatively the demodulation parameters can be specified manually using::
 
@@ -35,7 +39,7 @@ Alternatively the demodulation parameters can be specified manually using::
 where ``cropCentre`` is a tuple of (x,y), giving the pixel location of the centre of the modulation peak in the FFT of the hologram, 
 and ``cropRadius`` is half the size of the box around the modulation centre which is demodulated.    
 
-We can then demoodulate to obtain the complex field at focus using::
+We can then demodulate to obtain the complex field using::
 
     reconField = hol.process()
     
@@ -74,7 +78,7 @@ To correct for a background phase (i.e the phase map of the background hologram)
 
     holo.set_relative_phase(True)
     
-or pass ``relative_phase = True`` when creting the ``Holo`` object. You should then call::
+or pass ``relative_phase = True`` when creating the ``Holo`` object. You should then call::
 
     holo.background_field()
     
