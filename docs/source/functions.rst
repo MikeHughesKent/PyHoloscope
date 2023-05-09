@@ -125,6 +125,7 @@ Returns score of how 'in focus' an image ``img`` is based on selected method ``m
 Method options are: Brenner, Sobel, SobelVariance, Var, DarkFcous or Peak.
 
 .. py:function:: coarse_focus_search(imgFFT, depthRange, nIntervals, pixelSize, wavelength, method, scoreROI, propLUT)
+
 Used by find_focus to perform an initial check for approximate location of good focus depths prior to a finer search. 
 ``imgFFT`` is the 2D Fourier transform of the pre-processed hologram, ``depthRange`` is a tuple of (min depth, max depth) to search over,
 ``nIntervals`` is the number of search regions to split the depth interval into. ``pixelSize`` and ``wavelength`` are as defined for ``propagator``.
@@ -152,6 +153,7 @@ Produce a plot of focus score against depth, mainly useful for debugging erroneo
 Returns a tuple of (numpy vector of scores, numpy vector of dpeth).
 
 .. py:function:: propagator(gridSize, wavelength, pixelSize, depth)
+
 Creates Fourier domain propagator for refocusing using angular spectrum method. ``GridSize``
 is the size of the square image (in pixels) that will be refocused, ``wavelength`` is wavelength of light, 
 ``pixelSize`` is size of camera pixels (as projected onto imaging plane if there is system magnification), 

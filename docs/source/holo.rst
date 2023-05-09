@@ -10,6 +10,7 @@ Instantiatation
 ^^^^^^^^^^^^^^^
 
 .. py:function:: Holo(mode, wavelength, pixelSize, optional arguments)
+   :noindex:
 
 Intantiation of a Holo object. ``mode`` determines the pipeline of processing to apply to images, either ``PyHoloscope.offaxis`` or ``PyHoloscope.inline``.
 ``wavelength`` is the light wavelength, ``pixelSize`` is the camera pixel size (as projected onto the object plane if magnification is present). 
@@ -121,7 +122,7 @@ Set the downsampling factor. The holograms will be spatially downsampled by this
                
 .. py:function:: set_find_focus_parameters([method = 'Brenner', depthRange = (0, 0.1), roi = None, margin = None, coarseSearchInterval = None ])
 
-Sets the parameters used by the find_focus method. See ``automatic depth determination <autofocus.html>`_ for details.
+Sets the parameters used by the find_focus method. See `automatic depth determination <autofocus.html>`_ for details.
  
 
 
@@ -185,25 +186,23 @@ Sets whether to use Numba JIT if available, pass ``true`` to use Numba if availa
 Set the wavelength of the hologram.
      
  
-.. py:function:: set_window(img, radius, thickness, [shape = 'circle'])
+.. py:function:: set_window(img, radius, thickness, [shape = 'square'])
 
 Sets a cosine window used for pre and post processing to reduce edge artefacts.
-`img`` is a 2D numpy array which is either the hologram or any numpy array of the same size as the hologram, 
+``img`` is a 2D numpy array which is either the hologram or any numpy array of the same size as the hologram, 
 ``radius`` is the the size of the window
-and ``thickess`` determines the distance over which the window tapers from 0 to 1.  By defualt the window is circular, pass ``shape = 'square'`` to generate a square window.
+and ``thickess`` determines the distance over which the window tapers from 0 to 1.  By defualt the window is square, pass ``shape = 'circle'`` to generate a circular window.
 
  
 .. py:function:: set_window_radius(windowRadius)
 
 Sets the radius of the cropping window.
      
-     
-     
+          
      
 .. py:function:: set_window_thickness(windowThickness)
 
 Sets the edge thickness of the cropping window.
-
     
          
 .. py:function:: update_propagator(img)
