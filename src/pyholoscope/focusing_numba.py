@@ -19,9 +19,21 @@ from numba import jit, njit
 
 @jit(nopython = True)   
 def propagator_numba(gridSize, wavelength, pixelSize, depth, geometry = 'plane'):
-    """ Creates Fourier domain propagator for angular spectrum meethod. GridSize
-    is size of image (in pixels) to refocus (must be multiple of 2). 
-    Uses Numba and quadrant method for speed.
+    """ Creates Fourier domain propagator for angular spectrum method. Speeds
+    up generation by only calculating top left quadrant and then duplicating 
+    (with flips) to create the other quadrants. Returns the propagator as a 
+    complex 2D numpy array. Uses Numba JIT, typically several times faster
+    than calling propagator().
+    
+    Arguments:
+        gridSize   : float, size of square image (in pixels) to refocus.
+        pixelSize  : flaot, physical size of pixels
+        wavelength : float, in same units as pixelSize
+        depth      : float, refocus depth in same units as pixelSize
+    
+    Optional Keyword Arguments:
+        geometry   : str, 'plane' (defualt) or 'point'
+    
     """
     assert gridSize % 2 == 0, "Grid size must be even"
     
@@ -67,9 +79,9 @@ def propagator_numba(gridSize, wavelength, pixelSize, depth, geometry = 'plane')
       
     # Duplicate the top left quadrant into the other three quadrants as
     # this is quicker then explicitly calculating the values
-    prop[:midPoint + 1, :midPoint + 1] = propCorner                  # top left
+    prop[:midPoint + 1, :midPoint + 1] = propCorner                      # top left
     prop[:midPoint + 1, midPoint:] = (np.fliplr(propCorner[:, 1:]) )     # top right
-    prop[midPoint:, :] = np.flipud(prop[1:midPoint + 1, :])  # bottom left
+    prop[midPoint:, :] = np.flipud(prop[1:midPoint + 1, :])              # bottom left
 
    
     return prop

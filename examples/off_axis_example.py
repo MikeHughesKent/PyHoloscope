@@ -60,8 +60,8 @@ plt.figure(dpi = 150); plt.title('Hologram')
 plt.imshow(hologram, cmap = 'gray')
 
 plt.figure(dpi = 150); plt.title('Intensity')
-plt.imshow(pyh.amplitude(reconField), cmap = 'gray')
+plt.imshow(pyh.amplitude(reconField), cmap = 'gray', interpolation='none')
 
 plt.figure(dpi = 150); plt.title('Phase')
-plt.imshow(pyh.phase(reconField), cmap = 'twilight')
+plt.imshow(pyh.phase(reconField), cmap = 'twilight', interpolation='none')
 

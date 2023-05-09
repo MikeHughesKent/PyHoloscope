@@ -1,26 +1,32 @@
 # -*- coding: utf-8 -*-
 """
-PyHoloscope: prop_lut
+PyHoloscope - Python package for holgoraphic microscopy
 
-Provides class for look-up-able for propagators used by angular spectrum 
-method for numerical refocusing of holograms.
+@author: Mike Hughes, Applied Optics Group, University of Kent
 
-@author: Mike Hughes
-Applied Optics Group, Physics & Astronomy, University of Kent
+PropLUT is the class for generating and storing propagator look up tables.
+
 """
 
 import numpy as np
+
 from pyholoscope.focusing import propagator
 from pyholoscope.focusing_numba import propagator_numba
 
-################## Class for LUT of propagators ##############################
+
 class PropLUT:
+    """ Stores a propagator look up table (LUT). 
     
-    """ Creates a propagator look up table (LUT) containing angular spectrum propagators
-    for the specified parameters. depthRange is a tuple of (min depth, max depth), and nDepths
-    propagators will be generated equally specifed within this rangle.
+    The LUT contains angular spectrum propagators for the specified parameters. 
     """
+   
     def __init__(self, imgSize, wavelength, pixelSize, depthRange, nDepths, **kwargs):
+        """ Create the propagator Look-Up-Table (LUT). 
+
+        depthRange is a tuple of (min depth, max depth), and nDepths
+        propagators will be generated equally specifed within this range.
+        
+        """
         numba = kwargs.get('numba', False)
         self.depths = np.linspace(depthRange[0], depthRange[1], nDepths)
         self.size = imgSize
@@ -36,8 +42,10 @@ class PropLUT:
 
  
     def propagator(self, depth): 
-        """ Returns the propagator from the LUT which is closest to requested depth. If depth is
-        outside the range of the propagators, function returns None.
+        """ Returns the propagator from the LUT which is closest to requested 
+        depth. 
+        
+        If depth is outside the range of the propagators, function returns None.
         """
         # Find nearest propagator
         if self.nDepths == 1:   # Otherwise the algorithm to get the index will fail 

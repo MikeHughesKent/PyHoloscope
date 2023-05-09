@@ -50,32 +50,32 @@ phaseUntilted = phaseUnwrapped - tilt
 
 # Display intensity and phase
 plt.figure(dpi = 150)
-plt.imshow(pyh.amplitude(reconField), cmap = 'gray')
+plt.imshow(pyh.amplitude(reconField), cmap = 'gray', interpolation = 'None')
 plt.title('Intensity')
 
 plt.figure(dpi = 150)
-plt.imshow(pyh.phase(reconField), cmap = 'twilight')
+plt.imshow(pyh.phase(reconField), cmap = 'twilight', interpolation = 'None')
 plt.title('Phase')
 
 plt.figure(dpi = 150)
-plt.imshow(pyh.amplitude(refocusedField), cmap = 'gray')
+plt.imshow(pyh.amplitude(refocusedField), cmap = 'gray', interpolation = 'None')
 plt.title('Refocused Intensity')
 
 plt.figure(dpi = 150)
-plt.imshow(pyh.phase(refocusedField), cmap = 'twilight')
+plt.imshow(pyh.phase(refocusedField), cmap = 'twilight', interpolation = 'None')
 plt.title('Refocused Phase (Wrapped)')
 
 plt.figure(dpi = 150)
-plt.imshow(phaseUnwrapped)
+plt.imshow(phaseUnwrapped, interpolation = 'None')
 plt.title('Refocused Phase Unwrapped')
 
 plt.figure(dpi = 150)
-plt.imshow(phaseUntilted)
+plt.imshow(phaseUntilted, interpolation = 'None')
 plt.title('Refocused Phase Unwrapped, Tilt Removed')
 
 DIC = pyh.synthetic_DIC(refocusedField, shearAngle = 0)
 plt.figure(dpi = 150)
-plt.imshow(DIC, cmap='gray')
+plt.imshow(DIC, cmap='gray', interpolation = 'None')
 plt.title('Synthetic DIC')
 
 phaseGrad = pyh.phase_gradient(refocusedField)

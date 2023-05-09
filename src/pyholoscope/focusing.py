@@ -1,11 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-PyHoloscope
-Python package for holgoraphic microscopy
+PyHoloscope - Python package for holographic microscopy
 
-Mike Hughes, Applied Optics Group, University of Kent
-
-PyHoloscope is a python library for holographic microscopy.
+@author: Mike Hughes, Applied Optics Group, University of Kent
 
 This file contains functions relaatd to numrical refocusing.
 
@@ -28,57 +25,34 @@ from pyholoscope.roi import Roi
 import pyholoscope.general 
 
 
-def propagator_slow(gridSize, wavelength, pixelSize, depth):
-    """ 
-    Slow version of propagator. Creates Fourier domain propagator for angular 
-    spectrum meethod. Retained only for testing purposes, use propagator instead.
-  
-    Parameters:
-        gridSize: size of image (in pixels) to refocus.
-        pixelSize: physical size of pixels
-        wavelength: in same units as pixelSize
-        depth: refocus depth in same units as pixelSize
+def propagator(gridSize, wavelength, pixelSize, depth, geometry = 'plane'):
+    """ Creates Fourier domain propagator for angular spectrum method. Speeds
+    up process by only calculating top left quadrant and then duplicating 
+    (with flips) to create the other quadrants. Returns the propagator as a 
+    complex 2D numpy array.
+    
+    Arguments:
+        gridSize   : float, size of square image (in pixels) to refocus.
+        pixelSize  : float, physical size of pixels
+        wavelength : float, in same units as pixelSize
+        depth      : float, refocus depth in same units as pixelSize
+    
+    Optional Keyword Arguments:
+        geometry   : str, 'plane' (default) or 'point'
         
-    Returns:
-        propagator as complex 2D numpy array
-    """
-    
-    area = gridSize * pixelSize
 
-    (xM, yM) = np.meshgrid(range(gridSize), range(gridSize))
-    
-    delta0 = 1/area
-    u = delta0*(xM - gridSize/2 +.5)
-    v = delta0*(yM - gridSize/2 +.5)
-    prop= np.exp(1j*math.pi*wavelength*depth*(u**2 + v**2))
-
-    
-    return prop
-
-
-def propagator(gridSize, wavelength, pixelSize, depth, realImage = False, geometry = 'plane'):
-    """ Creates Fourier domain propagator for angular spectrum meethod. Speeds
-    up process by only calculating top left quadrant and then duplicating (with flips)
-    to create the other three quadrants.
-    
-    Parameters:
-        gridSize: size of image (in pixels) to refocus.
-        pixelSize: physical size of pixels
-        wavelength: in same units as pixelSize
-        depth: refocus depth in same units as pixelSize
-        
-    Returns:
-        propagator as complex 2D numpy array
     """
     assert gridSize % 2 == 0, "Grid size must be even"
     
     area = gridSize * pixelSize
     midPoint = int(gridSize/2)
 
+    # Points to generate one quadrant of propagator on
     (xM, yM) = np.meshgrid(range(int(gridSize/2) + 1 ), range(int(gridSize/2) + 1) )
     
     delta0 = 1/area   
     
+    # Generate one quadrant of the propagator
     if geometry == 'point':
         u = delta0*xM
         v = delta0*yM
@@ -91,36 +65,40 @@ def propagator(gridSize, wavelength, pixelSize, depth, realImage = False, geomet
     else:
         raise Exception("Invalid geometry.")               
     
-    prop = np.zeros((gridSize, gridSize), dtype ='complex64')
+    # For full propagator
+    prop = np.zeros((gridSize, gridSize), dtype ='complex128')
         
     # Duplicate the top left quadrant into the other three quadrants as
     # this is quicker then explicitly calculating the values
-    prop[:midPoint + 1, :midPoint + 1] = propCorner                  # top left
+    prop[:midPoint + 1, :midPoint + 1] = propCorner                      # top left
     prop[:midPoint + 1, midPoint:] = (np.flip(propCorner[:, 1:],1) )     # top right
-    prop[midPoint:, :] = (np.flip(prop[1:midPoint + 1, :],0))  # bottom left
-
+    prop[midPoint:, :] = (np.flip(prop[1:midPoint + 1, :],0))            # bottom left
 
     return prop
 
+
 def refocus(img, propagator, **kwargs):    
     """ 
-    Refocus a hologram using angular spectrum method. 
+    Refocus a hologram using the angular spectrum method. 
     
-    Parameters:
-        img           : hologram as 2D numpy array (with any pre-processing 
-                        such as background removal already performed) 
-        propagator    : as returned from propagator().
-        FourierDomain : optional, set to True if img is the FFT of the hologram (default = False)
-        cuda          : optional, set to True to use GPU (default = False)
-    Returns:
-        refocused hologram as complex 2D numpy array
-        
+    Arguments:
+        img           : 2D numpy array, raw hologram.  
+        propagator    : 2D numpy array, as returned from propagator().
+    
+    Optional Keyword Arguments:
+        FourierDomain : boolean, if True then img is assumed to be already the
+                        FFT of the hologram, useful for speed when performing
+                        multiple refocusing of the same hologram. (default =
+                                                                   False)
+        cuda          : boolean, if True GPU will be used if available.
+        others        : pass any keyword arguments from pre_process() to 
+                        apply this pre-processing prior to refocusing
     """
+    
     imgIsFourier = kwargs.pop('FourierDomain', False)
     cuda = kwargs.pop('cuda', True)
     
-    if np.shape(img) != np.shape(propagator):
-        return None
+    assert np.shape(img) == np.shape(propagator), "Propagator is the wrong size."
     
     # If we have been sent the FFT of image, used when repeatedly calling refocus
     # (for example when finding best focus) we don't need to do FFT or shift for speed
@@ -148,14 +126,15 @@ def refocus(img, propagator, **kwargs):
            
    
 def focus_score(img, method):
-    """ Returns score of how 'in focus' an image is based on selected method.
+    """ Returns score of how 'in focus' an amplitude image is.
     
-    Parameters:
-        img    : image as 2D numpy array
-        method : string, scoring method, options are: Brenner, Sobel, 
+    Score is returned as a float, the lower the better the focus.
+    
+    Arguments:
+        img     : 2D numpy array, real, image
+        method  : str, scoring method, options are: Brenner, Sobel, 
                          SobelVariance, Var, DarkFcous or Peak
-    Returns:
-        Focus score, float                     
+                      
     """
 
     focusScore = 0
@@ -208,7 +187,7 @@ def focus_score(img, method):
 
 def refocus_and_score(depth, imgFFT, pixelSize, wavelength, method, scoreROI, propLUT, useNumba, useCuda):
     """ Refocuses an image to specificed depth and returns focus score, used by
-    findFocus
+    findFocus.
     """
     
     # Whether we are using a look up table of propagators or calculating it each time  
@@ -229,8 +208,7 @@ def refocus_and_score(depth, imgFFT, pixelSize, wavelength, method, scoreROI, pr
         refocImg = scoreROI.crop(refocImg)
     
     score = focus_score(refocImg, method)
-    print(depth, score)
-    #print(time.perf_counter() - t1)
+
     return score
 
 
@@ -277,7 +255,6 @@ def find_focus(img, wavelength, pixelSize, depthRange, method, **kwargs):
         startDepth = (max(depthRange) - min(depthRange))/2
 
     # Find the depth using optimiser
-    print(depthRange)
     depth = scipy.optimize.minimize_scalar(refocus_and_score, method = 'Bounded', bounds = depthRange, bracket = depthRange, options = {'xtol': 0.00001, 'maxiter': 20}, args= (imgFFT ,pixelSize, wavelength, method, scoreROI, propLUT, useNumba, useCuda) )
 
     return depth.x 
@@ -294,9 +271,7 @@ def coarse_focus_search(imgFFT, depthRange, nIntervals, pixelSize, wavelength, m
     
     bestInterval = np.argmin(focusScore)
     bestDepth = searchDepths[bestInterval]
-    print("best interval", bestInterval)
-    print("best depth", bestDepth)
-    
+   
     return bestDepth
     
     

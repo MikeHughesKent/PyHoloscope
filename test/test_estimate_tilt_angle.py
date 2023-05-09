@@ -16,8 +16,7 @@ import pyholoscope as holo
 wavelength = 630e-9
 pixelSize = .6e-6
 
-# Load images
-hologram = holo.load_image("test data\\tissue_paper_oa.tif")
+# Load image
 background = holo.load_image("test data\\tissue_paper_oa_background.tif")
 
 # Estimate tilt angle

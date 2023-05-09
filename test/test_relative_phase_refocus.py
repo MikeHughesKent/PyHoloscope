@@ -16,18 +16,22 @@ import pyholoscope as pyh
 
 # Experimental Parameters
 wavelength = 630e-9
-pixelSize = .3e-6
+pixelSize = 1e-6
+depth = -0.0012
 
 # Load images
-hologram = pyh.load_image("test data\\tissue_paper_oa.tif")
-background = pyh.load_image("test data\\tissue_paper_oa_background.tif")
+hologram = pyh.load_image("test data\\paramecium_oa_oof.tif")
+background = pyh.load_image("test data\\paramecium_oa_oof_background.tif")
+
 
 # Create object
 holo = pyh.Holo(pyh.OFF_AXIS, 
                 wavelength = wavelength, 
                 pixelSize = pixelSize,
                 background = background,
-                relativePhase = False)
+                relativePhase = True,
+                refocus = True,
+                depth = depth)
                     
 
 # Find modulation frequency 
@@ -36,22 +40,22 @@ holo.calib_off_axis(background)
 # Remove modulation
 reconField = holo.process(hologram)
     
+# Make phase relative to a region of the image
 reconFieldCorrected = pyh.relative_phase_self(reconField, roi = pyh.Roi(40,40,10,10))
 
-print(pyh.mean_phase(reconFieldCorrected))
 
 plt.figure(dpi = 150)
-plt.imshow(np.angle(reconField), cmap = 'twilight')
+plt.imshow(np.angle(reconField), cmap = 'twilight', interpolation='none')
 plt.title('Phase uncorrected')
 
 plt.figure(dpi = 150)
-plt.imshow(np.abs(reconField), cmap = 'gray')
+plt.imshow(np.abs(reconField), cmap = 'gray', interpolation='none')
 plt.title('Amplitude uncorrected')
 
 plt.figure(dpi = 150)
-plt.imshow(np.angle(reconFieldCorrected), cmap='twilight')
+plt.imshow(np.angle(reconFieldCorrected), cmap='twilight', interpolation='none')
 plt.title('Phase corrected')
 
 plt.figure(dpi = 150)
-plt.imshow(np.abs(reconFieldCorrected), cmap = 'gray')
+plt.imshow(np.abs(reconFieldCorrected), cmap = 'gray', interpolation='none')
 plt.title('Amplitude corrected')

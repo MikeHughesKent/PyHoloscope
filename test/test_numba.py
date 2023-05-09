@@ -27,10 +27,6 @@ print("------------------")
 print("Timings (ms):")
 print("------------------")
 
-t1 = time.perf_counter()
-prop1 = pyh.propagator_slow(gridSize, wavelength, pixelSize, depth)
-print("No Numba (Slow Method): ", round((time.perf_counter() - t1) * 1000,1))
-
 
 t1 = time.perf_counter()
 prop2 = pyh.propagator(gridSize, wavelength, pixelSize, depth)
@@ -65,9 +61,8 @@ print("Table Lookup: ", round((time.perf_counter() - t1) * 1000,2))
 print("------------------")
 print("Numerical Errors:")
 print("------------------")
-print("Fast Method Error: ", np.mean(np.angle(prop2 - prop1)))
-print("Numba Method Error: ", np.mean(np.angle(prop4 - prop1)))
-print("Lookup Error: ", np.mean(np.angle(prop5 - prop1)))
+print("Numba Method Error: ", np.mean(np.angle(prop4 - prop2)))
+print("Lookup Error: ", np.mean(np.angle(prop5 - prop2)))
 
 
 

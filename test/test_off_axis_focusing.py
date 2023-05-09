@@ -29,7 +29,7 @@ holo = pyh.Holo(mode = pyh.OFF_AXIS,
                 wavelength = wavelength, 
                 pixelSize = pixelSize,
                 background = background,
-                autoWindow = True,
+                autoWindow = False,
                 relativePhase = True,
                 refocus = True,
                 depth = depth)
@@ -42,16 +42,20 @@ print(f"Demodulation and refocusing time: {round((time.perf_counter() - t1) * 10
 
 # Display intensity and phase
 plt.figure(dpi = 150)
-plt.imshow(pyh.amplitude(reconField), cmap = 'gray')
+plt.imshow(pyh.amplitude(reconField), cmap = 'gray', interpolation='none')
 plt.title('Intensity')
 
+plt.figure(dpi = 150), 
+plt.imshow(pyh.phase(reconField), cmap = 'gray', interpolation='none')
+plt.title('Phase')
+
 plt.figure(dpi = 150)
-plt.imshow(pyh.phase(reconField), cmap = 'twilight')
+plt.imshow(pyh.phase(reconField), cmap = 'twilight', interpolation='none')
 plt.title('Phase')
 
 DIC = pyh.synthetic_DIC(reconField, shearAngle = 0)
 plt.figure(dpi = 150)
-plt.imshow(DIC, cmap='gray')
+plt.imshow(DIC, cmap='gray', interpolation='none')
 plt.title('Synthetic DIC')
 
 phaseGrad = pyh.phase_gradient(reconField)

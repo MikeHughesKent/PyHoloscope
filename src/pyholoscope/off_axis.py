@@ -1,18 +1,16 @@
 # -*- coding: utf-8 -*-
 """
-PyHoloscope
-Python package for holgoraphic microscopy
+PyHoloscope - Python package for holographic microscopy
 
-Mike Hughes, Applied Optics Group, University of Kent
+@author: Mike Hughes, Applied Optics Group, University of Kent
 
-PyHoloscope is a python library for holographic microscopy.
-
-This file contains functions for handling off-axis holograms.
-
+This file contains functions for working with off-axis holograms.
 
 """
+
 import math
 import numpy as np
+
 try:
     import cupy as cp
     cudaAvailable = True
@@ -20,19 +18,34 @@ except:
     cudaAvailable = False
     
 
-def off_axis_demod(cameraImage, cropCentre, cropRadius, **kwargs):
-    """ Removes spatial modulation from off axis hologram. cropCentre is the location of
-    the modulation frequency in the Fourier Domain, cropRadius is the size of
-    the spatial frequency range to keep around the modulation frequency (in FFT pixels)    
+def off_axis_demod(hologram, cropCentre, cropRadius, returnFFT = False, 
+                   mask = None, cuda = False):
+    """ Removes spatial modulation from off-axis hologram to obtain field.
+    
+    By default, returns the complex field as a 2D numpy array. The size of
+    the returned array is (cropRadius*2, cropRadius*2). If returnFFT is
+    True, function returns a tuple (field, FFT) where FFT is a log scaled
+    image of the FFT of the hologram (2D numpy array, real).
+        
+    Arguments:
+          hologram   : 2D numpy array, real, raw hologram
+          cropCentre : tuple of (int, int). Pixel location in FFT of
+                       modulation frequency
+          cropRadius : int, radius of circle around modulation frequency to use
+        
+    Optional Keyword Arguments:
+          returnFFT  : boolean, if True will return a tuple of (demod image,
+                       log scaled FFT) for display purposes
+                       subtracted (default = None)
+          mask       : 2D numpy array, complex. Custom mask to use around
+                       demodulation frequency instead of default circle. Must
+                       be sqaure of size (cropRadius*2, cropRadius*2).
+          cuda      :  boolean, if True GPU will be used if available.  
     """
     
-    returnFFT = kwargs.get('returnFFT', False)
-    mask = kwargs.get('mask', None)
-    cuda = kwargs.get('cuda', False)
-    
-    # Size of image in pixels (assume square);
-    nPoints = np.min(np.shape(cameraImage))
-    cameraImage = cameraImage[0:nPoints, 0:nPoints]       
+    # Size of image in pixels (assume square)
+    nPoints = np.min(np.shape(hologram))
+    hologram = hologram[0:nPoints, 0:nPoints]       
      
     # Make a circular mask
     if mask is None:
@@ -42,23 +55,25 @@ def off_axis_demod(cameraImage, cropCentre, cropRadius, **kwargs):
   
     # Apply 2D FFT
     if cuda is False or cudaAvailable is False:
-        cameraFFT = np.fft.rfft2(cameraImage)
+        cameraFFT = np.fft.rfft2(hologram)
     else:
-        cameraFFT = cp.fft.rfft2(cp.array(cameraImage))
+        if type(hologram) is np.ndarray:
+            hologram = cp.array(hologram)
+        if type(mask) is np.ndarray:
+            mask = cp.array(mask)
+        cameraFFT = cp.fft.rfft2(cp.array(hologram))
    
     # Shift the ROI to the centre
     shiftedFFT = cameraFFT[round(cropCentre[1] - cropRadius): round(cropCentre[1] + cropRadius),round(cropCentre[0] - cropRadius): round(cropCentre[0] + cropRadius)]
 
     # Apply the mask
-    if cuda is True and cudaAvailable is True:
-        mask = cp.array(mask)
     maskedFFT = shiftedFFT * mask
 
     # Reconstruct complex field
     if cuda is False or cudaAvailable is False:
-        reconField = np.fft.ifft2(np.fft.fftshift(shiftedFFT))
+        reconField = np.fft.ifft2(np.fft.fftshift(maskedFFT))
     else:
-        reconField = cp.asnumpy(cp.fft.ifft2(cp.fft.fftshift(shiftedFFT)))
+        reconField = cp.asnumpy(cp.fft.ifft2(cp.fft.fftshift(maskedFFT)))
    
     if returnFFT:
         if cuda is True and cudaAvailable is True:
@@ -66,50 +81,55 @@ def off_axis_demod(cameraImage, cropCentre, cropRadius, **kwargs):
                 cameraFFT = cp.asnumpy(cameraFFT)
             except:
                 pass
-        return reconField, np.log(np.abs(cameraFFT) + 0.000001)
+        return reconField, np.log(np.abs(cameraFFT) + 0.000001) # Stops log(0)
     
     else:
         return reconField
     
 
-def off_axis_find_mod(cameraImage, maskFraction = 0.1):
-    """ Finds the location of the off-axis holography modulation peak in the FFT. Finds
-    the peak in the positive x region.    
+def off_axis_find_mod(hologram, maskFraction = 0.1):
+    """ Finds the location of the off-axis holography modulation peak in the FFT. 
+    
+    Arguments:
+          hologram   : 2D numpy array, real, raw hologram
+         
+    Optional Keyword Arguments:
+          maskFraction : float between 0 and 1, fraction of image around d.c. to 
+                         mask to avoid the d.c. peak being detected 
+                         (default = 0.1).
     """
     
     # Apply 2D FFT
-    cameraFFT = np.transpose(np.abs(np.fft.rfft2(cameraImage)) ) 
-    
- 
-    # Mask central region
-    imSize = min(np.shape(cameraImage)[:1])
-    cx = np.shape(cameraImage)[0] / 2
-    cy = np.shape(cameraImage)[1] / 2    
+    cameraFFT = np.transpose(np.abs(np.fft.rfft2(hologram))) 
     
     # Need to crop out DC otherwise we will find that. Set the areas around
     # dc (for both quadrants) to zero. The size of the masked area is maskFraction * the
     # size of the image (smallest dimension)
-    maskSize = int(np.min(np.shape(cameraImage)) * maskFraction)
-
+    maskSize = int(np.min(np.shape(hologram)) * maskFraction)
     cameraFFT[:maskSize,:maskSize] = 0
     cameraFFT[:maskSize:,-maskSize:] = 0
-   
  
     peakLoc = np.unravel_index(cameraFFT.argmax(), cameraFFT.shape)
     
     return peakLoc
 
 
-def off_axis_find_crop_radius(cameraImage, maskFraction = 0.1):
-    """ Estimates the correct off axis crop radius based on modulation peak position
+def off_axis_find_crop_radius(hologram, maskFraction = 0.1):
+    """ Estimates the off axis crop radius based on modulation peak position.
+    
+    Arguments:
+          hologram   : 2D numpy array, real, raw hologram
+         
+    Optional Keyword Arguments:
+          maskFraction : float between 0 and 1, fraction of image around d.c. to 
+                         mask to avoid the d.c. peak being detected 
+                         (default = 0.1).
     """
     
-    h = np.shape(cameraImage)[0]
-    w = np.shape(cameraImage)[1]
-    cx = w / 2
-    cy = h / 2
-
-    peakLoc = off_axis_find_mod(cameraImage, maskFraction = maskFraction)
+    h = np.shape(hologram)[0]
+    w = np.shape(hologram)[1]
+ 
+    peakLoc = off_axis_find_mod(hologram, maskFraction = maskFraction)
         
     # Depending on quadrant could be relative to either top-left or
     # top-right corner, so check both and use the closest distance
@@ -127,14 +147,20 @@ def off_axis_find_crop_radius(cameraImage, maskFraction = 0.1):
 
 
 def off_axis_predict_mod(wavelength, pixelSize, tiltAngle): 
-    """ Predicts the location of the modulation peak (i.e. carrer frequency) in the
-    FFT. Returns the distance of the peak from the centre (dc) of the FFT in pixels.
+    """ Predicts the location of the modulation peak in the FFT. 
+    
+    Returns the distance of the peak from the dc of the FFT in pixels.
+    
+    Arguments:
+          wavelegnth   : real, light wavelength in metres
+          pixelSizze   : real, hologram physical pixel size
+          tiltAngle    : real, angle of reference beam on camera in radians    
     """
            
     # Convert wavelength to wavenumber
     k = 2 * math.pi / wavelength     
      
-    # Spatial frequency of mdulation
+    # Spatial frequency of modulation
     refFreq = k * math.sin(tiltAngle)
     
     # Spatial frequency in camera pixels
@@ -146,25 +172,41 @@ def off_axis_predict_mod(wavelength, pixelSize, tiltAngle):
     return modFreqPx
 
 
-def off_axis_predict_tilt_angle(cameraImage, wavelength, pixelSize, maskFraction = 0.1):
-    """ Predicts the reference beam tilt based on the modulation of the camera image
-    and specified wavelength and pixel size.
-    """    
+def off_axis_predict_tilt_angle(hologram, wavelength, pixelSize, maskFraction = 0.1):
+    """ Returns the reference beam tilt based on the hologram modulation.
+    
+    Returns the angle in radians.
+    
+    Arguments:
+          hologram     : 2D numpy array, real, hologram
+          wavelegnth   : real, light wavelength in metres
+          pixelSizze   : real, hologram physical pixel size
+    
+    Optional Keyword Arguments:
+          maskFraction : float between 0 and 1, fraction of image around d.c. to 
+                         mask to avoid the d.c. peak being detected 
+                         (default = 0.1).        
+    """
     
     # Wavenumber
     k = 2 * math.pi / wavelength    
 
-    cx = np.shape(cameraImage)[0] / 2
-    cy = np.shape(cameraImage)[1] / 2
+    h, w = np.shape(hologram)[:2]
     
     # Find the location of the peak
-    peakLoc = off_axis_find_mod(cameraImage, maskFraction = maskFraction)
+    peakLoc = off_axis_find_mod(hologram, maskFraction = maskFraction)
+
+    # Pixel sizes in FFT (the spatial frequency)
+    vPixelSF = 1 / (2 * pixelSize * np.shape(hologram)[0])
+    hPixelSF = 1 / (2 * pixelSize * np.shape(hologram)[1])
+
     
-    hPixelSF = 1 / (2 * pixelSize * np.shape(cameraImage)[0])
-    vPixelSF = 1 / (2 * pixelSize * np.shape(cameraImage)[1])
-    
-    spatialFreq = np.sqrt( (hPixelSF * (peakLoc[0] - cx))**2  + (vPixelSF * (peakLoc[1] - cy) )**2)
-   
+    # Depending on quadrant could be relative to either top-left or
+    # top-right corner, so check both and use the closest distance    
+    peakDist1 = np.sqrt((vPixelSF * peakLoc[0])**2 + (hPixelSF * peakLoc[1])**2)
+    peakDist2 = np.sqrt((vPixelSF * peakLoc[0])**2 + (hPixelSF * peakLoc[1] - w)**2)
+    spatialFreq = min(peakDist1, peakDist2) 
+ 
     tiltAngle = math.asin(spatialFreq / k)
     
     return tiltAngle

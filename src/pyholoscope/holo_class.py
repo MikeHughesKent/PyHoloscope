@@ -2,11 +2,10 @@
 """
 PyHoloscope - Fast Holographic Microscopy in Python
 
-The Holo Class provides an object-oriented interface to a subset of the 
+The Holo Class provides an object-oriented interface to mosst of the 
 PyHoloscope functionality.
 
-@author: Mike Hughes
-Applied Optics Group, Physics & Astronomy, University of Kent
+@author: Mike Hughes, Applied Optics Group, Physics & Astronomy, University of Kent
 """
 
 import numpy as np
@@ -33,24 +32,21 @@ try:
     import numba
     from pyholoscope.focusing_numba import propagator_numba
     numbaAvailable = True
-    testProg = propagator_numba(6,1.0,1.0,1.0)
+    testProg = propagator_numba(6,1.0,1.0,1.0)   # Run the JIT once for speed
 except:
     numbaAvailable = False    
    
-
-
 
 class Holo:
      
     # Processing pipeline
     INLINE = 1
     OFF_AXIS = 2
-  
     INLINE_MODE = 1   # deprecated, kept  for backwards compatibility
     OFFAXIS_MODE = 2  # deprecated, kept  for backwards compatibility
     
     # For off-axis holography, these are generated if needed from the 
-    # background and normalise holograms
+    # background and normalise holograms later
     backgroundField = None
     backgroundAbs = None
     backgroundAngle = None
@@ -113,9 +109,7 @@ class Holo:
         
         self.invert = kwargs.get('invert', False)
         self.refocus = kwargs.get('refocus', False)
-        self.downsample = kwargs.get('downsample', 1)
-
-        
+        self.downsample = kwargs.get('downsample', 1)        
        
         self.cudaAvailable = cudaAvailable
         

@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-PyHoloscope
-Python package for holgoraphic microscopy
+PyHoloscope - Python package for holgoraphic microscopy
 
 Roi: Class for region of interest.
 
