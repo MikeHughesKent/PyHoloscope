@@ -105,7 +105,6 @@ class Holo:
         self.relativePhase = kwargs.get('relativePhase', False)
         self.stablePhase = kwargs.get('stablePhase', False)
         self.stableROI = kwargs.get('stableROI', False)
-
         
         self.invert = kwargs.get('invert', False)
         self.refocus = kwargs.get('refocus', False)
