@@ -33,6 +33,8 @@ import context         # Paths
 from time import perf_counter as timer
 from matplotlib import pyplot as plt
 
+from pathlib import Path
+
 import pyholoscope as pyh
 
 # Experimental Parameters
@@ -40,8 +42,11 @@ wavelength = 630e-9
 pixelSize = 1e-6
 
 # Load images
-hologram = pyh.load_image("..\\test\\test data\\paramecium_oa_oof.tif")
-background = pyh.load_image("..\\test\\test data\\paramecium_oa_oof_background.tif")
+holoFile = Path('../test/test data/paramecium_oa_oof.tif')
+backFile = Path('../test/test data/paramecium_oa_oof_background.tif')
+
+hologram = pyh.load_image(holoFile)
+background = pyh.load_image(backFile)
 
 # Create Holo object
 holo = pyh.Holo(mode = pyh.OFF_AXIS, 

@@ -30,10 +30,14 @@ import context                    # Loads relative paths
 
 import pyholoscope as pyh
 
+from pathlib import Path
 
 # Load images
-hologram = pyh.load_image("..\\test\\test data\\inline_example_holo.tif")
-background = pyh.load_image("..\\test\\test data\\inline_example_back.tif")
+holoFile = Path('../test/test data/inline_example_holo.tif')
+backFile = Path('../test/test data/inline_example_back.tif')
+
+hologram = pyh.load_image(holoFile)
+background = pyh.load_image(backFile)
 
 # Create an instance of the Holo class
 holo = pyh.Holo(mode = pyh.INLINE,             # For inline holography
