@@ -28,7 +28,7 @@ from pyholoscope.focus_stack import FocusStack
 from pyholoscope.prop_lut import PropLUT
 
 
-def pre_process(img, background = None, normalise = None, window = None, downsample = 1.):
+def pre_process(img, background = None, normalise = None, window = None, downsample = 1., numba = False):
     
     """ Carries out steps required prior to refocusing.
     
@@ -55,51 +55,57 @@ def pre_process(img, background = None, normalise = None, window = None, downsam
     if np.iscomplexobj(img):
         imType = 'complex128'
     else:
-        imType = 'float64'     
+        imType = 'float64'    
+    
+    if img.dtype != imType:
+        img = img.astype(imType)  
+        
+    if background is not None:
+        if background.dtype != imType:
+            background = background.astype(imType)  
+
+    if normalise is not None:
+        if normalise.dtype != imType:
+            normalise = normalise.astype(imType)      
        
     # Background subtraction  
-    if background is not None:
-       
+    if background is not None:       
         if np.iscomplexobj(img):
             imgAmp = np.abs(img)
             imgPhase = np.angle(img)
-            imgOut = np.zeros_like(img).astype(imType)
-            imgOut.real = (imgAmp - background) * np.cos(imgPhase)
-            imgOut.imag = (imgAmp - background) * np.sin(imgPhase)
+            img.real = (imgAmp - background) * np.cos(imgPhase)
+            img.imag = (imgAmp - background) * np.sin(imgPhase)
         else:
-            imgOut = img - background
-    else:
-        imgOut = img.astype(imType)
-    
+            img = img - background
     
     # Background normalisation 
     if normalise is not None:
-        imgOut = imgOut / normalise        
+        img = img / normalise        
     
     # Apply downsampling
     if downsample != 1:                
-        imgOut = cv.resize(imgOut, (int(np.shape(img)[1]/ downsample), int(np.shape(img)[0] / downsample) )   )
+        img = cv.resize(img, (int(np.shape(img)[1]/ downsample), int(np.shape(img)[0] / downsample) )   )
     
     # Ensure it is square
-    minSize = np.min(np.shape(imgOut))
-    imgOut = imgOut[:minSize, :minSize]
+    minSize = np.min(np.shape(img))
+    img = img[:minSize, :minSize]
      
     # Apply window
     if window is not None:
         
         # If the window is the wrong size, reshape it to match hologram
-        if np.shape(window) != np.shape(imgOut):
+        if np.shape(window) != np.shape(img):
             warnings.warn('Window needed resizing, may effect processing speed.')
-            window = cv.resize(window, (np.shape(imgOut)[1],np.shape(imgOut)[0])  )
+            window = cv.resize(window, (np.shape(img)[1],np.shape(img)[0])  )
 
         if np.iscomplexobj(img):
-            imgOut.imag = imgOut.imag * window
-            imgOut.real = imgOut.real * window
-            imgOut[imgOut == -0+0j] = 0j     # Otherwise phase angle looks weird when plotted
+            img.imag = img.imag * window
+            img.real = img.real * window
+            img[img == -0+0j] = 0j     # Otherwise phase angle looks weird when plotted
         else:
-            imgOut = imgOut * window 
+            img = img * window 
             
-    return imgOut
+    return img
 
  
 

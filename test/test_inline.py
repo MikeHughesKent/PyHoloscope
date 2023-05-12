@@ -9,6 +9,9 @@ University of Kent
 
 from matplotlib import pyplot as plt
 import time
+from pathlib import Path
+
+
 import context                    # Relative paths
 
 import pyholoscope as pyh
@@ -19,8 +22,8 @@ pixelSize = 1e-6
 depth = 0.0127
 
 # Load images
-hologram = pyh.load_image("test data\\inline_example_holo.tif")
-background = pyh.load_image("test data\\inline_example_back.tif")
+hologram = pyh.load_image(Path('test data/inline_example_holo.tif'))
+background = pyh.load_image(Path('test data/inline_example_back.tif'))
 
 # Set up PyHoloscope
 holo = pyh.Holo(mode = pyh.INLINE_MODE, 
@@ -29,7 +32,6 @@ holo = pyh.Holo(mode = pyh.INLINE_MODE,
                 background = background,
                 normalise = background,
                 depth = depth,
-                windowShape = 'square',
                 autoWindow = True)
 
 

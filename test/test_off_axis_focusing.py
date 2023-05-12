@@ -10,6 +10,8 @@ import context
 
 from matplotlib import pyplot as plt
 
+from pathlib import Path
+
 import time
 import math
 
@@ -21,8 +23,8 @@ pixelSize = 1e-6
 depth = -0.0012
 
 # Load images
-hologram = pyh.load_image("test data\\paramecium_oa_oof.tif")
-background = pyh.load_image("test data\\paramecium_oa_oof_background.tif")
+hologram = pyh.load_image(Path('test data/paramecium_oa_oof.tif'))
+background = pyh.load_image(Path('test data/paramecium_oa_oof_background.tif'))
 
 # Create object
 holo = pyh.Holo(mode = pyh.OFF_AXIS, 
@@ -44,10 +46,6 @@ print(f"Demodulation and refocusing time: {round((time.perf_counter() - t1) * 10
 plt.figure(dpi = 150)
 plt.imshow(pyh.amplitude(reconField), cmap = 'gray', interpolation='none')
 plt.title('Intensity')
-
-plt.figure(dpi = 150), 
-plt.imshow(pyh.phase(reconField), cmap = 'gray', interpolation='none')
-plt.title('Phase')
 
 plt.figure(dpi = 150)
 plt.imshow(pyh.phase(reconField), cmap = 'twilight', interpolation='none')

@@ -9,6 +9,7 @@ from matplotlib import pyplot as plt
 
 import numpy as np
 import time
+from pathlib import Path
 
 import context              # Load paths       
 
@@ -19,8 +20,8 @@ wavelength = 630e-9
 pixelSize = .3e-6
 
 # Load images
-hologram = pyh.load_image("test data\\tissue_paper_oa.tif")
-background = pyh.load_image("test data\\tissue_paper_oa_background.tif")
+hologram = pyh.load_image(Path('test data/tissue_paper_oa.tif'))
+background = pyh.load_image(Path('test data/tissue_paper_oa_background.tif'))
 
 # Create object
 holo = pyh.Holo(pyh.OFF_AXIS, 

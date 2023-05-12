@@ -18,7 +18,7 @@
 # -- Project information -----------------------------------------------------
 
 project = 'PyHoloscope'
-copyright = '2022, Mike Hughes'
+copyright = '2023, Mike Hughes'
 author = 'Mike Hughes'
 
 

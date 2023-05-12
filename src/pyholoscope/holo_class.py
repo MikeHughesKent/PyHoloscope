@@ -63,6 +63,8 @@ class Holo:
     propagator = None
     propagatorLUT = None
     
+    imageType = 'float64'
+    
     def __init__(self, mode = None, wavelength = None, pixelSize = None, **kwargs):
         
         self.mode = mode
@@ -76,8 +78,8 @@ class Holo:
         # Numerical refocusing
         self.depth = kwargs.get('depth', 0)
         
-        self.background = kwargs.get('background', None)
-        self.normalise = kwargs.get('normalise', None)
+        self.set_background(kwargs.get('background', None))
+        self.set_normalise(kwargs.get('normalise', None))
         
         # Phase
         self.relativeAmplitude = kwargs.get('relativeAmplitude', None)
@@ -172,7 +174,7 @@ class Holo:
             return None
             
         # Post refocusing processing
-        if self.postWindow is True and self.autoWindow is True and self.window is not None:
+        if self.postWindow is True and self.window is not None:
             imgOut = pre_process(imgOut, window = self.window)  
                                
         if self.invert is True:
@@ -284,14 +286,14 @@ class Holo:
     def set_background(self, background):
         """ Set the background hologram. Use None to remove background. """
         self.clear_background()
-        if background is not None: self.background  = background.astype(float) 
+        if background is not None: self.background  = background.astype(self.imageType) 
       
             
     def set_normalise(self, normalise):
         """ Set the normalisation hologram. Use None to remove normalisation. """
         self.clear_normalise()     
         if normalise is not None:
-            self.normalise  = normalise.astype(float) 
+            self.normalise  = normalise.astype(self.imageType) 
         
             
     def clear_background(self):

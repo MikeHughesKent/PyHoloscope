@@ -26,13 +26,14 @@ import pyholoscope.general
 
 
 def propagator(gridSize, wavelength, pixelSize, depth, geometry = 'plane'):
-    """ Creates Fourier domain propagator for angular spectrum method. Speeds
-    up process by only calculating top left quadrant and then duplicating 
-    (with flips) to create the other quadrants. Returns the propagator as a 
-    complex 2D numpy array.
+    """ Creates Fourier domain propagator for angular spectrum method. 
+    Returns the propagator as a complex 2D numpy array.
+    
+    Speed up by only calculating top left quadrant and then duplicating 
+    (with flips) to create the other quadrants. 
     
     Arguments:
-        gridSize   : float, size of square image (in pixels) to refocus.
+        gridSize   : float, size of square image (in pixels) to refocus
         pixelSize  : float, physical size of pixels
         wavelength : float, in same units as pixelSize
         depth      : float, refocus depth in same units as pixelSize
@@ -108,13 +109,12 @@ def refocus(img, propagator, **kwargs):
                 img = cp.array(img)
             if type(propagator) is np.ndarray:
                 propagator = cp.array(propagator)
-            return cp.asnumpy(cp.fft.fftshift(img * propagator))
+            return cp.asnumpy(cp.fft.ifft2(img * propagator))
         else:
             return np.fft.ifft2(img * propagator)
      
     else:   # If we are sent the spatial domain image
         cHologram = pyholoscope.pre_process(img, **kwargs)
-       
         if cuda is True and cudaAvailable is True:
                 if type(cHologram) is np.ndarray:
                     cHologram = cp.array(cHologram)
@@ -243,7 +243,7 @@ def find_focus(img, wavelength, pixelSize, depthRange, method, **kwargs):
         cropImg = cHologram   # otherwise use whole image
         
     # Pre-compute the FFT of the hologram since we need this for every trial depth    
-    imgFFT = np.fft.fftshift(np.fft.fft2(cropImg))
+    imgFFT = np.fft.fft2(cropImg)
     
     if coarseSearchInterval is not None:
         startDepth = coarse_focus_search(imgFFT, depthRange, coarseSearchInterval, pixelSize, wavelength, method, scoreROI, propLUT)
@@ -306,7 +306,7 @@ def focus_score_curve(img, wavelength, pixelSize, depthRange, nPoints, method, *
         cropImg = cHologram
     
     # Do the forwards FFT once for speed
-    cHologramFFT = np.fft.fftshift(np.fft.fft2(cropImg))
+    cHologramFFT = np.fft.fft2(cropImg)
     
     score = list()
     depths = np.linspace(depthRange[0], depthRange[1], nPoints)
@@ -329,7 +329,7 @@ def refocus_stack(img, wavelength, pixelSize, depthRange, nDepths, **kwargs):
     
     # Apply pre-processing and then take 2D FFT
     cHologram = pyholoscope.pre_process(img, **kwargs)
-    cHologramFFT = np.fft.fftshift(np.fft.fft2(cHologram))
+    cHologramFFT = (np.fft.fft2(cHologram))
     
     # Tell refocus that we are providing the FFT
     kwargs['FourierDomain'] = True
@@ -342,7 +342,7 @@ def refocus_stack(img, wavelength, pixelSize, depthRange, nDepths, **kwargs):
         else:
             prop = propagator(np.shape(img)[0], wavelength, pixelSize, depth)
 
-        imgStack.add_idx( pyholoscope.post_process( refocus(cHologramFFT, prop, **kwargs), window=window), idx)
+        imgStack.add_idx( pyholoscope.pre_process( refocus(cHologramFFT, prop, **kwargs), window=window), idx)
 
     return imgStack
 

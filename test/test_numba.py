@@ -33,14 +33,15 @@ prop2 = pyh.propagator(gridSize, wavelength, pixelSize, depth)
 print("No Numba (Fast Method): ", round((time.perf_counter() - t1) * 1000,1))
 
 
+# Since we now run prop at import, the two Numba runs should be roughly the same
 t1 = time.perf_counter()
 prop3 = pyh.propagator_numba(gridSize, wavelength, pixelSize, depth)
-print("Numba Compile: ", round((time.perf_counter() - t1) * 1000,1))
+print("Numba Run 1: ", round((time.perf_counter() - t1) * 1000,1))
 
 
 t1 = time.perf_counter()
 prop4 = pyh.propagator_numba(gridSize, wavelength, pixelSize, depth)
-print("Numba Run: ", round((time.perf_counter() - t1) * 1000,1))
+print("Numba Run 2: ", round((time.perf_counter() - t1) * 1000,1))
 
 
 t1 = time.perf_counter()

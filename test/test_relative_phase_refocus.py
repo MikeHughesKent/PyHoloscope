@@ -9,6 +9,7 @@ from matplotlib import pyplot as plt
 
 import numpy as np
 import time
+from pathlib import Path
 
 import context              # Load paths       
 
@@ -20,8 +21,8 @@ pixelSize = 1e-6
 depth = -0.0012
 
 # Load images
-hologram = pyh.load_image("test data\\paramecium_oa_oof.tif")
-background = pyh.load_image("test data\\paramecium_oa_oof_background.tif")
+hologram = pyh.load_image(Path('test data/paramecium_oa_oof.tif'))
+background = pyh.load_image(Path('test data/paramecium_oa_oof_background.tif'))
 
 
 # Create object

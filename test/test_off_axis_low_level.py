@@ -10,6 +10,8 @@ from matplotlib import pyplot as plt
 import time
 import math
 
+from pathlib import Path
+
 import context                    # Relative paths
 
 import pyholoscope as pyh
@@ -19,8 +21,8 @@ wavelength = 630e-9
 pixelSize = .6e-6
 
 # Load images
-hologram = pyh.load_image("test data\\tissue_paper_oa.tif")
-background = pyh.load_image("test data\\tissue_paper_oa_background.tif")
+hologram = pyh.load_image(Path('test data/tissue_paper_oa.tif'))
+background = pyh.load_image(Path('test data/tissue_paper_oa_background.tif'))
 
 # Determine Modulation
 cropCentre = pyh.off_axis_find_mod(background)

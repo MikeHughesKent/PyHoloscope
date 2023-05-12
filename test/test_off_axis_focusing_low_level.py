@@ -10,6 +10,8 @@ import context
 
 from matplotlib import pyplot as plt
 
+from pathlib import Path
+
 import pyholoscope as pyh
 
 # Experimental Parameters
@@ -19,8 +21,8 @@ gridSize = 1024
 depth = -0.0012
 
 # Load images
-hologram = pyh.load_image("test data\\paramecium_oa_oof.tif")
-background = pyh.load_image("test data\\paramecium_oa_oof_background.tif")
+hologram = pyh.load_image(Path('test data/paramecium_oa_oof.tif'))
+background = pyh.load_image(Path('test data/paramecium_oa_oof_background.tif'))
 
 # Determine Modulation
 cropCentre = pyh.off_axis_find_mod(background)
