@@ -40,16 +40,15 @@ def propagator_numba(gridSize, wavelength, pixelSize, depth, geometry = 'plane',
     """
     assert gridSize % 2 == 0, "Grid size must be even"
     
-    dataType = numba.complex64
     
-    area = gridSize * pixelSize
+    area = float(gridSize) * float(pixelSize)
     
     
-    propCorner = np.zeros((int(gridSize/2) + 1, int(gridSize/2) + 1), dtype = dataType)
-    prop = np.zeros((gridSize, gridSize), dtype = dataType)
+    propCorner = np.zeros((int(gridSize/2) + 1, int(gridSize/2) + 1), dtype = numba.complex64)
+    prop = np.zeros((gridSize, gridSize), dtype = numba.complex64)
 
     delta0 = 1/area
-    midPoint = int(gridSize / 2)
+    midPoint = int(float(gridSize) / 2)
     
     if geometry == 'point':
         fac = math.pi*wavelength*depth
@@ -70,10 +69,10 @@ def propagator_numba(gridSize, wavelength, pixelSize, depth, geometry = 'plane',
     elif geometry == 'plane':   
         fac = 2 * math.pi * depth / wavelength
         for x in range(int(gridSize/2) + 1) :
-             alphaSq = (wavelength * x * delta0)**2
+             alphaSq = (float(wavelength) * x * delta0)**2
 
              for y in range(int(gridSize/2) + 1) :
-                 betaSq = (wavelength * y * delta0)**2
+                 betaSq = (float(wavelength) * y * delta0)**2
                  if alphaSq + betaSq < 1:
                      phase = fac * np.sqrt(1 - alphaSq - betaSq) 
                      

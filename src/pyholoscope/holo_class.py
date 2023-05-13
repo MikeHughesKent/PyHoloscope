@@ -32,7 +32,7 @@ try:
     import numba
     from pyholoscope.focusing_numba import propagator_numba
     numbaAvailable = True
-    testProg = propagator_numba(6,1.0,1.0,1.0)   # Run the JIT once for speed
+    testProg = propagator_numba(int(6),float(1.0),float(1.0),float(1.0), precision = 'single')   # Run the JIT once for speed
 except:
     numbaAvailable = False    
    
