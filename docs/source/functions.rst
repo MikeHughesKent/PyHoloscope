@@ -132,7 +132,7 @@ Used by find_focus to perform an initial check for approximate location of good 
 ''method'' is the focus scoring method, as defined in ``focus_score``. ``scoreRoi`` is an optional ROI to apply focus score to and ``propLUT`` is an optional propagator
 LUT (set either as ``None`` to not use).
 
-.. py:function:: find_focus(img, wavelength, pixelSize, depthRange, method [, background = None, window = None, scoreRoi = None, margin = None, propLUT = None, coarseSearchInterval = None])
+.. py:function:: find_focus(img, wavelength, pixelSize, depthRange, method [, background = None, window = None, scoreRoi = None, margin = None, propLUT = None, coarseSearchInterval = None, precision = 'single'])
 
 Determines the refocus depth which maximises a focus metric on an image ``img`` using a golden section search.
 ``wavelength`` and ``pixelSize`` are as defined for ``propagator``.
@@ -147,18 +147,25 @@ provided in ``propLUT``. Note that if ``margin`` is specified, the propagator LU
 To perform an initial coarse search to identify the region likely to have the best focus, provide the number of
 search regions to split the search range into in ``coarseSearchInterval``.
 
-.. py:function:: focus_score_curve(img, wavelength, pixelSize, depthRange, nPoints, method [, background = None, window = None, scoreROI = None, margin = None])
+.. py:function:: focus_score_curve(img, wavelength, pixelSize, depthRange, nPoints, method [, background = None, window = None, scoreROI = None, margin = None, precision = 'single'])
 
 Produce a plot of focus score against depth, mainly useful for debugging erroneous focusing
 Returns a tuple of (numpy vector of scores, numpy vector of dpeth).
 
-.. py:function:: propagator(gridSize, wavelength, pixelSize, depth)
+.. py:function:: propagator(gridSize, wavelength, pixelSize, depth, precision = 'single')
 
 Creates Fourier domain propagator for refocusing using angular spectrum method. ``GridSize``
 is the size of the square image (in pixels) that will be refocused, ``wavelength`` is wavelength of light, 
 ``pixelSize`` is size of camera pixels (as projected onto imaging plane if there is system magnification), 
 ``depth`` is desired refocus distance. ``wavelength``, ``pixelSize`` and ``depth`` should be in the same units.
-Returns a 2D complex numpy array.
+Returns a 2D complex numpy array (single precision) unless ``precision = double`` is passed.
+
+
+.. py:function:: propagator_numba(gridSize, wavelength, pixelSize, depth, precision = 'single')
+
+Numba optimised version of propagator. The arguments are the same as for propagator, but the
+output will be single precision regardless of the ``precision`` argument.
+
 
 .. py:function:: refocus(img, propagator [, imgIsFourier = False, cuda = True])  
 

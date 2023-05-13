@@ -10,6 +10,7 @@ This file contains functions for working with off-axis holograms.
 
 import math
 import numpy as np
+import scipy
 
 try:
     import cupy as cp
@@ -55,7 +56,7 @@ def off_axis_demod(hologram, cropCentre, cropRadius, returnFFT = False,
   
     # Apply 2D FFT
     if cuda is False or cudaAvailable is False:
-        cameraFFT = np.fft.rfft2(hologram)
+        cameraFFT = scipy.fft.rfft2(hologram)
     else:
         if type(hologram) is np.ndarray:
             hologram = cp.array(hologram)
@@ -71,7 +72,7 @@ def off_axis_demod(hologram, cropCentre, cropRadius, returnFFT = False,
 
     # Reconstruct complex field
     if cuda is False or cudaAvailable is False:
-        reconField = np.fft.ifft2(np.fft.fftshift(maskedFFT))
+        reconField = scipy.fft.ifft2(scipy.fft.fftshift(maskedFFT))
     else:
         reconField = cp.asnumpy(cp.fft.ifft2(cp.fft.fftshift(maskedFFT)))
    
@@ -100,7 +101,7 @@ def off_axis_find_mod(hologram, maskFraction = 0.1):
     """
     
     # Apply 2D FFT
-    cameraFFT = np.transpose(np.abs(np.fft.rfft2(hologram))) 
+    cameraFFT = np.transpose(np.abs(scipy.fft.rfft2(hologram))) 
     
     # Need to crop out DC otherwise we will find that. Set the areas around
     # dc (for both quadrants) to zero. The size of the masked area is maskFraction * the

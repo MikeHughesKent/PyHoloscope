@@ -30,7 +30,7 @@ print("------------------")
 
 t1 = time.perf_counter()
 prop2 = pyh.propagator(gridSize, wavelength, pixelSize, depth)
-print("No Numba (Fast Method): ", round((time.perf_counter() - t1) * 1000,1))
+print("No Numba: ", round((time.perf_counter() - t1) * 1000,1))
 
 
 # Since we now run prop at import, the two Numba runs should be roughly the same

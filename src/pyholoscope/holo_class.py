@@ -63,7 +63,7 @@ class Holo:
     propagator = None
     propagatorLUT = None
     
-    imageType = 'float64'
+    imageType = 'float32'
     
     def __init__(self, mode = None, wavelength = None, pixelSize = None, **kwargs):
         
@@ -113,7 +113,7 @@ class Holo:
         self.downsample = kwargs.get('downsample', 1)        
        
         self.cudaAvailable = cudaAvailable
-        
+        self.precision = self.set_precision(kwargs.get('precision', 'single'))
     
         
     def process(self, img):
@@ -159,7 +159,7 @@ class Holo:
         else:
             normalise = None
               
-        imgPreprocessed = pre_process(img, downsample = self.downsample, window = self.window, background = self.background, normalise = self.normalise)
+        imgPreprocessed = pre_process(img, downsample = self.downsample, window = self.window, background = self.background, normalise = self.normalise, precision = self.precision)
       
         
         # If the propagator is not the correct one for the current parameters, regenerate it
@@ -175,7 +175,7 @@ class Holo:
             
         # Post refocusing processing
         if self.postWindow is True and self.window is not None:
-            imgOut = pre_process(imgOut, window = self.window)  
+            imgOut = pre_process(imgOut, window = self.window, precision = self.precision)  
                                
         if self.invert is True:
             imgOut = np.max(imgOut) - imgOut
@@ -233,7 +233,7 @@ class Holo:
             background = self.backgroundAbs
         else:
             background = None
-        demod = pre_process(demod, downsample = self.downsample, window = self.window, background = background, normalise = self.normaliseAbs)
+        demod = pre_process(demod, downsample = self.downsample, window = self.window, background = background, normalise = self.normaliseAbs, precision = self.precision)
     
 
         if self.refocus is True:
@@ -252,7 +252,7 @@ class Holo:
         # Post refocusing processing
         if demod is not None:
             if self.postWindow is True and self.autoWindow is True and self.window is not None:
-                demod = pre_process(demod, window = self.window)  
+                demod = pre_process(demod, window = self.window, precision = self.precision)  
                                    
             if self.invert is True: demod = np.max(demod) - demod
             
@@ -327,7 +327,16 @@ class Holo:
          assert boolean == True or boolean == False, "Argument of set_relative_phase must be True or False"
          self.relativePhase = boolean  
     
-    
+    def set_precision(self, precision):
+        """ Sets whether to use single or double precision
+        """
+        assert (precision == 'single' or precision == 'double'), "Precision must be 'single' or 'double'."
+        self.precision = precision
+        if self.precision == 'double':
+            self.imType = 'float64'
+        else:
+            self.imType = 'float32'
+            
     def create_window(self, imgSize, radius, skinThickness, shape = 'square'):
         """ Creates and stores the window used for pre or post processing. 
         Parameters:
@@ -343,15 +352,15 @@ class Holo:
         """    
        
         if shape == 'circle':
-            self.window = circ_cosine_window(imgSize, radius, skinThickness)
+            self.window = circ_cosine_window(imgSize, radius, skinThickness, dataType = self.imageType)
         elif shape == 'square':
-            self.window = square_cosine_window(imgSize, radius, skinThickness)
+            self.window = square_cosine_window(imgSize, radius, skinThickness, dataType = self.imageType)
     
     
     def set_window(self, window):
         """ Sets the window.
         """
-        self.window = window
+        self.window = window.astype(self.imageType)
     
     
     def set_window_shape(self, windowShape):
@@ -482,9 +491,9 @@ class Holo:
             self.propagatorPixelSize = self.oaPixelSize * self.downsample
             
         if numbaAvailable and self.useNumba:
-            self.propagator = propagator_numba(int(np.shape(img)[0] / self.downsample), self.wavelength, self.propagatorPixelSize, self.depth)
+            self.propagator = propagator_numba(int(np.shape(img)[0] / self.downsample), self.wavelength, self.propagatorPixelSize, self.depth, precision = self.precision)
         else:
-            self.propagator = propagator(int(np.shape(img)[0] / self.downsample), self.wavelength, self.propagatorPixelSize, self.depth)
+            self.propagator = propagator(int(np.shape(img)[0] / self.downsample), self.wavelength, self.propagatorPixelSize, self.depth, precision = self.precision)
      
         # If using CUDA we send propagator to GPU now to speed up refocusing later 
         if self.cuda and cudaAvailable:
@@ -542,7 +551,7 @@ class Holo:
         
     def make_propagator_LUT(self, img, depthRange, nDepths):
         """ Creates a LUT of propagators for faster finding of focus """
-        self.propagatorLUT = PropLUT(np.shape(img)[0], self.wavelength, self.pixelSize, depthRange, nDepths, numba = (numbaAvailable and self.useNumba))
+        self.propagatorLUT = PropLUT(np.shape(img)[0], self.wavelength, self.pixelSize, depthRange, nDepths, numba = (numbaAvailable and self.useNumba), precision = self.precision)
      
         
     def clear_propagator_LUT(self):
@@ -562,7 +571,7 @@ class Holo:
                 "coarseSearchInterval": self.findFocusCoarseSearchInterval}
         
         
-        return find_focus(img, self.wavelength, self.pixelSize, self.findFocusDepthRange, self.findFocusMethod, **args)
+        return find_focus(img, self.wavelength, self.pixelSize, self.findFocusDepthRange, self.findFocusMethod, precision = self.precision, **args)
     
 
     def depth_stack(self, img, depthRange, nDepths):
@@ -583,7 +592,7 @@ class Holo:
                 "window": self.window,
                 "numba": numbaAvailable and self.useNumba}
                 
-        return refocus_stack(img, self.wavelength, self.pixelSize, depthRange, nDepths, **args)
+        return refocus_stack(img, self.wavelength, self.pixelSize, depthRange, nDepths, precision = self.precision, **args)
 
 
     def apply_window(self, img):
@@ -604,5 +613,6 @@ class Holo:
                                margin = kwargs.get('margin', None), \
                                propLUT = kwargs.get('propagatorLUT', None),  \
                                coarseSearchInterval = kwargs.get('coarseSearchInterval', None), \
-                               roi = kwargs.get('roi', None) ) 
+                               roi = kwargs.get('roi', None) ,
+                               precision = self.precision) 
         return focusDepth

@@ -20,20 +20,25 @@ class PropLUT:
     The LUT contains angular spectrum propagators for the specified parameters. 
     """
    
-    def __init__(self, imgSize, wavelength, pixelSize, depthRange, nDepths, **kwargs):
+    def __init__(self, imgSize, wavelength, pixelSize, depthRange, nDepths, numba = False, precision = 'single'):
         """ Create the propagator Look-Up-Table (LUT). 
 
         depthRange is a tuple of (min depth, max depth), and nDepths
         propagators will be generated equally specifed within this range.
         
         """
-        numba = kwargs.get('numba', False)
+        
+        if precision == 'double':
+            dataType = 'complex128'
+        else:
+            dataType = 'complex64'
+        
         self.depths = np.linspace(depthRange[0], depthRange[1], nDepths)
         self.size = imgSize
         self.nDepths = nDepths
         self.wavelength = wavelength
         self.pixelSize = pixelSize
-        self.propTable = np.zeros((nDepths, imgSize, imgSize), dtype = 'complex64')
+        self.propTable = np.zeros((nDepths, imgSize, imgSize), dtype = dataType)
         for idx, depth in enumerate(self.depths):
             if numba is True:
                 self.propTable[idx,:,:] = propagator_numba(imgSize, wavelength, pixelSize, depth)

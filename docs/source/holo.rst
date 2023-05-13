@@ -147,6 +147,9 @@ of the location of the modulation peak in the FFT of the hologram, ``cropRadius`
 a square around the modulation peak that will be used to generate the demodulated image.
 
 
+.. py:function:: set_precision(precision)
+
+Sets the numerical precision to use internally, either 'single' (defualt) or 'double'.
 
 
 

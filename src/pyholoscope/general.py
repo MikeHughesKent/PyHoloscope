@@ -28,13 +28,12 @@ from pyholoscope.focus_stack import FocusStack
 from pyholoscope.prop_lut import PropLUT
 
 
-def pre_process(img, background = None, normalise = None, window = None, downsample = 1., numba = False):
-    
+def pre_process(img, background = None, normalise = None, window = None, downsample = 1., numba = False, precision = 'single'):
     """ Carries out steps required prior to refocusing.
     
     This includes background correction, normalisation and windowing. It also 
-    coverts image to either float64 (if input img is real) or
-    complex128 (if input img is complex). Finally, the image is cropped to a 
+    coverts image to either to a float64 (if input img is real) or
+    complex float (if input img is complex). Finally, the image is cropped to a 
     square and, if requested, downsampled.
     
     Arguments:
@@ -53,9 +52,15 @@ def pre_process(img, background = None, normalise = None, window = None, downsam
     
     # Ensure the input hologram is a float or a complex float          
     if np.iscomplexobj(img):
-        imType = 'complex128'
+        if precision == 'double': 
+            imType = 'complex128'
+        else:
+            imType = 'complex64'
     else:
-        imType = 'float64'    
+        if precision == 'double':
+            imType = 'float64' 
+        else:
+            imType = 'float32'
     
     if img.dtype != imType:
         img = img.astype(imType)  

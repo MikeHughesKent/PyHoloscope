@@ -118,7 +118,7 @@ def extract_central(img, boxSize):
        return img
        
     
-def circ_cosine_window(imgSize, circleRadius, skinThickness):
+def circ_cosine_window(imgSize, circleRadius, skinThickness, dataType = 'float32'):
     """ Produce a circular cosine window mask on grid of imgSize * imgSize. 
     
     Mask
@@ -140,11 +140,11 @@ def circ_cosine_window(imgSize, circleRadius, skinThickness):
     mask[imgRad < innerRad ] = 1
     mask[imgRad > innerRad + skinThickness] = 0
 
-    return mask
+    return mask.astype(dataType)
 
 
 
-def square_cosine_window(imgSize, radius, skinThickness):
+def square_cosine_window(imgSize, radius, skinThickness, dataType = 'float32'):
     """ Produce a square cosine window mask on grid of imgSize * imgSize. 
     
     Mask is 0 for radius > circleSize and 1 for radius < (circleSize - 
@@ -183,7 +183,7 @@ def square_cosine_window(imgSize, radius, skinThickness):
     mask = maskH * maskV
     
     
-    return mask
+    return mask.astype(dataType)
 
 
 def pil2np(im):

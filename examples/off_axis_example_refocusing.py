@@ -50,7 +50,8 @@ background = pyh.load_image(backFile)
 
 # Create Holo object
 holo = pyh.Holo(mode = pyh.OFF_AXIS, 
-                wavelength = wavelength, 
+                wavelength = wavelength,
+                precision = 'single',
                 pixelSize = pixelSize,
                 background = background,    # For correcting background phase
                 relativePhase = True,       # We will remove the background phase

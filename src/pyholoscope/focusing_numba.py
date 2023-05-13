@@ -13,11 +13,11 @@ This file contains numba-optimised functions relaatd to numrical refocusing.
 import math
 import cmath
 import numpy as np
-
+import numba
 from numba import jit, njit
 
 @jit(nopython = True)   
-def propagator_numba(gridSize, wavelength, pixelSize, depth, geometry = 'plane'):
+def propagator_numba(gridSize, wavelength, pixelSize, depth, geometry = 'plane', precision = 'single'):
     """ Creates Fourier domain propagator for angular spectrum method. Speeds
     up generation by only calculating top left quadrant and then duplicating 
     (with flips) to create the other quadrants. Returns the propagator as a 
@@ -26,19 +26,27 @@ def propagator_numba(gridSize, wavelength, pixelSize, depth, geometry = 'plane')
     
     Arguments:
         gridSize   : float, size of square image (in pixels) to refocus.
-        pixelSize  : flaot, physical size of pixels
+        pixelSize  : float, physical size of pixels
         wavelength : float, in same units as pixelSize
         depth      : float, refocus depth in same units as pixelSize
-    
     Optional Keyword Arguments:
         geometry   : str, 'plane' (defualt) or 'point'
+    
+        
+    NOTE: precision is currently not implemented, propagator numba will always
+          use single precision
+
     
     """
     assert gridSize % 2 == 0, "Grid size must be even"
     
+    dataType = numba.complex64
+    
     area = gridSize * pixelSize
-    propCorner = np.zeros((int(gridSize/2) + 1, int(gridSize/2) + 1), dtype = 'complex64')
-    prop = np.zeros((gridSize, gridSize), dtype = 'complex64')
+    
+    
+    propCorner = np.zeros((int(gridSize/2) + 1, int(gridSize/2) + 1), dtype = dataType)
+    prop = np.zeros((gridSize, gridSize), dtype = dataType)
 
     delta0 = 1/area
     midPoint = int(gridSize / 2)

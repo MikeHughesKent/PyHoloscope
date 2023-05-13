@@ -45,6 +45,11 @@ holo.update_auto_window(hologram)        # To make timing below just for propaga
 print(f"Window generation time: {round((time.perf_counter() - t1) * 1000)} ms")
 
 
+# If we are using GPU, warm it up
+for i in range(5):
+    recon = holo.process(hologram)
+
+
 # Refocus
 t1 = time.perf_counter()
 recon = holo.process(hologram)
