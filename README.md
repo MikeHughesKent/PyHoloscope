@@ -1,4 +1,6 @@
-# PyHoloscope : Holographic Microscopy for Python
+
+![PyHoloscope Logo](/res/pyholoscope_logo_.png)
+# PyHololoscope: Holographic Microscopy for Python
 
 PyHoloscope is a Python package for holographic microscopy image processing, both inline and off-axis. It is under development but close to the first release.
 
