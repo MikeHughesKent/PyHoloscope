@@ -159,7 +159,7 @@ def square_cosine_window(imgSize, radius, skinThickness, dataType = 'float32'):
     else:
         w = imgSize
         h = imgSize
-
+    
     innerRad = radius - skinThickness
 
     xCentre = int(w/2)
@@ -168,11 +168,11 @@ def square_cosine_window(imgSize, radius, skinThickness, dataType = 'float32'):
     yR = np.arange(h)
     xR = np.arange(w)
 
-    row = np.transpose(np.atleast_2d(np.cos(math.pi / (2 * skinThickness) * (xR - w / 2 - innerRad))**2))
+    row =  np.transpose(np.atleast_2d(np.cos(math.pi / (2 * skinThickness) * (np.abs(xR - w/2) - innerRad))**2))
     row[np.abs(xR - xCentre) < innerRad] = 1
     row[np.abs(xR - xCentre) > innerRad + skinThickness] = 0
 
-    col = np.cos(math.pi / (2 * skinThickness) * (yR - h / 2 - innerRad))**2
+    col = np.cos(math.pi / (2 * skinThickness) * (np.abs(yR - h/2) - innerRad))**2
     col[np.abs(yR - yCentre) < innerRad] = 1
     col[np.abs(yR - yCentre) > innerRad + skinThickness] = 0
 
@@ -181,8 +181,8 @@ def square_cosine_window(imgSize, radius, skinThickness, dataType = 'float32'):
     maskV = np.tile(row, (1,h))
 
     mask = maskH * maskV
-    
-    
+   
+        
     return mask.astype(dataType)
 
 

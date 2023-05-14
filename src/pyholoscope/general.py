@@ -26,6 +26,7 @@ import cv2 as cv
 from pyholoscope.roi import Roi
 from pyholoscope.focus_stack import FocusStack
 from pyholoscope.prop_lut import PropLUT
+from pyholoscope.utils import extract_central
 
 
 def pre_process(img, background = None, normalise = None, window = None, downsample = 1., numba = False, precision = 'single'):
@@ -89,11 +90,13 @@ def pre_process(img, background = None, normalise = None, window = None, downsam
     
     # Apply downsampling
     if downsample != 1:                
-        img = cv.resize(img, (int(np.shape(img)[1]/ downsample), int(np.shape(img)[0] / downsample) )   )
+        img = cv.resize(img, (int(np.shape(img)[1]/ downsample / 2) * 2, int(np.shape(img)[0] / downsample /2) *2 )   )
     
     # Ensure it is square
-    minSize = np.min(np.shape(img))
-    img = img[:minSize, :minSize]
+    if np.shape(img)[0] != np.shape(img)[1]:
+        minSize = np.min(np.shape(img))
+        img = extract_central(img, minSize)
+        
      
     # Apply window
     if window is not None:

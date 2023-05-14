@@ -153,7 +153,7 @@ class Holo:
         # a window, or it is the wrong size, we make a new window   
         self.update_auto_window(img)
                    
-        # Apply background, normaliseation, windowing, downsampling    
+        # Apply background, normalisation, windowing, downsampling    
         if self.normaliseField is not None:
             normalise = np.abs(self.normaliseField)
         else:
@@ -166,6 +166,7 @@ class Holo:
         if np.shape(self.propagator) != np.shape(imgPreprocessed) or self.propagator is None or self.propagatorDepth != self.depth or self.propagatorWavelength != self.wavelength:
             self.update_propagator(img)
  
+
         # Numerical refocusing           
         imgOut = refocus(imgPreprocessed, self.propagator, cuda = (self.cuda and cudaAvailable))
         
@@ -294,7 +295,7 @@ class Holo:
         self.clear_normalise()     
         if normalise is not None:
             self.normalise  = normalise.astype(self.imageType) 
-        
+       
             
     def clear_background(self):
         """ Remove existing background hologram. 
@@ -350,7 +351,7 @@ class Holo:
                              opaque to transparent.  
             shape         :  [Optional] window shape, 'circle' or 'square' (defualt).
         """    
-       
+
         if shape == 'circle':
             self.window = circ_cosine_window(imgSize, radius, skinThickness, dataType = self.imageType)
         elif shape == 'square':
@@ -360,7 +361,10 @@ class Holo:
     def set_window(self, window):
         """ Sets the window.
         """
-        self.window = window.astype(self.imageType)
+        self.clear_window()
+        if window is not None: 
+            self.window = window.astype(self.imageType)
+       
     
     
     def set_window_shape(self, windowShape):
@@ -371,12 +375,12 @@ class Holo:
         else:
             raise Exception ("Invalid window shape.")
         
-        
-    
+            
     def clear_window(self):
         """ Removes existing window, equivalent to set_window(None)
         """
         self.window = None
+        
         
     def set_auto_window(self, autoWindow):
         """ Sets whether or not use auto create a window.
@@ -388,7 +392,7 @@ class Holo:
     def set_post_window(self, postWindow):
         """ Sets whether or not to re- apply the window after refocusing.
         """
-        assert postWindow == True or postWindow == False, "set_post_window must be True or Falses"
+        assert postWindow == True or postWindow == False, "set_post_window must be True or False"
         self.postWindow = postWindow    
         
         
@@ -405,7 +409,8 @@ class Holo:
     def update_auto_window(self, img):
         """ Create or re-create the automatic window using current parameters."""
 
-        imHeight, imWidth = np.shape(img)
+        imHeight = np.min(np.shape(img)[0:2])
+        imWidth = imHeight
         
         if self.autoWindow == True:
             if self.window is None:
@@ -417,7 +422,7 @@ class Holo:
                 
             if regenWindow:
                if self.windowRadius is None:
-                   windowRadius = np.shape(img)[0] / 2
+                   windowRadius = imHeight / 2
                else:
                    windowRadius = self.windowRadius
                self.create_window((int(imWidth / self.downsample), int(imHeight / self.downsample)), 
@@ -491,9 +496,9 @@ class Holo:
             self.propagatorPixelSize = self.oaPixelSize * self.downsample
             
         if numbaAvailable and self.useNumba:
-            self.propagator = propagator_numba(int(np.shape(img)[0] / self.downsample), self.wavelength, self.propagatorPixelSize, self.depth, precision = self.precision)
+            self.propagator = propagator_numba(int(np.shape(img)[0] / self.downsample / 2) * 2, self.wavelength, self.propagatorPixelSize, self.depth, precision = self.precision)
         else:
-            self.propagator = propagator(int(np.shape(img)[0] / self.downsample), self.wavelength, self.propagatorPixelSize, self.depth, precision = self.precision)
+            self.propagator = propagator(int(np.shape(img)[0] / self.downsample / 2) * 2, self.wavelength, self.propagatorPixelSize, self.depth, precision = self.precision)
      
         # If using CUDA we send propagator to GPU now to speed up refocusing later 
         if self.cuda and cudaAvailable:

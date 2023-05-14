@@ -41,11 +41,12 @@ background = pyh.load_image(backFile)
 
 # Create an instance of the Holo class
 holo = pyh.Holo(mode = pyh.INLINE,             # For inline holography
+                windowThickness = 100,
                 wavelength = 630e-9,           # Light wavelength, m
                 pixelSize = 1e-6,              # Hologram physical pixel size, m
                 background = background,       # To subtract the background
                 normalise = background,        # To divide by the background
-                autoWindow = True,             # Will results in a cosine window to smooth edges
+                autoWindow = True,             # Will result in a cosine window to smooth edges
                 depth = 0.0127)                # Distance to refocus, m
 
 

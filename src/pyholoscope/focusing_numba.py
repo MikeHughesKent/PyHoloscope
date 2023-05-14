@@ -44,19 +44,19 @@ def propagator_numba(gridSize, wavelength, pixelSize, depth, geometry = 'plane',
     area = float(gridSize) * float(pixelSize)
     
     
-    propCorner = np.zeros((int(gridSize/2) + 1, int(gridSize/2) + 1), dtype = numba.complex64)
+    propCorner = np.zeros((int(gridSize//2) + 1, int(gridSize//2) + 1), dtype = numba.complex64)
     prop = np.zeros((gridSize, gridSize), dtype = numba.complex64)
 
     delta0 = 1/area
-    midPoint = int(float(gridSize) / 2)
+    midPoint = int(float(gridSize) // 2)
     
     if geometry == 'point':
         fac = math.pi*wavelength*depth
 
-        for x in range(int(gridSize/2) + 1) :
+        for x in range(int(gridSize//2) + 1) :
              uSq = (delta0*x)**2
 
-             for y in range(int(gridSize/2) + 1) :
+             for y in range(int(gridSize//2) + 1) :
             
                  vSq = (delta0*y)**2
 

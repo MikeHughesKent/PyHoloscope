@@ -52,7 +52,7 @@ def propagator(gridSize, wavelength, pixelSize, depth, geometry = 'plane', preci
         dataType = 'complex64'
     
     area = gridSize * pixelSize
-    midPoint = int(gridSize/2)
+    midPoint = int(gridSize//2)
 
     # Points to generate one quadrant of propagator on
     (xM, yM) = np.meshgrid(range(int(gridSize/2) + 1 ), range(int(gridSize/2) + 1) )

@@ -34,6 +34,7 @@ holo = pyh.Holo(mode = pyh.INLINE_MODE,
                 depth = depth,
                 autoWindow = True)
 
+holo.update_propagator(hologram)         # To make timing below just for refocusing
 
 t1 = time.perf_counter()
 holo.update_propagator(hologram)         # To make timing below just for refocusing

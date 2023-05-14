@@ -29,7 +29,7 @@ print("------------------")
 
 
 t1 = time.perf_counter()
-prop2 = pyh.propagator(gridSize, wavelength, pixelSize, depth)
+prop2 = pyh.propagator(gridSize, wavelength, pixelSize, depth, precision = 'single')
 print("No Numba: ", round((time.perf_counter() - t1) * 1000,1))
 
 
