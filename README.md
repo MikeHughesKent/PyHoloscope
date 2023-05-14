@@ -3,42 +3,70 @@
 PyHoloscope is a Python package for holographic microscopy image processing, both inline and off-axis. It is under development but close to the first release.
 
 PyHoloscope is designed to be:
-* Fast - optmised both for CPU and GPU, using Cupy and Numba
-* Easy to Use - an object-oriented interface allows you to set up the processing scheme and then
-process raw holograms with a single method call
+* Fast (for Python) - optmised for CPU using Numpy, Scipy and Numba, with GPU support via CuPy
+* Easy to Use - a simple object-oriented API gives high performance without low-level tweaks
+* For Live Imaging - can be used as the back-end of holographic microscopy GUIs as well as for offline processing
 
 Full documentation is on [Read the docs](https://pyholoscope.readthedocs.io/en/latest/index.html). Also see the examples in the examples folder and the test folder.
 
 Development is led by [Mike Hughes](https://research.kent.ac.uk/applied-optics/hughes/)' lab in the 
 [Applied Optics Group](https://research.kent.ac.uk/applied-optics), School of Physics & Astronomy, University of Kent. 
-Help testing and developing the package is welcome, please get in touch.
+Help testing and developing the package is welcome, please get in touch. I'm happy to collaborate with academic users, and 
+if you would like help using PyHoloscope for commercial purposes, consultancy is available, please contact [Mike Hughes](mailto:m.r.hughes@kent.ac.uk). 
 
 
 ## Features
 
+### General
+* Object-oriented interface
+* Choice of single or double precision
+* Support for CUDA compatible GPUs
+* Optional use of Numba JIT compiler
+
 ### Off Axis Holography
-* Complex image recovery by FFT, shifting modulated signal to centre and iFFT (GPU acceleration available)
-* Auto detect modulation frequency
+* Quantitatave phase and amplitude recovery from off-axis hologram
+* Auto detect off-axis modulation frequency
 * Predict tilt angle from modulation frequency
 
-### General and Inline holography
-* Refocus using angular spectrum method 
-* Cosine window to avoid edge effects 
-* Generate stack of images at different focal positions
+### Numerical Refocusing (Inline and Off-axis Holgoraphy)
+* Refocus holograms or complex fields using the angular spectrum method 
+* Choice of cosine windows to reduce edge effects 
+* Generate stack of images at different refocus depths
 * Apply focus metrics (Brenner, Sobel, Peak Intensity, DarkFocus, SobelVariance)
 * Auto focus whole image or ROI by optimising focus metric, through fast bounded search and (optionally) initial coarse search to narrow search range.
 * Generate LUT of propagators for faster auto-focus or repeated generation of focus stacks.
 
 ### Phase Visualation
 * Remove background phase 
-* Remove 1D phase tilt
-* Phase relative to some region of interest 
-* Synthetic DIC/phase contrast
+* Remove phase tilt
+* Show phase relative to region of interest 
+* Generate phase contrast image
+* Generate synthetic DIC image
 
 ## Planned Developments (help welcome!)
-* Support non-square holograms
-* Better auto-focusing
-* Improved optimisation for speed
-* Port tracking code from Matlab (or maybe try and integrate with TrackPy?)
-* Phase recovery for inline holography
 
+### Short-term (Before release 1.0.0)
+* Support non-square holograms
+* Support holograms with odd side lengths
+* Better auto-focusing
+* Support cascaded refocus (with pre-generation of propagator)
+
+### Long-term
+* Improved optimisation for speed
+* Support phase-shifting holography
+* Support coded aperture/multi-depth phase recovery
+* Support forward scattering and inference (or intergrate with HoloPy)
+* Port tracking code from Matlab (or integrate with TrackPy)
+* Phase recovery for inline holography
+* Deep learning for focusing
+* Targeted support for edge computing (e.g. Raspberry Pi)
+
+## Requirements
+* Numpy
+* Scipy
+* PIL
+* OpenCV
+* Scikit-Image
+* Matplotlib
+* Numba (optional, for JIT acceleration)
+* CuPy (optional, for GPU)
