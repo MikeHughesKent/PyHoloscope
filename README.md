@@ -7,12 +7,15 @@ PyHoloscope is designed to be:
 * Easy to Use - a simple object-oriented API gives high performance without low-level tweaks
 * For Live Imaging - can be used as the back-end of holographic microscopy GUIs as well as for offline processing
 
-Full documentation is on [Read the docs](https://pyholoscope.readthedocs.io/en/latest/index.html). Also see the examples in the examples folder and the test folder.
+Full documentation is on [Read the docs](https://pyholoscope.readthedocs.io/en/latest/index.html). 
 
-Development is led by [Mike Hughes](https://research.kent.ac.uk/applied-optics/hughes/)' lab in the 
-[Applied Optics Group](https://research.kent.ac.uk/applied-optics), School of Physics & Astronomy, University of Kent. 
-Help testing and developing the package is welcome, please get in touch. I'm happy to collaborate with academic users, and 
-if you would like help using PyHoloscope for commercial purposes, consultancy is available, please contact [Mike Hughes](mailto:m.r.hughes@kent.ac.uk). 
+Also see the examples in the [examples folder](https://github.com/MikeHughesKent/PyHoloscope/tree/main/examples) as well as the tests in the [test folder](https://github.com/MikeHughesKent/PyHoloscope/tree/main/test).
+
+Development is mainly by [Mike Hughes](https://research.kent.ac.uk/applied-optics/hughes/)' lab in the 
+[Applied Optics Group](https://research.kent.ac.uk/applied-optics), School of Physics & Astronomy, University of Kent. I'm happy to collaborate with academic users to help your use case, and if you would like help using PyHoloscope for commercial purposes, 
+consultancy is available, please contact [Mike Hughes](mailto:m.r.hughes@kent.ac.uk). 
+
+Help testing and developing the package is welcome, please get in touch.
 
 
 ## Features
