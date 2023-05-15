@@ -19,6 +19,9 @@ consultancy is available, please contact [Mike Hughes](mailto:m.r.hughes@kent.ac
 
 Help testing and developing the package is welcome, please get in touch.
 
+[Join the mailing list](https://groups.google.com/g/pyholoscope) to hear about releases, updates and bug fixes.
+
+
 
 ## Features
 
