@@ -18,6 +18,8 @@ try:
 except:
     cudaAvailable = False
     
+from pyholoscope.utils import extract_central
+    
 
 def off_axis_demod(hologram, cropCentre, cropRadius, returnFFT = False, 
                    mask = None, cuda = False):
@@ -44,9 +46,12 @@ def off_axis_demod(hologram, cropCentre, cropRadius, returnFFT = False,
           cuda      :  boolean, if True GPU will be used if available.  
     """
     
+    
+    hologram = extract_central(hologram)
+    
     # Size of image in pixels (assume square)
     nPoints = np.min(np.shape(hologram))
-    hologram = hologram[0:nPoints, 0:nPoints]       
+ 
      
     # Make a circular mask
     if mask is None:
@@ -101,7 +106,8 @@ def off_axis_find_mod(hologram, maskFraction = 0.1):
     """
     
     # Apply 2D FFT
-    cameraFFT = np.transpose(np.abs(scipy.fft.rfft2(hologram))) 
+    hologram = extract_central(hologram)
+    cameraFFT = np.transpose(np.abs(scipy.fft.rfft2((hologram)))) 
     
     # Need to crop out DC otherwise we will find that. Set the areas around
     # dc (for both quadrants) to zero. The size of the masked area is maskFraction * the

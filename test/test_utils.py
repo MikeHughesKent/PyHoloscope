@@ -8,7 +8,7 @@ University of Kent
 """
 
 import numpy as np
-from pyholoscope import get8bit, get16bit, amplitude, phase, extract_central, circ_cosine_window
+from pyholoscope import get8bit, get16bit, amplitude, phase, extract_central, circ_cosine_window, dimensions
 
 # Test get8it, get16bit, amplitude, phase
 img = np.ones((100,100), dtype = 'complex64')
@@ -30,3 +30,12 @@ imgSize = 100
 circleRadius = 90
 skinThickness = 10
 window = circ_cosine_window(imgSize, circleRadius, skinThickness)
+
+
+# Test dimensions
+w = 2
+h = 4
+a = np.zeros((h, w))
+assert dimensions(np.zeros((h, w))) == (w, h)
+assert dimensions((w,h)) == (w, h)
+assert dimensions((w)) == (w,w) 

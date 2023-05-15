@@ -12,6 +12,7 @@ import numpy as np
 
 from pyholoscope.focusing import propagator
 from pyholoscope.focusing_numba import propagator_numba
+from pyholoscope.utils import dimensions
 
 
 class PropLUT:
@@ -38,12 +39,13 @@ class PropLUT:
         self.nDepths = nDepths
         self.wavelength = wavelength
         self.pixelSize = pixelSize
-        self.propTable = np.zeros((nDepths, imgSize, imgSize), dtype = dataType)
+        w,h = dimensions(imgSize)
+        self.propTable = np.zeros((nDepths, h, w), dtype = dataType)
         for idx, depth in enumerate(self.depths):
             if numba is True:
-                self.propTable[idx,:,:] = propagator_numba(imgSize, wavelength, pixelSize, depth)
+                self.propTable[idx,:,:] = propagator_numba((w,h), wavelength, pixelSize, depth)
             else:
-                self.propTable[idx,:,:] = propagator(imgSize, wavelength, pixelSize, depth)
+                self.propTable[idx,:,:] = propagator((w,h), wavelength, pixelSize, depth)
 
  
     def propagator(self, depth): 

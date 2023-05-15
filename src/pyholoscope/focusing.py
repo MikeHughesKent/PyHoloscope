@@ -23,6 +23,7 @@ from pyholoscope.focus_stack import FocusStack
 from pyholoscope.focusing_numba import propagator_numba
 from pyholoscope.roi import Roi
 import pyholoscope.general 
+from pyholoscope.utils import dimensions
 
 
 def propagator(gridSize, wavelength, pixelSize, depth, geometry = 'plane', precision = 'single'):
@@ -33,7 +34,8 @@ def propagator(gridSize, wavelength, pixelSize, depth, geometry = 'plane', preci
     (with flips) to create the other quadrants. 
     
     Arguments:
-        gridSize   : float, size of square image (in pixels) to refocus
+        gridSize   : float, size of square image (in pixels) to refocus, or
+                     tuple of (float, float), size of rectangular image.
         pixelSize  : float, physical size of pixels
         wavelength : float, in same units as pixelSize
         depth      : float, refocus depth in same units as pixelSize
@@ -44,42 +46,50 @@ def propagator(gridSize, wavelength, pixelSize, depth, geometry = 'plane', preci
                      or 'double'
 
     """
-    assert gridSize % 2 == 0, "Grid size must be even"
+    #assert gridSize % 2 == 0, "Grid size must be even"
     
     if precision == 'double':
         dataType = 'complex128'
     else:
         dataType = 'complex64'
     
-    area = gridSize * pixelSize
-    midPoint = int(gridSize//2)
+    
+    gridWidth, gridHeight = dimensions(gridSize)
+    
+    width = gridWidth * pixelSize
+    height = gridHeight * pixelSize
+
+    centreX = int(gridWidth//2)
+    centreY = int(gridHeight//2)
 
     # Points to generate one quadrant of propagator on
-    (xM, yM) = np.meshgrid(range(int(gridSize/2) + 1 ), range(int(gridSize/2) + 1) )
+    (xM, yM) = np.meshgrid(range(centreX + 1 ), range(centreY + 1) )
     
-    delta0 = 1/area   
     
+    delta0x = 1/width 
+    delta0y = 1/height   
+ 
     # Generate one quadrant of the propagator
     if geometry == 'point':
-        u = delta0*xM
-        v = delta0*yM
+        u = delta0x*xM
+        v = delta0y*yM
         propCorner = np.exp(1j*math.pi*wavelength*depth*(u**2 + v**2))
     elif geometry == 'plane':        
-        alpha = wavelength * xM/area
-        beta = wavelength * yM/area
-        propCorner = np.exp( (1j * 2 * math.pi * depth * np.sqrt(1 - alpha**2 - beta**2) /wavelength   ))
+        alpha = wavelength * xM/width
+        beta = wavelength * yM/height
+        propCorner = np.exp( (1j * 2 * math.pi * depth * np.sqrt(1 - alpha**2 - beta**2) /wavelength ))
         propCorner[alpha**2 + beta**2 > 1] = 0  
     else:
         raise Exception("Invalid geometry.")               
     
     # For full propagator
-    prop = np.zeros((gridSize, gridSize), dtype = dataType)
+    prop = np.zeros((gridHeight, gridWidth), dtype = dataType)
         
     # Duplicate the top left quadrant into the other three quadrants as
     # this is quicker then explicitly calculating the values
-    prop[:midPoint + 1, :midPoint + 1] = propCorner                      # top left
-    prop[:midPoint + 1, midPoint:] = (np.flip(propCorner[:, 1:],1) )     # top right
-    prop[midPoint:, :] = (np.flip(prop[1:midPoint + 1, :],0))            # bottom left
+    prop[:centreY + 1, :centreX + 1] = propCorner                      # top left
+    prop[:centreY + 1, centreX:] = (np.flip(propCorner[:, 1:],1) )     # top right
+    prop[centreY:, :] = (np.flip(prop[1:centreY + 1, :],0))            # bottom left
 
     return prop
 
@@ -348,10 +358,10 @@ def refocus_stack(img, wavelength, pixelSize, depthRange, nDepths, **kwargs):
 
     for idx, depth in enumerate(depths):
         if useNumba:
-            prop = propagator_numba(np.shape(img)[0], wavelength, pixelSize, depth, precision = precision)
+            prop = propagator_numba(np.shape(img)[1::-1], wavelength, pixelSize, depth, precision = precision)
         else:
-            prop = propagator(np.shape(img)[0], wavelength, pixelSize, depth, precision = precision)
-
+            prop = propagator(np.shape(img)[1::-1], wavelength, pixelSize, depth, precision = precision)
+      
         imgStack.add_idx( pyholoscope.pre_process( refocus(cHologramFFT, prop, **kwargs), window=window), idx)
 
     return imgStack

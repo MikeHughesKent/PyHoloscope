@@ -17,6 +17,7 @@ except:
     pass
 
 from PIL import Image
+
     
 
 def get8bit(img):
@@ -125,16 +126,16 @@ def circ_cosine_window(imgSize, circleRadius, skinThickness, dataType = 'float32
     is 0 for radius > circleSize and 1 for radius < (circleSize - skinThickness)
     The intermediate region is a smooth cosine function.
     """
-    if type(imgSize) is np.ndarray:
-        (h,w) = np.shape(imgSize)[:1]       
-    elif type(imgSize) is tuple:
-        w,h = imgSize
-    else:
-        w = imgSize
-        h = imgSize
+    w,h = dimensions(imgSize)
+        
+    # Technically we don't accept a tuple but this may happen by mistake
+    # if switching from square window, so we handle it anyway     
+    if type(circleRadius) is tuple:
+        circleRadius = min(circleRadius)
+       
         
     innerRad = circleRadius - skinThickness
-    yM, xM = np.meshgrid(range(h),range(w))
+    xM, yM = np.meshgrid(range(w),range(h))
     imgRad = np.sqrt( (yM - h/2) **2 + (xM - w/2) **2)
     mask =  np.cos(math.pi / (2 * skinThickness) * (imgRad - innerRad))**2
     mask[imgRad < innerRad ] = 1
@@ -152,15 +153,19 @@ def square_cosine_window(imgSize, radius, skinThickness, dataType = 'float32'):
     The intermediate region is a smooth cosine function.
     """   
      
-    if type(imgSize) is np.ndarray:
-        (h,w) = np.shape(imgSize)[:2]       
-    elif type(imgSize) is tuple:
-        w,h = imgSize
+    w,h = dimensions(imgSize)
+
+
+    if type(radius) is tuple:
+        radiusX, radiusY = radius
     else:
-        w = imgSize
-        h = imgSize
-    
-    innerRad = radius - skinThickness
+        radiusX = radius
+        radiusY = radius
+
+
+    innerRadX = radiusX - skinThickness
+    innerRadY = radiusY - skinThickness
+
 
     xCentre = int(w/2)
     yCentre = int(h/2)
@@ -168,17 +173,17 @@ def square_cosine_window(imgSize, radius, skinThickness, dataType = 'float32'):
     yR = np.arange(h)
     xR = np.arange(w)
 
-    row =  np.transpose(np.atleast_2d(np.cos(math.pi / (2 * skinThickness) * (np.abs(xR - w/2) - innerRad))**2))
-    row[np.abs(xR - xCentre) < innerRad] = 1
-    row[np.abs(xR - xCentre) > innerRad + skinThickness] = 0
+    row =  np.cos(math.pi / (2 * skinThickness) * (np.abs(xR - w/2) - innerRadX))**2
+    row[np.abs(xR - xCentre) < innerRadX] = 1
+    row[np.abs(xR - xCentre) > innerRadX + skinThickness] = 0
 
-    col = np.cos(math.pi / (2 * skinThickness) * (np.abs(yR - h/2) - innerRad))**2
-    col[np.abs(yR - yCentre) < innerRad] = 1
-    col[np.abs(yR - yCentre) > innerRad + skinThickness] = 0
+    col = np.transpose(np.atleast_2d(np.cos(math.pi / (2 * skinThickness) * (np.abs(yR - h/2) - innerRadY))**2))
+    col[np.abs(yR - yCentre) < innerRadY] = 1
+    col[np.abs(yR - yCentre) > innerRadY + skinThickness] = 0
 
 
-    maskH = np.tile(col, (w, 1))
-    maskV = np.tile(row, (1,h))
+    maskH = np.tile(col, (1, w))
+    maskV = np.tile(row, (h,1))
 
     mask = maskH * maskV
    
@@ -191,18 +196,26 @@ def pil2np(im):
     return  np.array(im)
 
 
-def load_image(file):
+def load_image(file, square = False):
     """ Loads an image from a file and returns as numpy array. 
     
-    If the image is not square then the largest possible central sqaure is 
-    extracted and returned.
+    Arguments:
+        
+        file : Filename to load image from, including exension.
+    
+    Optional Arguments:
+        
+        square : If True, non-square will be made square by taking the largest
+                 possible central square, default is False.
     """
     img = Image.open(file)
     im = pil2np(img)
     
-    # Make sure image is square
-    if np.shape(im)[0] != np.shape(im)[1]:
-        im = extract_central(im, min(np.shape(im)))
+    if square:
+        # Make sure image is square
+        if np.shape(im)[0] != np.shape(im)[1]:
+            im = extract_central(im, min(np.shape(im)[0:2]))
+    
     return im
 
 
@@ -228,7 +241,7 @@ def save_amplitude_image16(img, filename):
     im.save(filename)
     
     
-def extract_central(img, boxSize):
+def extract_central(img, boxSize = None):
     """ Extract a central square from an image. 
     
     The extracted square is centred on the input image, with size 2 * boxSize 
@@ -244,8 +257,27 @@ def extract_central(img, boxSize):
 
     cx = w/2
     cy = h/2
-    boxSemiSize = min(cx,cy,boxSize)
-    
+    if boxSize is not None:        
+        boxSemiSize = min(cx,cy,boxSize)
+    else:
+        boxSemiSize = min(cx,cy)
+
     imgOut = img[math.floor(cx - boxSemiSize):math.floor(cx + boxSemiSize), math.ceil(cy- boxSemiSize): math.ceil(cy + boxSemiSize)]
     
     return imgOut
+
+def dimensions(inp):
+    """ Helper to obtain width and height in functions which accept multiple
+    ways to send this information.
+    """
+    
+    if type(inp) is np.ndarray:
+        h,w = np.shape(inp)[0:2]
+    elif type(inp) is tuple:
+        w,h = inp
+    else:
+        w = inp
+        h = inp
+        
+    return int(w),int(h)    
+        

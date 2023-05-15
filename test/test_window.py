@@ -36,7 +36,7 @@ assert np.shape(holo.window) == np.shape(hologram)
 
 
 # Check that default window is the same as one created manually 
-windowLowLevel = pyh.square_cosine_window(np.shape(hologram)[0], np.shape(hologram)[0] / 2, 10)
+windowLowLevel = pyh.square_cosine_window(hologram, (np.shape(hologram)[1] / 2, np.shape(hologram)[0] / 2), 10)
 assert np.array_equal(windowLowLevel, holo.window) == True
 
 
@@ -50,7 +50,7 @@ holo = pyh.Holo(mode = pyh.INLINE_MODE,
                 windowRadius = 100)
 holo.update_auto_window(hologram)
 
-windowLowLevel = pyh.square_cosine_window(np.shape(hologram)[0], 100, 10)
+windowLowLevel = pyh.square_cosine_window(hologram, 100, 10)
 assert np.array_equal(windowLowLevel, holo.window) == True
 
 
@@ -65,7 +65,7 @@ holo = pyh.Holo(mode = pyh.INLINE_MODE,
                 windowThickness = 20)
 holo.update_auto_window(hologram)
 
-windowLowLevel = pyh.square_cosine_window(np.shape(hologram)[0], 100, 20)
+windowLowLevel = pyh.square_cosine_window(hologram, 100, 20)
 assert np.array_equal(windowLowLevel, holo.window) == True
 
 
@@ -144,7 +144,7 @@ holo = pyh.Holo(mode = pyh.INLINE_MODE,
                 pixelSize = pixelSize,
                 depth = depth)
 
-windowLowLevel = pyh.square_cosine_window(np.shape(hologram)[0], 100, 10)
+windowLowLevel = pyh.square_cosine_window(hologram, 100, 10)
 
 holo.set_window(windowLowLevel)
 recon1 = holo.process(hologram)

@@ -34,7 +34,7 @@ holoFile = Path('../test/test data/inline_example_holo.tif')
 backFile = Path('../test/test data/inline_example_back.tif')
 
 hologram = pyh.load_image(holoFile)
-background = pyh.load_image(backFile)
+backHologram = pyh.load_image(backFile)
 
 
 """ Simple processing """

@@ -20,9 +20,11 @@ pixelSize = 1e-6
 gridSize = 1024
 depth = -0.0012
 
-# Load images
+# Load images. Note here that we pass square = True otherwise rectangular images
+# will not work with off-axis demod
 hologram = pyh.load_image(Path('test data/paramecium_oa_oof.tif'))
 background = pyh.load_image(Path('test data/paramecium_oa_oof_background.tif'))
+
 
 # Determine Modulation
 cropCentre = pyh.off_axis_find_mod(background)

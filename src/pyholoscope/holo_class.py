@@ -13,7 +13,7 @@ import cv2 as cv
 import time
 import warnings
 
-from pyholoscope.utils import circ_cosine_window, square_cosine_window
+from pyholoscope.utils import circ_cosine_window, square_cosine_window, dimensions
 from pyholoscope.off_axis import off_axis_find_mod, off_axis_find_crop_radius, off_axis_demod
 from pyholoscope.focusing import propagator, refocus, find_focus, refocus_stack
 from pyholoscope.general import pre_process, relative_phase
@@ -326,7 +326,8 @@ class Holo:
          """ Sets whether or not calculate relative amplitude in off-axis holography
          """
          assert boolean == True or boolean == False, "Argument of set_relative_phase must be True or False"
-         self.relativePhase = boolean  
+         self.relativePhase = boolean
+         
     
     def set_precision(self, precision):
         """ Sets whether to use single or double precision
@@ -338,17 +339,23 @@ class Holo:
         else:
             self.imType = 'float32'
             
+            
     def create_window(self, imgSize, radius, skinThickness, shape = 'square'):
         """ Creates and stores the window used for pre or post processing. 
-        Parameters:
+        
+        Arguments:
             imgSize       :  the size of the window array, must be the same as the hologram it will be
                              applied to. Either provide a 2D numpy array, in which case the window will 
                              be created to match the size of this, provide an int, in which case the window 
-                             will be square of the size or a tuple of (witdth, height).
+                             will be square of the size or a tuple of (width, height).
             radius        :  the size of the  transparent part of the window, for 'circle' this is the 
-                             radius, for 'sqaure' this is half the side length.
+                             radius, for 'square' this is half the side length. For 'circle' provide
+                             an int, for 'square' either provide an int (resulting in a square window)
+                             or a tuple of (width, height) for rectangular window.
             skinThickness :  The number of pixels inside the window in over which it transitions from
-                             opaque to transparent.  
+                             opaque to transparent.
+                             
+        Optional Arguments:                     
             shape         :  [Optional] window shape, 'circle' or 'square' (defualt).
         """    
 
@@ -409,8 +416,8 @@ class Holo:
     def update_auto_window(self, img):
         """ Create or re-create the automatic window using current parameters."""
 
-        imHeight = np.min(np.shape(img)[0:2])
-        imWidth = imHeight
+        imHeight = np.shape(img)[0]
+        imWidth = np.shape(img)[1]
         
         if self.autoWindow == True:
             if self.window is None:
@@ -422,13 +429,15 @@ class Holo:
                 
             if regenWindow:
                if self.windowRadius is None:
-                   windowRadius = imHeight / 2
+                   windowRadiusX = int(imWidth / 2)
+                   windowRadiusY = int(imHeight / 2)
                else:
-                   windowRadius = self.windowRadius
-               self.create_window((int(imWidth / self.downsample), int(imHeight / self.downsample)), 
-                                  windowRadius / self.downsample, 
-                                  self.windowThickness / self.downsample,
-                                  shape = self.windowShape)
+                   windowRadiusX, windowRadiusY = dimensions(self.windowRadius)
+                   
+               self.create_window( (int(imWidth / self.downsample), int(imHeight / self.downsample)), 
+                                   (int(windowRadiusX / self.downsample), int(windowRadiusY / self.downsample) ),
+                                   self.windowThickness / self.downsample,
+                                   shape = self.windowShape)
 
         
     def set_off_axis_mod(self, cropCentre, cropRadius):
@@ -494,11 +503,14 @@ class Holo:
             self.propagatorPixelSize = self.pixelSize * self.downsample
         else:
             self.propagatorPixelSize = self.oaPixelSize * self.downsample
-            
+        
+        propWidth = int(np.shape(img)[1] / self.downsample / 2 ) * 2   
+        propHeight = int(np.shape(img)[0] / self.downsample / 2) * 2    
+        
         if numbaAvailable and self.useNumba:
-            self.propagator = propagator_numba(int(np.shape(img)[0] / self.downsample / 2) * 2, self.wavelength, self.propagatorPixelSize, self.depth, precision = self.precision)
+            self.propagator = propagator_numba((propWidth, propHeight), self.wavelength, self.propagatorPixelSize, self.depth, precision = self.precision)
         else:
-            self.propagator = propagator(int(np.shape(img)[0] / self.downsample / 2) * 2, self.wavelength, self.propagatorPixelSize, self.depth, precision = self.precision)
+            self.propagator = propagator((propWidth, propHeight), self.wavelength, self.propagatorPixelSize, self.depth, precision = self.precision)
      
         # If using CUDA we send propagator to GPU now to speed up refocusing later 
         if self.cuda and cudaAvailable:

@@ -93,14 +93,14 @@ def pre_process(img, background = None, normalise = None, window = None, downsam
         img = cv.resize(img, (int(np.shape(img)[1]/ downsample / 2) * 2, int(np.shape(img)[0] / downsample /2) *2 )   )
     
     # Ensure it is square
-    if np.shape(img)[0] != np.shape(img)[1]:
-        minSize = np.min(np.shape(img))
-        img = extract_central(img, minSize)
+    #if np.shape(img)[0] != np.shape(img)[1]:
+    #    minSize = np.min(np.shape(img))
+    #    img = extract_central(img, minSize)
         
      
     # Apply window
     if window is not None:
-        
+    
         # If the window is the wrong size, reshape it to match hologram
         if np.shape(window) != np.shape(img):
             warnings.warn('Window needed resizing, may effect processing speed.')
