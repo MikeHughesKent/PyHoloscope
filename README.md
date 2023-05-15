@@ -17,7 +17,7 @@ Development is mainly by [Mike Hughes](https://research.kent.ac.uk/applied-optic
 [Applied Optics Group](https://research.kent.ac.uk/applied-optics), School of Physics & Astronomy, University of Kent. I'm happy to collaborate with academic users to help your use case, and if you would like help using PyHoloscope for commercial purposes, 
 consultancy is available, please contact [Mike Hughes](mailto:m.r.hughes@kent.ac.uk). 
 
-Help testing and developing the package is welcome, please get in touch.
+Help testing and developing the package is welcome, please [get in touch](mailto:m.r.hughes@kent.ac.uk).
 
 [Join the mailing list](https://groups.google.com/g/pyholoscope) to hear about releases, updates and bug fixes.
 
