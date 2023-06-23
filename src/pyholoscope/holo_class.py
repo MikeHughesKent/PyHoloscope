@@ -135,7 +135,6 @@ class Holo:
         assert img.ndim == 2, "Input must be a 2D numpy array."
         
         
-        ################ INLINE HOLOGRAPHY PIPELINE #######################
         if self.mode == self.INLINE_MODE or self.mode == self.INLINE: 
             return self.process_inline(img)
         elif self.mode == self.OFFAXIS_MODE or self.mode == self.OFF_AXIS: 
@@ -439,7 +438,6 @@ class Holo:
                                    self.windowThickness / self.downsample,
                                    shape = self.windowShape)
 
-        
     def set_off_axis_mod(self, cropCentre, cropRadius):
         """ Sets the location of the frequency domain position of the OA modulation """
         self.cropCentre = cropCentre

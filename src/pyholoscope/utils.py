@@ -91,8 +91,14 @@ def save_phase_image(img, filename):
 
     im = Image.fromarray(phase)
     im.save(filename)
-        
+  
     
+def magnitude(img):
+    """ Returns magnitude of complex image
+    """
+    return np.abs(img)**2     
+    
+
 def amplitude(img):
     """ Returns amplitude of complex image
     """
@@ -265,6 +271,13 @@ def extract_central(img, boxSize = None):
     imgOut = img[math.floor(cx - boxSemiSize):math.floor(cx + boxSemiSize), math.ceil(cy- boxSemiSize): math.ceil(cy + boxSemiSize)]
     
     return imgOut
+
+
+def invert(img):
+    
+    return np.max(img) - img
+    
+    
 
 def dimensions(inp):
     """ Helper to obtain width and height in functions which accept multiple

@@ -47,7 +47,7 @@ holo = pyh.Holo(mode = pyh.INLINE,             # For inline holography
                 background = background,       # To subtract the background
                 normalise = background,        # To divide by the background
                 autoWindow = True,             # Will result in a cosine window to smooth edges
-                depth = 0.0127)                # Distance to refocus, m
+                depth = 0.0130)                 # Distance to refocus, m
 
 
 # We call these here, but this is optional, otherwise
@@ -60,12 +60,16 @@ startTime = timer()
 recon = holo.process(hologram)
 print(f"Numerical refocusing took {round((timer() - startTime) * 1000)} ms.")
 
-# Extract anmpltide
+# Extract amplitude and magnitude
 amp = pyh.amplitude(recon)
+mag = pyh.magnitude(recon)
 
 # Display results
 plt.figure(dpi = 150); plt.title('Raw Hologram')
 plt.imshow(hologram, cmap = 'gray')
 
-plt.figure(dpi = 150); plt.title('Refocused Hologram')
+plt.figure(dpi = 150); plt.title('Refocused Hologram (amp)')
 plt.imshow(amp, cmap = 'gray')
+
+plt.figure(dpi = 150); plt.title('Refocused Hologram (mag, inverted)')
+plt.imshow(pyh.invert(mag), cmap = 'gray')

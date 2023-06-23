@@ -26,7 +26,7 @@ import pyholoscope.general
 from pyholoscope.utils import dimensions
 
 
-def propagator(gridSize, wavelength, pixelSize, depth, geometry = 'plane', precision = 'single'):
+def propagator(gridSize, wavelength, pixelSize, depth, geometry = 'plane', precision = 'single', cascade = 1):
     """ Creates Fourier domain propagator for angular spectrum method. 
     Returns the propagator as a complex 2D numpy array.
     
@@ -52,20 +52,24 @@ def propagator(gridSize, wavelength, pixelSize, depth, geometry = 'plane', preci
         dataType = 'complex128'
     else:
         dataType = 'complex64'
+        
+    depth = depth / cascade    
     
     
     gridWidth, gridHeight = dimensions(gridSize)
-    
+   
+    centreX = int(gridWidth//2)
+    centreY = int(gridHeight//2)
+ 
+    # Physical size of hologram in real units
     width = gridWidth * pixelSize
     height = gridHeight * pixelSize
 
-    centreX = int(gridWidth//2)
-    centreY = int(gridHeight//2)
-
-    # Points to generate one quadrant of propagator on
+    
+    # Grid points to generate one quadrant of propagator on
     (xM, yM) = np.meshgrid(range(centreX + 1 ), range(centreY + 1) )
     
-    
+    # Bins size of FFT (i.e. pixel size of FFT in inverse distance)
     delta0x = 1/width 
     delta0y = 1/height   
  
@@ -74,22 +78,24 @@ def propagator(gridSize, wavelength, pixelSize, depth, geometry = 'plane', preci
         u = delta0x*xM
         v = delta0y*yM
         propCorner = np.exp(1j*math.pi*wavelength*depth*(u**2 + v**2))
+    
     elif geometry == 'plane':        
         alpha = wavelength * xM/width
         beta = wavelength * yM/height
         propCorner = np.exp( (1j * 2 * math.pi * depth * np.sqrt(1 - alpha**2 - beta**2) /wavelength ))
         propCorner[alpha**2 + beta**2 > 1] = 0  
+    
     else:
         raise Exception("Invalid geometry.")               
     
-    # For full propagator
+    # Attay to hold full propagator
     prop = np.zeros((gridHeight, gridWidth), dtype = dataType)
         
     # Duplicate the top left quadrant into the other three quadrants as
     # this is quicker then explicitly calculating the values
     prop[:centreY + 1, :centreX + 1] = propCorner                      # top left
     prop[:centreY + 1, centreX:] = (np.flip(propCorner[:, 1:],1) )     # top right
-    prop[centreY:, :] = (np.flip(prop[1:centreY + 1, :],0))            # bottom left
+    prop[centreY:, :] = (np.flip(prop[1:centreY + 1, :],0))            # bottom half
 
     return prop
 
@@ -114,6 +120,7 @@ def refocus(img, propagator, **kwargs):
        
     imgIsFourier = kwargs.pop('FourierDomain', False)
     cuda = kwargs.pop('cuda', True)
+    cascade = kwargs.pop('cascade', 1)
     
     assert np.shape(img) == np.shape(propagator), "Propagator is the wrong size."
     
@@ -138,6 +145,11 @@ def refocus(img, propagator, **kwargs):
                     propagator = cp.array(propagator)
                 return cp.asnumpy(cp.fft.ifft2(cp.fft.fft2(cHologram) * propagator))
         else:
+                if cascade > 1:
+                    import matplotlib.pyplot as plt
+                    for idx in range(cascade - 1):
+                        cHologram = np.abs(scipy.fft.ifft2(scipy.fft.fft2(cHologram) * propagator))**2
+                        #plt.figure(dpi = 150); plt.title(str(idx)); plt.imshow(cHologram, cmap = 'gray')
                 return scipy.fft.ifft2(scipy.fft.fft2(cHologram) * propagator)
            
    
@@ -301,8 +313,7 @@ def focus_score_curve(img, wavelength, pixelSize, depthRange, nPoints, method, *
     margin = kwargs.get('margin', None)
     precision = kwargs.get('precision', None)
 
-    
-    
+        
     if background is not None:
         cHologram = img.astype('float32') - background.astype('float32')
     else:
