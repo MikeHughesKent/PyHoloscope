@@ -31,19 +31,24 @@ def off_axis_demod(hologram, cropCentre, cropRadius, returnFFT = False,
     image of the FFT of the hologram (2D numpy array, real).
         
     Arguments:
-          hologram   : 2D numpy array, real, raw hologram
-          cropCentre : tuple of (int, int). Pixel location in FFT of
-                       modulation frequency
-          cropRadius : int, radius of circle around modulation frequency to use
+          hologram   : ndarray
+                       2D numpy array, real, raw hologram
+          cropCentre : tuple of (int, int). 
+                       pixel location in FFT of modulation frequency
+          cropRadius : int
+                       radius of circle around modulation frequency to use
         
-    Optional Keyword Arguments:
-          returnFFT  : boolean, if True will return a tuple of (demod image,
+    Keyword Arguments:
+          returnFFT  : boolean 
+                       if True will return a tuple of (demod image,
                        log scaled FFT) for display purposes
                        subtracted (default = None)
-          mask       : 2D numpy array, complex. Custom mask to use around
+          mask       : ndarray
+                       2D numpy array, complex. Custom mask to use around
                        demodulation frequency instead of default circle. Must
                        be sqaure of size (cropRadius*2, cropRadius*2).
-          cuda      :  boolean, if True GPU will be used if available.  
+          cuda      :  boolean
+                       if True GPU will be used if available.  
     """
     
     
@@ -97,10 +102,12 @@ def off_axis_find_mod(hologram, maskFraction = 0.1):
     """ Finds the location of the off-axis holography modulation peak in the FFT. 
     
     Arguments:
-          hologram   : 2D numpy array, real, raw hologram
+          hologram     : ndarray
+                         2D numpy array, real, raw hologram
          
-    Optional Keyword Arguments:
-          maskFraction : float between 0 and 1, fraction of image around d.c. to 
+    Keyword Arguments:
+          maskFraction : float 
+                         between 0 and 1, fraction of image around d.c. to 
                          mask to avoid the d.c. peak being detected 
                          (default = 0.1).
     """
@@ -125,10 +132,12 @@ def off_axis_find_crop_radius(hologram, maskFraction = 0.1):
     """ Estimates the off axis crop radius based on modulation peak position.
     
     Arguments:
-          hologram   : 2D numpy array, real, raw hologram
+          hologram     : ndarray
+                         2D numpy array, real, raw hologram
          
-    Optional Keyword Arguments:
-          maskFraction : float between 0 and 1, fraction of image around d.c. to 
+    Keyword Arguments:
+          maskFraction : float 
+                         between 0 and 1, fraction of image around d.c. to 
                          mask to avoid the d.c. peak being detected 
                          (default = 0.1).
     """
@@ -159,9 +168,12 @@ def off_axis_predict_mod(wavelength, pixelSize, tiltAngle):
     Returns the distance of the peak from the dc of the FFT in pixels.
     
     Arguments:
-          wavelegnth   : real, light wavelength in metres
-          pixelSizze   : real, hologram physical pixel size
-          tiltAngle    : real, angle of reference beam on camera in radians    
+          wavelegnth   : float
+                         light wavelength in metres
+          pixelSizze   : float
+                         hologram physical pixel size in metres
+          tiltAngle    : float
+                         angle of reference beam on camera in radians    
     """
            
     # Convert wavelength to wavenumber
@@ -185,12 +197,16 @@ def off_axis_predict_tilt_angle(hologram, wavelength, pixelSize, maskFraction = 
     Returns the angle in radians.
     
     Arguments:
-          hologram     : 2D numpy array, real, hologram
-          wavelegnth   : real, light wavelength in metres
-          pixelSizze   : real, hologram physical pixel size
+          hologram     : ndarray
+                         2D numpy array, real, hologram
+          wavelength   : float
+                         light wavelength in metres
+          pixelSizze   : float
+                         hologram physical pixel size
     
     Optional Keyword Arguments:
-          maskFraction : float between 0 and 1, fraction of image around d.c. to 
+          maskFraction : float 
+                         between 0 and 1, fraction of image around d.c. to 
                          mask to avoid the d.c. peak being detected 
                          (default = 0.1).        
     """

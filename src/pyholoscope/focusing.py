@@ -4,7 +4,7 @@ PyHoloscope - Python package for holographic microscopy
 
 @author: Mike Hughes, Applied Optics Group, University of Kent
 
-This file contains functions relaatd to numrical refocusing.
+This file contains functions related to numerical refocusing.
 
 """
 import math
@@ -40,13 +40,12 @@ def propagator(gridSize, wavelength, pixelSize, depth, geometry = 'plane', preci
         wavelength : float, in same units as pixelSize
         depth      : float, refocus depth in same units as pixelSize
     
-    Optional Keyword Arguments:
+    Keyword Arguments:
         geometry   : str, 'plane' (default) or 'point'
         precision  : str, numerical precision of ouptut, 'single' (defualt) 
                      or 'double'
 
     """
-    #assert gridSize % 2 == 0, "Grid size must be even"
     
     if precision == 'double':
         dataType = 'complex128'
@@ -108,7 +107,7 @@ def refocus(img, propagator, **kwargs):
         img           : 2D numpy array, raw hologram.  
         propagator    : 2D numpy array, as returned from propagator().
     
-    Optional Keyword Arguments:
+    Keyword Arguments:
         FourierDomain : boolean, if True then img is assumed to be already the
                         FFT of the hologram, useful for speed when performing
                         multiple refocusing of the same hologram. (default =
@@ -213,7 +212,7 @@ def focus_score(img, method):
     return focusScore
 
 
-def refocus_and_score(depth, imgFFT, pixelSize, wavelength, method, scoreROI, propLUT, useNumba, useCuda, precision = 'single'):
+def refocus_and_score(depth, imgFFT, pixelSize, wavelength, method, scoreROI, propLUT, useNumba = False, useCuda = False, precision = 'single'):
     """ Refocuses an image to specificed depth and returns focus score, used by
     findFocus.
     """
@@ -283,7 +282,7 @@ def find_focus(img, wavelength, pixelSize, depthRange, method, **kwargs):
         startDepth = (max(depthRange) - min(depthRange))/2
 
     # Find the depth using optimiser
-    depth = scipy.optimize.minimize_scalar(refocus_and_score, method = 'Bounded', bounds = depthRange, bracket = depthRange, options = {'xtol': 0.00001, 'maxiter': 20}, args= (imgFFT ,pixelSize, wavelength, method, scoreROI, propLUT, useNumba, useCuda) )
+    depth = scipy.optimize.minimize_scalar(refocus_and_score, method = 'Bounded', bounds = depthRange, bracket = depthRange, options = {'maxiter': 20}, args= (imgFFT ,pixelSize, wavelength, method, scoreROI, propLUT, useNumba, useCuda) )
 
     return depth.x 
 
