@@ -2,13 +2,11 @@
 """
 Minimal example of how to use off-axis holography functionality of PyHoloscope.
 
-@author: Mike Hughes, Applied Optics Group, University of Kent
-
 This example loads an off-axis hologram and a background image (i.e. with the 
 sample removed).
 
 The images are loaded using the PyHoloscope 'load_image' function. 
-Altneratively you can load these in using any method that results in them 
+Alternatively you can load these in using any method that results in them 
 being stored in a 2D numpy array.
 
 We instantiate a 'Holo' object and pass in the system parameters and some 
@@ -25,19 +23,17 @@ and phase of the complex demodulated image.
 
 """
 
-import context         # Paths
-from time import perf_counter as timer
-
 from matplotlib import pyplot as plt
-
 from pathlib import Path
 
+import context         # Paths
+
 import pyholoscope as pyh
+
 
 # Experimental Parameters
 wavelength = 630e-9
 pixelSize = .3e-6
-
 
 # Load images
 holoFile = Path('../test/test data/tissue_paper_oa.tif')
@@ -57,9 +53,7 @@ holo.calib_off_axis()                       # Finds modulation frequency and
 
 
 # Remove the off-axis modulation and recover the phase
-startTime = timer()
 reconField = holo.process(hologram)
-print(f"Off-axis demodulation took {round((timer() - startTime) * 1000)} ms.")
 
 
 """ Display results """

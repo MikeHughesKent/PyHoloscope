@@ -1,9 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-Example of how to use off-axis holography functionality of PyHoloscope with phase
-processing and visualisation. 
-
-@author: Mike Hughes, Applied Optics Group, University of Kent
+Example of how to use off-axis holography functionality of PyHoloscope with 
+phase processing and visualisation. 
 
 This example loads an off-axis hologram and a background image (i.e. with the 
 sample removed).
@@ -28,18 +26,18 @@ We then use some low-level functions to process and display the phase in
 different ways.
 """
 
-import context         # Paths
-
-from time import perf_counter as timer
 from matplotlib import pyplot as plt
-
 from pathlib import Path
 
+import context         # Paths
+
 import pyholoscope as pyh
+
 
 # Experimental Parameters
 wavelength = 630e-9
 pixelSize = 1e-6
+
 
 # Load images
 holoFile = Path('../test/test data/paramecium_oa_oof.tif')
@@ -47,6 +45,7 @@ backFile = Path('../test/test data/paramecium_oa_oof_background.tif')
 
 hologram = pyh.load_image(holoFile)
 background = pyh.load_image(backFile)
+
 
 # Create Holo object
 holo = pyh.Holo(mode = pyh.OFF_AXIS, 
@@ -65,21 +64,24 @@ holo.calib_off_axis()                       # Finds modulation frequency and
 # the propagator will be created the first time we call 'process'.
 holo.update_propagator(hologram)
 
+
 # In a single step we remove the off-axis modulation and refocus
-startTime = timer()
 reconField = holo.process(hologram)
-print(f"Off-axis demodulation and refocusing took {round((timer() - startTime) * 1000)} ms.")
+
 
 # We had set relativePhase = True which means that we subtracted the phase
 # from the background image. The alternative is to call relative_phase to do
 # this manually.
 
+
 # The output from holo.process is complex. If we extract the phase it will be 
 # wrapped
 phase = pyh.phase(reconField)
 
+
 # We can perform 2D phase unwrapping using
 phaseUnwrapped = pyh.phase_unwrap(phase)
+
 
 # It is sometimes the case that there is still a tilt in the phase after
 # we removed the background. For example, maybe the cover slip is slightly
@@ -89,9 +91,11 @@ tilt = pyh.obtain_tilt(phaseUnwrapped)
 # And remove the tilted phase:
 phaseUntilted = pyh.relative_phase(phaseUnwrapped, tilt)
 
-# We can create a DIC style image from the field - we have to provde
+
+# We can create a DIC style image from the field - we have to provide
 # the field as the DIC relies on both amplitude and phase
 DIC = pyh.synthetic_DIC(reconField)
+
 
 # We can also create a phase gradient image. We can do this either from the 
 # raw field or the raw phase (results will be the same) or from any of the 

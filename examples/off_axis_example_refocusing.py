@@ -1,18 +1,17 @@
 # -*- coding: utf-8 -*-
 """
-Minimal example of how to use off-axis holography functionality of PyHoloscope.
-
-@author: Mike Hughes, Applied Optics Group, University of Kent
+Minimal example of how to use off-axis holography functionality of PyHoloscope
+with numerical refocusing.
 
 This example loads an off-axis hologram and a background image (i.e. with the 
 sample removed).
 
 The images are loaded using the PyHoloscope 'load_image' function. 
-Altneratively you can load these in using any method that results in them 
+Alternatively you can load these in using any method that results in them 
 being stored in a 2D numpy array.
 
 We instantiate a 'Holo' object and pass in the system parameters and some 
-options.
+options, including a flag to tell it to refocus to a particular depth.
 
 We call the 'process' method of 'Holo' to demodulate the hologram to recover 
 the phase and numerically refocus.
@@ -26,19 +25,19 @@ and phase of the complex demodulated image.
 We then use some functions to process and display the phase in different ways.
 """
 
-import context         # Paths
 
-from time import perf_counter as timer
 from matplotlib import pyplot as plt
-
 from pathlib import Path
 
+import context         # Paths
+
 import pyholoscope as pyh
+
 
 # Experimental Parameters
 wavelength = 630e-9
 pixelSize = 1e-6
-
+refocusDepth = -0.0012
 
 # Load images
 holoFile = Path('../test/test data/paramecium_oa_oof.tif')
@@ -56,23 +55,19 @@ holo = pyh.Holo(mode = pyh.OFF_AXIS,
                 background = background,    # For correcting background phase
                 relativePhase = True,       # We will remove the background phase
                 refocus = True,             # We will numerically refocus
-                depth = -0.0012)            # Refocus distance in m
+                depth = refocusDepth)       # Refocus distance in m
 
 holo.calib_off_axis()                       # Finds modulation frequency and 
                                             # pre-computes background phase
 
 
-# We call this here, but this is optional, otherwise
-# the propagator will be created the first time we call 'process'.
-holo.update_propagator(hologram)
-
 # In a single step we remove the off-axis modulation and refocus
-startTime = timer()
 reconField = holo.process(hologram)
-print(f"Off-axis demodulation and refocusing took {round((timer() - startTime) * 1000)} ms.")
+
 
 # Unwrap phase
 phaseUnwrapped = pyh.phase_unwrap(pyh.phase(reconField))
+
 
 # Detect a global tilt in the phase and remove it (note we must supply the
 # unwrapped phase here)

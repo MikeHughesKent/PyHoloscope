@@ -28,11 +28,14 @@ def get8bit(img):
     0 and 255, with 0 = 0 radians and 255 = 2pi radians.
     
     Arguments:
-          img   : 2D numpy array, complex
+          img   : 2D numpy array, complex or real
        
     """
     
-    amp = np.abs(img).astype('double')
+    if np.iscomplexobj(img):
+        amp = np.abs(img).astype('float')
+    else:
+        amp = img
     amp = amp - np.min(amp)
   
     if np.max(amp) != 0:
@@ -40,7 +43,7 @@ def get8bit(img):
     
     amp = amp.astype('uint8')
         
-    phase = np.angle(img).astype('double')
+    phase = np.angle(img).astype('float')
     phase = phase % (2 * math.pi)
     phase = phase / (2* math.pi) * 255
     phase = phase.astype('uint8')
@@ -225,7 +228,7 @@ def load_image(file, square = False):
     return im
 
 
-def save_image(file, img):
+def save_image(img, file):
     """ Saves an image stored as numpy array to an 8 bit tif.
     """
     img = Image.fromarray(get8bit(img)[0])       
@@ -273,6 +276,7 @@ def extract_central(img, boxSize = None):
     return imgOut
 
 
+
 def invert(img):
     
     return np.max(img) - img
@@ -292,5 +296,5 @@ def dimensions(inp):
         w = inp
         h = inp
         
-    return int(w),int(h)    
+    return int(w), int(h)    
         

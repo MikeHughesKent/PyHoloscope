@@ -2,14 +2,13 @@
 """
 PyHoloscope - Fast Holographic Microscopy in Python
 
-The Holo Class provides an object-oriented interface to mosst of the 
+The Holo Class provides an object-oriented interface to most of the 
 PyHoloscope functionality.
 
 @author: Mike Hughes, Applied Optics Group, Physics & Astronomy, University of Kent
 """
 
 import numpy as np
-import cv2 as cv
 import time
 import warnings
 
