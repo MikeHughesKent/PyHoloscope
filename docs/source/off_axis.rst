@@ -37,7 +37,8 @@ Alternatively the demodulation parameters can be specified manually using::
     holo.set_off_axis_mod(cropCentre, cropRadius)
    
 where ``cropCentre`` is a tuple of (x,y), giving the pixel location of the centre of the modulation peak in the FFT of the hologram, 
-and ``cropRadius`` is half the size of the box around the modulation centre which is demodulated.    
+and ``cropRadius`` is half the size of the box around the modulation centre which is demodulated.  ``cropRadius`` can also
+be a tuple giving the x and y radii of an ellipse, for cases where the hologram is non-square.  
 
 We can then demodulate to obtain the complex field using::
 

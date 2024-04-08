@@ -1,8 +1,8 @@
 INLINE = 1
 OFF_AXIS = 2
 
-INLINE_MODE = 1   # deprecated, kept  for backwards compatibility
-OFFAXIS_MODE = 2  # deprecated, kept  for backwards compatibility
+INLINE_MODE = 1   # deprecated, kept for backwards compatibility
+OFFAXIS_MODE = 2  # deprecated, kept for backwards compatibility
 
 from pyholoscope.general import *
 from pyholoscope.off_axis import *

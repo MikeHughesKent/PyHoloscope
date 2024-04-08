@@ -75,7 +75,7 @@ def pre_process(img, background = None, normalise = None, window = None, downsam
             normalise = normalise.astype(imType)      
        
     # Background subtraction  
-    if background is not None:       
+    if background is not None and np.shape(background) == np.shape(img):       
         if np.iscomplexobj(img):
             imgAmp = np.abs(img)
             imgPhase = np.angle(img)

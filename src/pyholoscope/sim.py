@@ -11,20 +11,42 @@ The Sim package provide utilites for simulating holograms.
 import math
 import cmath
 import numpy as np
+from pyholoscope import dimensions
         
-def off_axis(objectField, wavelength, pixelSize, tiltAngle):
+def off_axis(objectField, wavelength, pixelSize, tiltAngle, rotation = math.pi / 4):
+    """ Generates simulated off-axis hologram.
+    
+    Arguments:
+        objectField : ndarray, complex
+                      complex field representing object
+        wavelength  : float
+                      wavelength of simulated light source
+        pixelSize   : float
+                      real size of pixels in hologram
+        tiltAngle   : float
+                      angle of reference beam on camera in radians
+  
+    Keyword Arguments:
+        rotation    : float
+                      rotation of the tilt with respect to x axis in rad 
+                      (Default is pi/4 = 45 deg)
+           
+    """
     
     # Convert wavelength to wavenumber
     k = 2 * math.pi / wavelength      
 
     # Check size of object
-    nPoints = np.shape(objectField)[0]
+    nPointsY, nPointsX = np.shape(objectField)
 
     # Generate tilted reference field
-    refField = np.ones((nPoints, nPoints))
+    refField = np.ones((nPointsY, nPointsX))
     refFreq = k * math.sin(tiltAngle)
-    (xM, yM) = np.meshgrid(range(nPoints), range(nPoints))
-    refField = refField * np.exp(1j * refFreq * pixelSize * (xM + yM)/np.sqrt(2))
+    (xM, yM) = np.meshgrid(range(nPointsX), range(nPointsY))
+
+
+    refField = refField * np.exp(1j * (refFreq * pixelSize * (xM * np.cos(rotation) + yM * np.sin(rotation))))
+    
 
     # Field at camera is superposition of images of object and reference. 
     # We are assuming 1:1 magnification here.

@@ -12,6 +12,8 @@ from matplotlib import pyplot as plt
 
 from pathlib import Path
 
+import numpy as np
+
 import pyholoscope as pyh
 
 # Experimental Parameters
@@ -37,7 +39,11 @@ backgroundField = pyh.off_axis_demod(background, cropCentre, cropRadius)
 # Apply background correction 
 correctedField = pyh.relative_phase(reconField, backgroundField)
 
-prop = pyh.propagator(cropRadius * 2, wavelength, pixelSize / (cropRadius * 2) * gridSize, depth)
+adjustedPixelSize = pixelSize / (cropRadius[0] * 2) * np.shape(hologram)[1]
+adjustedPixelSize2 = pixelSize / (cropRadius[1] * 2) * np.shape(hologram)[0]
+
+
+prop = pyh.propagator((cropRadius[0] * 2, cropRadius[1] *2), wavelength, adjustedPixelSize, depth)
 refocusedField = pyh.refocus(correctedField, prop)
 
 # These lines can be uncommented to dump a depth stack to test.tif

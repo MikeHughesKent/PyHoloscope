@@ -12,21 +12,25 @@ import math
 import numpy as np
 import scipy
 
+
+import matplotlib.pyplot as plt
+
 try:
     import cupy as cp
     cudaAvailable = True
 except:
     cudaAvailable = False
     
-from pyholoscope.utils import extract_central
+from pyholoscope.utils import extract_central, dimensions
     
 
-def off_axis_demod(hologram, cropCentre, cropRadius, returnFFT = False, 
+def off_axis_demod(hologram, cropCentre, cropRadius, returnFull = False, returnFFT = False, 
                    mask = None, cuda = False):
-    """ Removes spatial modulation from off-axis hologram to obtain field.
+    """ Removes spatial modulation from off-axis hologram to obtain complex field.
     
-    By default, returns the complex field as a 2D numpy array. The size of
-    the returned array is (cropRadius*2, cropRadius*2). If returnFFT is
+    By default, returns the complex field as a 2D numpy array of size 
+    (cropRadius*2, cropRadius*2). If returnFull is True, the returned
+    array will instead by the same size as the input hologram. If returnFFT is
     True, function returns a tuple (field, FFT) where FFT is a log scaled
     image of the FFT of the hologram (2D numpy array, real).
         
@@ -39,31 +43,38 @@ def off_axis_demod(hologram, cropCentre, cropRadius, returnFFT = False,
                        radius of circle around modulation frequency to use
         
     Keyword Arguments:
+          returnFull : boolean
+                       if true, the returned reconstruction will be the same
+                       size as the input hologram, otherwise it will be the
+                       2 * cropRadius. (Default is False)
           returnFFT  : boolean 
                        if True will return a tuple of (demod image,
                        log scaled FFT) for display purposes
-                       subtracted (default = None)
+                       (Default is False)
           mask       : ndarray
                        2D numpy array, complex. Custom mask to use around
                        demodulation frequency instead of default circle. Must
-                       be sqaure of size (cropRadius*2, cropRadius*2).
+                       be square array of size (cropRadius*2, cropRadius*2). 
           cuda      :  boolean
                        if True GPU will be used if available.  
+    Returns:
+        
+    Reconstructed field as complex numpy array.     
+    
     """
     
     
-    hologram = extract_central(hologram)
+   
+    # Size of image in pixels 
+    height, width = np.shape(hologram) 
     
-    # Size of image in pixels (assume square)
-    nPoints = np.min(np.shape(hologram))
- 
-     
-    # Make a circular mask
+    
+    # Make a circular/elliptical mask
     if mask is None:
-        [xM, yM] = np.meshgrid(range(cropRadius * 2), range(cropRadius *2))
-        mask = (xM - cropRadius)**2 + (yM - cropRadius)**2 < cropRadius**2
+        [xM, yM] = np.meshgrid(range(cropRadius[0] *2), range(cropRadius[1] * 2))
+        mask = ( (yM - cropRadius[1]) / cropRadius[1] )**2 + ((xM - cropRadius[0]) / cropRadius[0])**2 < 1
         mask = mask.astype('complex')
-  
+   
     # Apply 2D FFT
     if cuda is False or cudaAvailable is False:
         cameraFFT = scipy.fft.rfft2(hologram)
@@ -73,18 +84,28 @@ def off_axis_demod(hologram, cropCentre, cropRadius, returnFFT = False,
         if type(mask) is np.ndarray:
             mask = cp.array(mask)
         cameraFFT = cp.fft.rfft2(cp.array(hologram))
-   
+    
     # Shift the ROI to the centre
-    shiftedFFT = cameraFFT[round(cropCentre[1] - cropRadius): round(cropCentre[1] + cropRadius),round(cropCentre[0] - cropRadius): round(cropCentre[0] + cropRadius)]
+    shiftedFFT = cameraFFT[round(cropCentre[1] - cropRadius[1]): round(cropCentre[1] + cropRadius[1]),round(cropCentre[0] - cropRadius[0]): round(cropCentre[0] + cropRadius[0])]
 
     # Apply the mask
     maskedFFT = shiftedFFT * mask
+ 
+    if returnFull:
+        h,w = np.shape(hologram)
+        h2, w2, = np.shape(maskedFFT)
+        x,y = round((w - w2) / 2), round((h - h2)/2)
+        output = np.zeros((h,w), dtype = 'complex')
+        output[y: y + h2, x: x + w2] = maskedFFT
+        maskedFFT = output
+         
 
     # Reconstruct complex field
     if cuda is False or cudaAvailable is False:
         reconField = scipy.fft.ifft2(scipy.fft.fftshift(maskedFFT))
     else:
         reconField = cp.asnumpy(cp.fft.ifft2(cp.fft.fftshift(maskedFFT)))
+    
    
     if returnFFT:
         if cuda is True and cudaAvailable is True:
@@ -93,6 +114,7 @@ def off_axis_demod(hologram, cropCentre, cropRadius, returnFFT = False,
             except:
                 pass
         return reconField, np.log(np.abs(cameraFFT) + 0.000001) # Stops log(0)
+    
     
     else:
         return reconField
@@ -110,26 +132,32 @@ def off_axis_find_mod(hologram, maskFraction = 0.1):
                          between 0 and 1, fraction of image around d.c. to 
                          mask to avoid the d.c. peak being detected 
                          (default = 0.1).
+    Returns:
+
+    Tuple of (int, int) = (y location, x location)                     
     """
     
     # Apply 2D FFT
-    hologram = extract_central(hologram)
     cameraFFT = np.transpose(np.abs(scipy.fft.rfft2((hologram)))) 
     
     # Need to crop out DC otherwise we will find that. Set the areas around
     # dc (for both quadrants) to zero. The size of the masked area is maskFraction * the
     # size of the image (smallest dimension)
     maskSize = int(np.min(np.shape(hologram)) * maskFraction)
+        
     cameraFFT[:maskSize,:maskSize] = 0
     cameraFFT[:maskSize:,-maskSize:] = 0
- 
+    
     peakLoc = np.unravel_index(cameraFFT.argmax(), cameraFFT.shape)
     
     return peakLoc
 
 
 def off_axis_find_crop_radius(hologram, maskFraction = 0.1):
-    """ Estimates the off axis crop radius based on modulation peak position.
+    """ Estimates the off axis crop radius based on modulation peak position. If the
+    hologram is square, this is the radius of a circle, otherwise if it is rectangular 
+    than the crop radius is a tuple of (y radius, x radius), corresponding to to
+    the half the lengths of the two axes of an ellipse.
     
     Arguments:
           hologram     : ndarray
@@ -140,55 +168,107 @@ def off_axis_find_crop_radius(hologram, maskFraction = 0.1):
                          between 0 and 1, fraction of image around d.c. to 
                          mask to avoid the d.c. peak being detected 
                          (default = 0.1).
+                         
+    Returns:
+
+    Tuple of (int, int) = (y radius, x radius)                     
     """
     
     h = np.shape(hologram)[0]
     w = np.shape(hologram)[1]
  
-    peakLoc = off_axis_find_mod(hologram, maskFraction = maskFraction)
-        
-    # Depending on quadrant could be relative to either top-left or
-    # top-right corner, so check both and use the closest distance
-    peakDist1 = np.sqrt((peakLoc[0])**2 + (peakLoc[1])**2)
-    peakDist2 = np.sqrt((peakLoc[0])**2 + (peakLoc[1] - w)**2)
-    peakDist = min(peakDist1, peakDist2)
+    peakLocY, peakLocX = off_axis_find_mod(hologram, maskFraction = maskFraction)
+    
+    # The crop radii will have the same ratio as the width and height of the hologram
+    aspectRatio = h/w
+    
+    peakLocSquare = (peakLocY * aspectRatio, peakLocX)
+    
     
     # In the optimal case, the radius is 1/3rd of the modulation position
-    cropRadius = math.floor(peakDist / 3)
-    
-    # Ensure it doesn't run off edge of image
-    cropRadius = min (cropRadius, peakLoc[0], int(h / 2 )- peakLoc[0], peakLoc[1], w - peakLoc[1] )
-    
-    return cropRadius
+    if peakLocX < h /2:
+        cropRadiusSquare = np.sqrt(peakLocSquare[0]**2 + peakLocSquare[1]**2) / 3
+        cropRadiusSquare = min(cropRadiusSquare, peakLocY, int(w - peakLocY), peakLocX, int(h/2 - peakLocX) )
+    else:
+        cropRadiusSquare = np.sqrt(peakLocSquare[0]**2 + (w*2 - peakLocSquare[1])**2) / 3
+        cropRadiusSquare = min(cropRadiusSquare, peakLocY, int(w - peakLocY), peakLocX - h/2 * aspectRatio, int(h * aspectRatio - peakLocX) )
+      
+    cropRadiusX = int(round(cropRadiusSquare))
+    cropRadiusY = int(round(cropRadiusSquare / aspectRatio))
+
+   
+    return cropRadiusY, cropRadiusX
 
 
-def off_axis_predict_mod(wavelength, pixelSize, tiltAngle): 
-    """ Predicts the location of the modulation peak in the FFT. 
-    
-    Returns the distance of the peak from the dc of the FFT in pixels.
-    
+def off_axis_predict_mod(wavelength, pixelSize, numPixels, tiltAngle, rotation = 0): 
+    """ Predicts the location of the modulation peak in the FFT.
+   
     Arguments:
           wavelegnth   : float
                          light wavelength in metres
-          pixelSizze   : float
+          pixelSize   : float
                          hologram physical pixel size in metres
+          numPixels    : int or (int, int)
+                         hologram size in pixels,             
           tiltAngle    : float
-                         angle of reference beam on camera in radians    
+                         angle of reference beam on camera in radians 
+                         
+    Keyword Arguments:
+          rotation     : float
+                         rotation of tilt with respect to x axis, in radians (default is 0)                     
+    
+    Returns:
+          tuple of (int, int) = (x pixel, y pixel)
+    
     """
-           
-    # Convert wavelength to wavenumber
-    k = 2 * math.pi / wavelength     
+   
      
     # Spatial frequency of modulation
-    refFreq = k * math.sin(tiltAngle)
+    refFreq = math.sin(tiltAngle) / wavelength
+   
+    # Spatial frequency at edge of FFT
+    maxSF = 1 / (pixelSize * 2)
     
-    # Spatial frequency in camera pixels
-    refFreqPx = refFreq / pixelSize
+    imSizeX, imSizeY = dimensions(numPixels)
     
-    # Pixel in Fourier Domain
-    modFreqPx = 2 / refFreqPx
+    # Pixel corresponding to frequency in Fourier Domain
+    modFreqPxX = round(refFreq / maxSF * np.cos(rotation) * imSizeX / 2)
+    modFreqPxY = round(refFreq / maxSF * np.sin(rotation) * imSizeY / 2)
     
-    return modFreqPx
+    if modFreqPxX < 0: modFreqPxX = modFreqPxX + imSizeX
+    if modFreqPxY < 0: modFreqPxY = modFreqPxY + imSizeY
+    
+    return modFreqPxX, modFreqPxY
+
+
+
+def off_axis_predict_mod_distance(wavelength, pixelSize, numPixels, tiltAngle, rotation = 0): 
+    """ Predicts the absolute distance of the modulation peak in the FFT from the dc.
+   
+    Arguments:
+          wavelegnth   : float
+                         light wavelength in metres
+          pixelSize   : float
+                         hologram physical pixel size in metres
+          numPixels    : int or (int, int)
+                         hologram size in pixels,             
+          tiltAngle    : float
+                         angle of reference beam on camera in radians 
+                         
+    Keyword Arguments:
+          rotation     : float
+                         rotation of tilt with respect to x axis, in radians (default is 0)                     
+    
+    Returns:
+          float, distance in pixels
+    
+    """
+   
+    x,y = off_axis_predict_mod(wavelength, pixelSize, numPixels, tiltAngle, rotation)
+
+    
+    return math.sqrt(x**2 + y**2)
+
 
 
 def off_axis_predict_tilt_angle(hologram, wavelength, pixelSize, maskFraction = 0.1):
@@ -208,7 +288,10 @@ def off_axis_predict_tilt_angle(hologram, wavelength, pixelSize, maskFraction = 
           maskFraction : float 
                          between 0 and 1, fraction of image around d.c. to 
                          mask to avoid the d.c. peak being detected 
-                         (default = 0.1).        
+                         (default = 0.1).  
+                         
+    Returns:
+          float, tilt angle in radians
     """
     
     # Wavenumber
@@ -220,16 +303,15 @@ def off_axis_predict_tilt_angle(hologram, wavelength, pixelSize, maskFraction = 
     peakLoc = off_axis_find_mod(hologram, maskFraction = maskFraction)
 
     # Pixel sizes in FFT (the spatial frequency)
-    vPixelSF = 1 / (2 * pixelSize * np.shape(hologram)[0])
-    hPixelSF = 1 / (2 * pixelSize * np.shape(hologram)[1])
-
+    vPixelSF = 1 / (pixelSize * np.shape(hologram)[0])
+    hPixelSF = 1 / (pixelSize * np.shape(hologram)[1])
     
     # Depending on quadrant could be relative to either top-left or
     # top-right corner, so check both and use the closest distance    
-    peakDist1 = np.sqrt((vPixelSF * peakLoc[0])**2 + (hPixelSF * peakLoc[1])**2)
-    peakDist2 = np.sqrt((vPixelSF * peakLoc[0])**2 + (hPixelSF * peakLoc[1] - w)**2)
+    peakDist1 = np.sqrt((vPixelSF * peakLoc[1])**2 + (hPixelSF * peakLoc[0])**2)
+    peakDist2 = np.sqrt((vPixelSF * peakLoc[1])**2 + (hPixelSF * (peakLoc[0] - w))**2)
     spatialFreq = min(peakDist1, peakDist2) 
  
-    tiltAngle = math.asin(spatialFreq / k)
+    tiltAngle = math.asin(2 * math.pi * spatialFreq / k)
     
     return tiltAngle

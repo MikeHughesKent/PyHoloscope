@@ -2,9 +2,7 @@
 """
 Tests inline holography functionality of PyHoloscope
 
-@author: Mike Hughes
-Applied Optics Group
-University of Kent
+@author: Mike Hughes, Applied Optics Group, University of Kent
 """
 
 from matplotlib import pyplot as plt

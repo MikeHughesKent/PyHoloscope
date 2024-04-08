@@ -2,9 +2,7 @@
 """
 Tests estimate_tilt_angle
 
-@author: Mike Hughes
-Applied Optics Group
-University of Kent
+@author: Mike Hughes, Applied Optics Group, University of Kent
 """
 
 import context                    # Relative paths

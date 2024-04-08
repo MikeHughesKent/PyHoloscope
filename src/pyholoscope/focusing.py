@@ -9,15 +9,17 @@ This file contains functions related to numerical refocusing.
 """
 import math
 import numpy as np
+
+
 try:
     import cupy as cp
     cudaAvailable = True
 except:
     cudaAvailable = False
+    
 from PIL import Image
 import cv2 as cv
 import scipy
-import time
 
 from pyholoscope.focus_stack import FocusStack
 from pyholoscope.focusing_numba import propagator_numba
@@ -44,6 +46,8 @@ def propagator(gridSize, wavelength, pixelSize, depth, geometry = 'plane', preci
         geometry   : str, 'plane' (default) or 'point'
         precision  : str, numerical precision of ouptut, 'single' (defualt) 
                      or 'double'
+        cascade    : int, for use with cascade method, depth will be dividing by
+                     by this number             
 
     """
     
@@ -63,7 +67,6 @@ def propagator(gridSize, wavelength, pixelSize, depth, geometry = 'plane', preci
     # Physical size of hologram in real units
     width = gridWidth * pixelSize
     height = gridHeight * pixelSize
-
     
     # Grid points to generate one quadrant of propagator on
     (xM, yM) = np.meshgrid(range(centreX + 1 ), range(centreY + 1) )
@@ -87,7 +90,7 @@ def propagator(gridSize, wavelength, pixelSize, depth, geometry = 'plane', preci
     else:
         raise Exception("Invalid geometry.")               
     
-    # Attay to hold full propagator
+    # Array to hold full propagator
     prop = np.zeros((gridHeight, gridWidth), dtype = dataType)
         
     # Duplicate the top left quadrant into the other three quadrants as
@@ -123,14 +126,16 @@ def refocus(img, propagator, **kwargs):
     
     assert np.shape(img) == np.shape(propagator), "Propagator is the wrong size."
     
+    # If we were sent the propagator on the CPU, sent to GPU now
+    if cuda is True and cudaAvailable is True and type(propagator) is np.ndarray:
+        propagator = cp.array(propagator)
+    
     # If we have been sent the FFT of image, used when repeatedly calling refocus
     # (for example when finding best focus) we don't need to do FFT or shift for speed
     if imgIsFourier:  
         if cuda is True and cudaAvailable is True:
             if type(img) is np.ndarray:
-                img = cp.array(img)
-            if type(propagator) is np.ndarray:
-                propagator = cp.array(propagator)
+                img = cp.array(img)            
             return cp.asnumpy(cp.fft.ifft2(img * propagator))
         else:
             return scipy.fft.ifft2(img * propagator)
@@ -138,19 +143,17 @@ def refocus(img, propagator, **kwargs):
     else:   # If we are sent the spatial domain image
         cHologram = pyholoscope.pre_process(img, **kwargs)
         if cuda is True and cudaAvailable is True:
-                if type(cHologram) is np.ndarray:
-                    cHologram = cp.array(cHologram)
-                if type(propagator) is np.ndarray:
-                    propagator = cp.array(propagator)
-                return cp.asnumpy(cp.fft.ifft2(cp.fft.fft2(cHologram) * propagator))
+            if type(cHologram) is np.ndarray:
+                cHologram = cp.array(cHologram)           
+            return cp.asnumpy(cp.fft.ifft2(cp.fft.fft2(cHologram) * propagator))
         else:
-                if cascade > 1:
-                    import matplotlib.pyplot as plt
-                    for idx in range(cascade - 1):
-                        cHologram = np.abs(scipy.fft.ifft2(scipy.fft.fft2(cHologram) * propagator))**2
-                        #plt.figure(dpi = 150); plt.title(str(idx)); plt.imshow(cHologram, cmap = 'gray')
-                return scipy.fft.ifft2(scipy.fft.fft2(cHologram) * propagator)
+            if cascade > 1:
+                for idx in range(cascade - 1):
+                    cHologram = np.abs(scipy.fft.ifft2(scipy.fft.fft2(cHologram) * propagator))**2
+            return scipy.fft.ifft2(scipy.fft.fft2(cHologram) * propagator)
            
+   
+    
    
 def focus_score(img, method):
     """ Returns score of how 'in focus' an amplitude image is.
@@ -212,9 +215,36 @@ def focus_score(img, method):
     return focusScore
 
 
-def refocus_and_score(depth, imgFFT, pixelSize, wavelength, method, scoreROI, propLUT, useNumba = False, useCuda = False, precision = 'single'):
+def refocus_and_score(depth, imgFFT, pixelSize, wavelength, method, scoreROI = None, propLUT = None, useNumba = False, useCuda = False, precision = 'single'):
     """ Refocuses an image to specificed depth and returns focus score, used by
     findFocus.
+    
+    Arguments:
+        depth     : float
+                    depth to focus to
+        imgFFT    : ndarray, complex
+                    FFT of hologram
+        pixelSize : float
+                    real pixel size of hologram
+        wavelength: float
+                    wavelength of light source
+        method    : str, 
+                    scoring method (see focus_score for list)
+
+                         
+     Keyword Arguments:                    
+        scoreROI  : ROI or None
+                    region of image to apply scoring to (default is None, in
+                    which case it applies to whole image.)
+        propLU    : propLUT or None
+                    propgator look-up table (default is None, propagator is
+                    calculate for each depth)
+        useNumba  : boolean 
+                    if True, uses Numba version of functions (default is False)
+        useCuda   : boolean
+                    if True, uses GPU where available
+        precision : str
+                    'single' (default) or 'double', precision of calculated propagator
     """
     
     # Whether we are using a look up table of propagators or calculating it each time  
@@ -240,7 +270,42 @@ def refocus_and_score(depth, imgFFT, pixelSize, wavelength, method, scoreROI, pr
 
 
 def find_focus(img, wavelength, pixelSize, depthRange, method, **kwargs):
-    """ Determine the refocus depth which maximises the focus metric on image
+    """ Determine the refocus depth which maximises the focus metric on image.
+    
+    Arguments:
+    
+        pixelSize : float
+                    real pixel size of hologram
+        wavelength: float
+                    wavelength of light source
+        depthRange: tuple of (float, float)
+                    min and max depths to search between
+        method    : str
+                    scoring method (see focus_score for list)
+      
+    Keyword Arguments:
+        
+        background : ndarray or None
+                     background image (default is None)
+        window     : ndarray or None
+                     spatial window (default is None)
+        scoreROI   : ROI or None
+                     region of image to apply scoring to (default is None, in
+                     which case it applies to whole image.)                             
+        margin     : int or None
+                     if not none, only a region with this margin around the scoreROI
+                     will be refocused prior to scoring
+        propLUT    : propLUT or None 
+                     propagator look up table (default is None)    
+        coarseSearchInterval : int or None
+                               number of intervals to divide depth range into
+                               for initial search. Default is None, i.e. no
+                               initial search.
+        useNumba  : boolean 
+                    if True, uses Numba version of functions (default is False)
+        useCuda   : boolean
+                   if True, uses GPU where available                       
+    
     """   
     background = kwargs.get('background', None)
     window = kwargs.get('window', None)
@@ -288,8 +353,11 @@ def find_focus(img, wavelength, pixelSize, depthRange, method, **kwargs):
 
 
 def coarse_focus_search(imgFFT, depthRange, nIntervals, pixelSize, wavelength, method, scoreROI, propLUT):
-    """ An initial check for approximate location of good focus depths prior to a finer search. Called
-     by findFocus    
+    """ An initial check for approximate location of good focus depths prior to a finer search. 
+    Used by findFocus, see this function for arguments.
+
+    nIntervals : number of intervals to divide depth range into.
+    
     """
     searchDepths = np.linspace(depthRange[0], depthRange[1], nIntervals)
     focusScore = np.zeros_like(searchDepths)
@@ -303,9 +371,10 @@ def coarse_focus_search(imgFFT, depthRange, nIntervals, pixelSize, wavelength, m
     
     
 def focus_score_curve(img, wavelength, pixelSize, depthRange, nPoints, method, **kwargs):
-    """ Produce a plot of focus score against depth, mainly useful for debugging
-    erroneous focusing
-    """     
+    """ Produces a plot of focus score against depth, mainly useful for debugging
+    erroneous focusing.
+    """   
+    
     background = kwargs.get('background', None)
     window = kwargs.get('window', None)
     scoreROI = kwargs.get('roi', None)
@@ -334,7 +403,7 @@ def focus_score_curve(img, wavelength, pixelSize, depthRange, nPoints, method, *
     else:
         cropImg = cHologram
     
-    # Do the forwards FFT once for speed
+    # Do the forwards FFT just once for speed
     cHologramFFT = scipy.fft.fft2(cropImg)
     
     score = list()
@@ -346,10 +415,39 @@ def focus_score_curve(img, wavelength, pixelSize, depthRange, nPoints, method, *
 
 
 def refocus_stack(img, wavelength, pixelSize, depthRange, nDepths, **kwargs):
-    """ Numerical refocusing of a hologram to produce a depth stack. 'depthRange' is a tuple
-    defining the min and max depths, the resulting stack will have 'nDepths' images
-    equally spaced between these limits. 
+    """ Numerical refocusing of a hologram to produce a depth stack. 
+    
+    Arguments:
+    
+        pixelSize : float
+                    real pixel size of hologram
+        wavelength: float
+                    wavelength of light source
+        depthRange: tuple of (float, float)
+                    min and max depths of stack
+        nDepths   : int
+                    number of depths to refocus to within depthRange
+             
+    Keyword Arguments:
+        
+        background : ndarray or None
+                     background image (default is None)
+        window     : ndarray or None
+                     spatial window (default is None)
+        scoreROI   : ROI or None
+                     region of image to apply scoring to (default is None, in
+                     which case it applies to whole image.)                             
+        coarseSearchInterval : int or None
+                               number of intervals to divide depth range into
+                               for initial search. Default is None, i.e. no
+                               initial search.
+        useNumba   : boolean 
+                     if True, uses Numba version of functions (default is False)
+        useCuda    : boolean
+                     if True, uses GPU where available     
+   
     """
+   
     window = kwargs.get('window', None)
     useNumba = kwargs.get('numba', False)
     background = kwargs.get('preBackground', None)
