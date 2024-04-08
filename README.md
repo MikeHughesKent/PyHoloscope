@@ -30,6 +30,7 @@ Help testing and developing the package is welcome, please [get in touch](mailto
 * Choice of single or double precision
 * Support for CUDA compatible GPUs
 * Optional use of Numba JIT compiler
+* Supports non-square holograms
 
 ### Off Axis Holography
 * Quantitatave phase and amplitude recovery from off-axis hologram
