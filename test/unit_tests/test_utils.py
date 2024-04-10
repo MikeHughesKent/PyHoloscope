@@ -57,8 +57,7 @@ class TestUtils(unittest.TestCase):
         window = circ_cosine_window(imgSize, circleRadius, skinThickness)
         self.assertEqual(window[0,0], 0)
         self.assertEqual(window[50,50], 1)
-        self.assertTupleEqual(np.shape(window), (imgSize, imgSize))
-        
+        self.assertTupleEqual(np.shape(window), (imgSize, imgSize))        
         
 
     def test_dimensions(self):

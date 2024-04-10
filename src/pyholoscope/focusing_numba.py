@@ -43,8 +43,7 @@ def propagator_numba(gridSize, wavelength, pixelSize, depth, geometry = 'plane',
     
    
     gridWidth = int(gridSize[0])
-    gridHeight = int(gridSize[1])
-  
+    gridHeight = int(gridSize[1])  
     
     width = float(gridWidth) * float(pixelSize)
     height = float(gridHeight) * float(pixelSize)

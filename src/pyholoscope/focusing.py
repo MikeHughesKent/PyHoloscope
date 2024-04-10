@@ -56,8 +56,7 @@ def propagator(gridSize, wavelength, pixelSize, depth, geometry = 'plane', preci
     else:
         dataType = 'complex64'
         
-    depth = depth / cascade    
-    
+    depth = depth / cascade        
     
     gridWidth, gridHeight = dimensions(gridSize)
    
@@ -301,10 +300,10 @@ def find_focus(img, wavelength, pixelSize, depthRange, method, **kwargs):
                                number of intervals to divide depth range into
                                for initial search. Default is None, i.e. no
                                initial search.
-        useNumba  : boolean 
-                    if True, uses Numba version of functions (default is False)
-        useCuda   : boolean
-                   if True, uses GPU where available                       
+        useNumba   : boolean 
+                     if True, uses Numba version of functions (default is False)
+        useCuda    : boolean
+                    if True, uses GPU where available                       
     
     """   
     background = kwargs.get('background', None)

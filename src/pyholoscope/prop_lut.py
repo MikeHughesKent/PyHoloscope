@@ -61,7 +61,7 @@ class PropLUT:
             return None
        
         idx = round((depth - self.depths[0]) / (self.depths[-1] - self.depths[0]) * (self.nDepths - 1))
-        #print("Desired Depth: ", depth, "Used Depth:", self.depths[idx])
+
         return self.propTable[idx, :,:]
     
     

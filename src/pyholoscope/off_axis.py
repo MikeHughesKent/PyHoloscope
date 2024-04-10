@@ -62,12 +62,9 @@ def off_axis_demod(hologram, cropCentre, cropRadius, returnFull = False, returnF
     Reconstructed field as complex numpy array.     
     
     """
-    
-    
-   
+           
     # Size of image in pixels 
-    height, width = np.shape(hologram) 
-    
+    height, width = np.shape(hologram)     
     
     # Make a circular/elliptical mask
     if mask is None:
@@ -90,6 +87,7 @@ def off_axis_demod(hologram, cropCentre, cropRadius, returnFull = False, returnF
 
     # Apply the mask
     maskedFFT = shiftedFFT * mask
+    
  
     if returnFull:
         h,w = np.shape(hologram)
@@ -147,7 +145,7 @@ def off_axis_find_mod(hologram, maskFraction = 0.1):
         
     cameraFFT[:maskSize,:maskSize] = 0
     cameraFFT[:maskSize:,-maskSize:] = 0
-    
+   
     peakLoc = np.unravel_index(cameraFFT.argmax(), cameraFFT.shape)
     
     return peakLoc
@@ -206,7 +204,7 @@ def off_axis_predict_mod(wavelength, pixelSize, numPixels, tiltAngle, rotation =
     Arguments:
           wavelegnth   : float
                          light wavelength in metres
-          pixelSize   : float
+          pixelSize    : float
                          hologram physical pixel size in metres
           numPixels    : int or (int, int)
                          hologram size in pixels,             
@@ -220,8 +218,7 @@ def off_axis_predict_mod(wavelength, pixelSize, numPixels, tiltAngle, rotation =
     Returns:
           tuple of (int, int) = (x pixel, y pixel)
     
-    """
-   
+    """   
      
     # Spatial frequency of modulation
     refFreq = math.sin(tiltAngle) / wavelength
@@ -232,14 +229,18 @@ def off_axis_predict_mod(wavelength, pixelSize, numPixels, tiltAngle, rotation =
     imSizeX, imSizeY = dimensions(numPixels)
     
     # Pixel corresponding to frequency in Fourier Domain
-    modFreqPxX = round(refFreq / maxSF * np.cos(rotation) * imSizeX / 2)
-    modFreqPxY = round(refFreq / maxSF * np.sin(rotation) * imSizeY / 2)
+    if rotation%math.pi < math.pi/2:
+        modFreqPxX = round(refFreq / maxSF * np.abs(np.cos(rotation)) * imSizeX / 2)
+        modFreqPxY = round(refFreq / maxSF * np.abs(np.sin(rotation)) * imSizeY / 2)
+    else:
+        modFreqPxX = round(refFreq / maxSF * np.abs(np.cos(math.pi  - rotation)) * imSizeX / 2)
+        modFreqPxY = imSizeY - round(refFreq / maxSF * np.abs(np.sin(rotation)) * imSizeY / 2)
+        
     
     if modFreqPxX < 0: modFreqPxX = modFreqPxX + imSizeX
     if modFreqPxY < 0: modFreqPxY = modFreqPxY + imSizeY
     
     return modFreqPxX, modFreqPxY
-
 
 
 def off_axis_predict_mod_distance(wavelength, pixelSize, numPixels, tiltAngle, rotation = 0): 
@@ -268,7 +269,6 @@ def off_axis_predict_mod_distance(wavelength, pixelSize, numPixels, tiltAngle, r
 
     
     return math.sqrt(x**2 + y**2)
-
 
 
 def off_axis_predict_tilt_angle(hologram, wavelength, pixelSize, maskFraction = 0.1):

@@ -4,13 +4,14 @@ PyHoloscope: focus_stack
 
 Class to store stack of images numerically refocused to different depths.
 
-@author: Mike Hughes
-Applied Optics Group, Physics & Astronomy, University of Kent
+@author: Mike Hughes, Applied Optics Group, Physics & Astronomy, University of Kent
 """
+
+import math
+
 
 import numpy as np
 from PIL import Image
-import math
 
 
 ################### Class for stack of images focused at different depths ####       
@@ -66,6 +67,7 @@ class FocusStack:
     
     def depth_to_index(self, depth):
         """ Return the index closest to the specified depth """
+        
         idx = round((depth - self.minDepth) / (self.maxDepth - self.minDepth) * (self.nDepths-1))
         if idx < 0:
             idx = 0
@@ -83,6 +85,7 @@ class FocusStack:
         """ Write the amplitudes of the stack of refocused images to a tif stack 
         If autoContrast == True, all images will be normalised.
         """
+        
         autoContrast = kwargs.get('autoContrast', True)
        
         if autoContrast:

@@ -49,10 +49,10 @@ class TestOffAxis(unittest.TestCase):
           """
           
           gridSize2 = 512   
-          gridSize1 = 1024  
+          gridSize1 = 1024 
         
-          angle = math.radians(8)
-          rotation = math.pi /5
+          angle = math.radians(3)
+          rotation = .22 * math.pi 
           pixel_size = 2e-6
           wavelength = 500e-9
          
@@ -67,9 +67,24 @@ class TestOffAxis(unittest.TestCase):
           
           measured_peak_distance = math.sqrt(measured_peak_loc[0]**2 + measured_peak_loc[1]**2)
           predicted_peak_dist = pyh.off_axis_predict_mod_distance(wavelength, pixel_size, (gridSize1, gridSize2), angle, rotation = rotation)
+          
+          self.assertAlmostEqual(measured_peak_distance, predicted_peak_dist, delta = 1)
+          
+          # Check it works when modulation peak in 2nd quadrant of FFT
+          rotation = .7 * math.pi 
+          test_hologram = pyh.sim.off_axis(object_field, wavelength, pixel_size, angle, rotation = rotation)
+           
+          measured_peak_loc = pyh.off_axis_find_mod(test_hologram)        
+          predicted_peak_loc = pyh.off_axis_predict_mod(wavelength, pixel_size, (gridSize1, gridSize2), angle, rotation = rotation)
+          
+          self.assertAlmostEqual(predicted_peak_loc[0], measured_peak_loc[0], delta = 1)
+          self.assertAlmostEqual(predicted_peak_loc[1], measured_peak_loc[1], delta = 1)
+          
+          measured_peak_distance = math.sqrt(measured_peak_loc[0]**2 + measured_peak_loc[1]**2)
+          predicted_peak_dist = pyh.off_axis_predict_mod_distance(wavelength, pixel_size, (gridSize1, gridSize2), angle, rotation = rotation)
             
           self.assertAlmostEqual(measured_peak_distance, predicted_peak_dist, delta = 1)
-     
+      
         
     def test_off_axis_demod(self):
           """ Check standard demo with and without window
@@ -123,8 +138,8 @@ class TestOffAxis(unittest.TestCase):
           gridSize1 = 512 
           pixel_size = 1e-6
           wavelength = 550e-9
-          rotation = math.pi / 4
-          angle = math.radians(15)
+          rotation = 3 * math.pi / 4
+          angle = math.radians(9)
                  
           x = 100
           y = 70
@@ -176,7 +191,6 @@ class TestOffAxis(unittest.TestCase):
          
           cropCentre = pyh.off_axis_find_mod(test_hologram)
           cropRadius = pyh.off_axis_find_crop_radius(test_hologram)
-         
          
           # no window
           recon = pyh.off_axis_demod(test_hologram, cropCentre, cropRadius, returnFull = True)

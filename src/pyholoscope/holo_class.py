@@ -102,8 +102,7 @@ class Holo:
         self.cropCentre = kwargs.get('cropCentre', False)
         self.cropRadius = kwargs.get('cropRadius', False)
         self.returnFFT = kwargs.get('returnFFT', False)
-        
-        
+                
         # Phase
         self.relativePhase = kwargs.get('relativePhase', False)
         self.stablePhase = kwargs.get('stablePhase', False)
@@ -148,7 +147,7 @@ class Holo:
         
         
     def process_inline(self, img):
-        """ Process an  inline hologram image, img, using the currently selected 
+        """ Process an inline hologram image, img, using the currently selected 
         parameters.
         """
         
@@ -161,9 +160,9 @@ class Holo:
             normalise = np.abs(self.normaliseField)
         else:
             normalise = None
+            
         imgPreprocessed = pre_process(img, downsample = self.downsample, window = self.window, background = self.background, normalise = self.normalise, precision = self.precision)
-      
-        
+              
         # If the propagator is not the correct one for the current parameters, regenerate it
         if np.shape(self.propagator) != np.shape(imgPreprocessed) or self.propagator is None or self.propagatorDepth != self.depth or self.propagatorWavelength != self.wavelength or self.propagatorPixelSize != self.pixelSize * self.downsample:
             self.update_propagator(img)
@@ -257,8 +256,7 @@ class Holo:
             warnings.warn('Output from off-axis processing was None.')
             return None
 
-        return demod
-            
+        return demod            
     
     
     def __str__(self):
@@ -287,7 +285,7 @@ class Holo:
         """ Set the background hologram. Use None to remove background. 
         """
         self.clear_background()
-        if background is not None: self.background  = background.astype(self.imageType) 
+        if background is not None: self.background = background.astype(self.imageType) 
       
             
     def set_normalise(self, normalise):
@@ -443,6 +441,7 @@ class Holo:
                                    (int(windowRadiusX / self.downsample), int(windowRadiusY / self.downsample) ),
                                    self.windowThickness / self.downsample,
                                    shape = self.windowShape)
+               
 
     def set_off_axis_mod(self, cropCentre, cropRadius):
         """ Sets the location of the frequency domain position of the OA modulation.
@@ -499,6 +498,7 @@ class Holo:
         self.backgroundField = off_axis_demod(self.background, self.cropCentre, self.cropRadius)
         self.backgroundAbs = np.abs(self.backgroundField)   # Store these now for speed
         self.backgroundPhase = np.angle(self.backgroundField)
+        
 
     def off_axis_normalise_field(self):
         """ Demodulate the background hologram.
@@ -533,8 +533,7 @@ class Holo:
      
         # If using CUDA we send propagator to GPU now to speed up refocusing later 
         if self.cuda and cudaAvailable:
-           self.propagator = cp.array(self.propagator)
-    
+           self.propagator = cp.array(self.propagator)    
     
            
     def set_oa_centre(self, centre):

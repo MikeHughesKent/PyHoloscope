@@ -44,7 +44,6 @@ def off_axis(objectField, wavelength, pixelSize, tiltAngle, rotation = math.pi /
     refFreq = k * math.sin(tiltAngle)
     (xM, yM) = np.meshgrid(range(nPointsX), range(nPointsY))
 
-
     refField = refField * np.exp(1j * (refFreq * pixelSize * (xM * np.cos(rotation) + yM * np.sin(rotation))))
     
 
