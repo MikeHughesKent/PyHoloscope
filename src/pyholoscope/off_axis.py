@@ -39,8 +39,10 @@ def off_axis_demod(hologram, cropCentre, cropRadius, returnFull = False, returnF
                        2D numpy array, real, raw hologram
           cropCentre : tuple of (int, int). 
                        pixel location in FFT of modulation frequency
-          cropRadius : int
-                       radius of circle around modulation frequency to use
+          cropRadius : int or (int, int)
+                       semi-diameter of sqaure or rectangle to extract
+                       around modulation frequency. Provide a single int
+                       for a sqaure area or a tuple of (w,h) for a rectangle.
         
     Keyword Arguments:
           returnFull : boolean
@@ -53,8 +55,8 @@ def off_axis_demod(hologram, cropCentre, cropRadius, returnFull = False, returnF
                        (Default is False)
           mask       : ndarray
                        2D numpy array, complex. Custom mask to use around
-                       demodulation frequency instead of default circle. Must
-                       be square array of size (cropRadius*2, cropRadius*2). 
+                       demodulation frequency. Must match size of 
+                       (cropRadiusX, cropRadiusY)
           cuda      :  boolean
                        if True GPU will be used if available.  
     Returns:
@@ -66,11 +68,7 @@ def off_axis_demod(hologram, cropCentre, cropRadius, returnFull = False, returnF
     # Size of image in pixels 
     height, width = np.shape(hologram)     
     
-    # Make a circular/elliptical mask
-    if mask is None:
-        [xM, yM] = np.meshgrid(range(cropRadius[0] *2), range(cropRadius[1] * 2))
-        mask = ( (yM - cropRadius[1]) / cropRadius[1] )**2 + ((xM - cropRadius[0]) / cropRadius[0])**2 < 1
-        mask = mask.astype('complex')
+    
    
     # Apply 2D FFT
     if cuda is False or cudaAvailable is False:
@@ -86,8 +84,12 @@ def off_axis_demod(hologram, cropCentre, cropRadius, returnFull = False, returnF
     shiftedFFT = cameraFFT[round(cropCentre[1] - cropRadius[1]): round(cropCentre[1] + cropRadius[1]),round(cropCentre[0] - cropRadius[0]): round(cropCentre[0] + cropRadius[0])]
 
     # Apply the mask
-    maskedFFT = shiftedFFT * mask
-    
+    if mask is not None:
+        assert np.shape(mask) == np.shape(shiftedFFT), "Incorrect mask size."
+        maskedFFT = shiftedFFT * mask
+    else:
+        maskedFFT = shiftedFFT
+        
  
     if returnFull:
         h,w = np.shape(hologram)

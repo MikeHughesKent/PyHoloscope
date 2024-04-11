@@ -15,7 +15,7 @@ import context
 
 import pyholoscope as pyh
 import pyholoscope.sim
-from pyholoscope.utils import circ_cosine_window
+from pyholoscope.utils import circ_cosine_window, circ_window
 
 
 class TestOffAxis(unittest.TestCase):
@@ -131,7 +131,7 @@ class TestOffAxis(unittest.TestCase):
           assert np.mean(pyh.amplitude(recon[y2:y2+h2, x2:x2+w2])) > 100 * np.mean(pyh.amplitude(recon[4*y2:4*y2+h2, x2:x2+w2]))
        
     def test_off_axis_demod_full(self):
-          """ Checks demod and return of image same size as hologram
+          """ Check demodulation and return of image same size as hologram
           """
         
           gridSize2 = 512   
@@ -139,7 +139,7 @@ class TestOffAxis(unittest.TestCase):
           pixel_size = 1e-6
           wavelength = 550e-9
           rotation = 3 * math.pi / 4
-          angle = math.radians(9)
+          angle = math.radians(15)
                  
           x = 100
           y = 70
@@ -156,14 +156,20 @@ class TestOffAxis(unittest.TestCase):
            
           # no window
           recon = pyh.off_axis_demod(test_hologram, cropCentre, cropRadius, returnFull = True)
-         
-          # compare mean value in the square to mean value somewhere elese (that should be zero)
+          # compare mean value in the square to mean value somewhere else (that should be zero). 
           assert np.mean(pyh.amplitude(recon[y:y+h, x:x+w])) > 100 * np.mean(pyh.amplitude(recon[4*y:4*y+h, x:x+w]))
 
-          # with window
-          window = circ_cosine_window(cropRadius[0] * 2, cropRadius[0] - 10, 10)
+
+          # with circ window
+          window = circ_window(cropRadius[0] * 2, cropRadius[0])
           recon = pyh.off_axis_demod(test_hologram, cropCentre, cropRadius, mask = window, returnFull = True)
-            
+          # compare mean value in the square to mean value somewhere else (that should be very close to zero)
+          assert np.mean(pyh.amplitude(recon[y:y+h, x:x+w])) > 100 * np.mean(pyh.amplitude(recon[4*y:4*y+h, x:x+w]))
+
+
+          # with cos window
+          window = circ_cosine_window(cropRadius[0] * 2, cropRadius[0], 10)
+          recon = pyh.off_axis_demod(test_hologram, cropCentre, cropRadius, mask = window, returnFull = True)
           # compare mean value in the square to mean value somewhere elese (that should be zero)
           assert np.mean(pyh.amplitude(recon[y:y+h, x:x+w])) > 100 * np.mean(pyh.amplitude(recon[4*y:4*y+h, x:x+w]))
 
@@ -194,11 +200,16 @@ class TestOffAxis(unittest.TestCase):
          
           # no window
           recon = pyh.off_axis_demod(test_hologram, cropCentre, cropRadius, returnFull = True)
-         
           # compare mean value in the square to mean value somewhere elese (that should be zero)
           assert np.mean(pyh.amplitude(recon[y:y+h, x:x+w])) > 100 * np.mean(pyh.amplitude(recon[4*y:4*y+h, x:x+w]))
 
-          
+          # with cosine window
+          window = circ_cosine_window((cropRadius[0] * 2, cropRadius[1] * 2), cropRadius, 10)
+          recon = pyh.off_axis_demod(test_hologram, cropCentre, cropRadius, mask = window, returnFull = True)
+          # compare mean value in the square to mean value somewhere elese (that should be zero)
+          assert np.mean(pyh.amplitude(recon[y:y+h, x:x+w])) > 100 * np.mean(pyh.amplitude(recon[4*y:4*y+h, x:x+w]))
+
+
                 
 
 if __name__ == '__main__':

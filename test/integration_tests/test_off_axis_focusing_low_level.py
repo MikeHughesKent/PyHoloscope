@@ -40,8 +40,6 @@ backgroundField = pyh.off_axis_demod(background, cropCentre, cropRadius)
 correctedField = pyh.relative_phase(reconField, backgroundField)
 
 adjustedPixelSize = pixelSize / (cropRadius[0] * 2) * np.shape(hologram)[1]
-adjustedPixelSize2 = pixelSize / (cropRadius[1] * 2) * np.shape(hologram)[0]
-
 
 prop = pyh.propagator((cropRadius[0] * 2, cropRadius[1] *2), wavelength, adjustedPixelSize, depth)
 refocusedField = pyh.refocus(correctedField, prop)

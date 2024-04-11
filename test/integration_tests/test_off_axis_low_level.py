@@ -37,27 +37,53 @@ correctedField = pyh.relative_phase(reconField, backgroundField)
 
 # Display results
 plt.figure(dpi = 150)
-plt.imshow(hologram, cmap = 'gray')
-plt.title('Hologram')
+plt.imshow(pyh.amplitude(reconField), cmap = 'gray')
+plt.title('Amplitude, no mask')
     
 plt.figure(dpi = 150)
 plt.imshow(pyh.phase(reconField), cmap = 'twilight')
-plt.title('Phase')
+plt.title('Phase, no mask')
 
-plt.figure(dpi = 150)
-plt.imshow(pyh.phase(correctedField), cmap = 'twilight')
-plt.title('Corrected Phase')
 
+
+
+""" Circular Mask """
+
+# Remove modulation    
+mask = pyh.circ_window( (cropRadius[0] * 2, cropRadius[1] * 2), cropRadius)
+reconField = pyh.off_axis_demod(hologram.astype(float), cropCentre, cropRadius, mask = mask)
+backgroundField = pyh.off_axis_demod(background.astype(float), cropCentre, cropRadius)
+
+# Apply background correction and phase offset correction
+correctedField = pyh.relative_phase(reconField, backgroundField)
+
+# Display results
 plt.figure(dpi = 150)
 plt.imshow(pyh.amplitude(reconField), cmap = 'gray')
-plt.title('Intensity')
-
-DIC = pyh.synthetic_DIC(reconField, shearAngle = 0)
+plt.title('Amplitude, circ mask')
+    
 plt.figure(dpi = 150)
-plt.imshow(DIC, cmap='gray')
-plt.title('Synthetic DIC')
+plt.imshow(pyh.phase(reconField), cmap = 'twilight')
+plt.title('Phase, circ mask')
 
-phaseGrad = pyh.phase_gradient(correctedField)
+
+""" Cosine Mask """
+
+
+# Remove modulation    
+mask = pyh.circ_cosine_window( (cropRadius[0] * 2, cropRadius[1] * 2), cropRadius, 10)
+
+reconField = pyh.off_axis_demod(hologram.astype(float), cropCentre, cropRadius, mask = mask)
+backgroundField = pyh.off_axis_demod(background.astype(float), cropCentre, cropRadius)
+
+# Apply background correction and phase offset correction
+correctedField = pyh.relative_phase(reconField, backgroundField)
+
+# Display results
 plt.figure(dpi = 150)
-plt.imshow(phaseGrad, cmap='gray')
-plt.title('Phase Gradient')
+plt.imshow(pyh.amplitude(reconField), cmap = 'gray')
+plt.title('Amplitude, cos mask')
+    
+plt.figure(dpi = 150)
+plt.imshow(pyh.phase(reconField), cmap = 'twilight')
+plt.title('Phase, cos mask')

@@ -12,7 +12,7 @@ import numpy as np
 import time
 import warnings
 
-from pyholoscope.utils import circ_cosine_window, square_cosine_window, dimensions
+from pyholoscope.utils import circ_cosine_window, circ_window, square_cosine_window, dimensions
 from pyholoscope.off_axis import off_axis_find_mod, off_axis_find_crop_radius, off_axis_demod
 from pyholoscope.focusing import propagator, refocus, find_focus, refocus_stack
 from pyholoscope.general import pre_process, relative_phase
@@ -44,6 +44,11 @@ class Holo:
     INLINE_MODE = 1   # deprecated, kept for backwards compatibility
     OFFAXIS_MODE = 2  # deprecated, kept for backwards compatibility
     
+    # Off-axis crop mask types
+    CUSTOM = 1
+    CIRCLE = 2
+    CIRCLE_COSINE = 3
+    
     # For off-axis holography, these are generated if needed from the 
     # background and normalisation holograms later
     backgroundField = None
@@ -52,6 +57,7 @@ class Holo:
     normaliseField = None
     normaliseAbs = None
     normaliseAngle = None
+    cropWindow = None
     
     # When a propagator is created we store the parameters to know when it
     # needs updating
@@ -99,9 +105,12 @@ class Holo:
         self.findFocusDepthRange = kwargs.get('findFocusDepthRange', (0,1))
 
         # Off-axis demodulation
-        self.cropCentre = kwargs.get('cropCentre', False)
-        self.cropRadius = kwargs.get('cropRadius', False)
+        self.cropCentre = kwargs.get('cropCentre', None)
+        self.cropRadius = kwargs.get('cropRadius', None)
         self.returnFFT = kwargs.get('returnFFT', False)
+        self.cropMask = kwargs.get('cropMask', None)
+        self.customCropWindow = kwargs.get('customCropWindow', None)
+        self.cropWindowSkinThickness = kwargs.get('cropWindowSkinThickness', 10)
                 
         # Phase
         self.relativePhase = kwargs.get('relativePhase', False)
@@ -192,7 +201,7 @@ class Holo:
         assert self.cropRadius is not None, "Off-Axis demodulation radius not defined."
           
         # Removes the off-axis modulation to obtain complex image
-        demod = off_axis_demod(img, self.cropCentre, self.cropRadius, returnFFT = self.returnFFT, cuda = self.cuda)
+        demod = off_axis_demod(img, self.cropCentre, self.cropRadius, mask = self.cropWindow, returnFFT = self.returnFFT, cuda = self.cuda)
         
         if demod is None:
             warnings.warn('Output from off-axis demodulation was None.')
@@ -223,7 +232,7 @@ class Holo:
         # so here we calculate the corrected pizel size
         if self.pixelSize is not None:
             self.oaPixelSize = self.pixelSize / float(np.shape(demod)[0]) * float(np.shape(img)[0])
-                        
+
         # Apply background, normalisation, windowing, downsampling    
         if self.relativeAmplitude:
             background = self.backgroundAbs
@@ -479,15 +488,27 @@ class Holo:
 
         if hologram is None:
             hologram = self.background
+        
         if hologram is None:
             raise Exception ("calib_off_axis requires a calibration image, either provided as an argument or from a previously set background.")
+        
         self.cropCentre = off_axis_find_mod(hologram, maskFraction = 0.1)
         self.cropRadius = off_axis_find_crop_radius(hologram) 
+       
         if self.background is not None:
             self.off_axis_background_field()
         if self.normalise is not None:
             self.off_axis_normalise_field()
-    
+            
+        if self.cropMask == self.CIRCLE:
+            self.cropWindow = circ_window((self.cropRadius[0] * 2, self.cropRadius[1] * 2), self.cropRadius)
+        elif self.cropMask == self.CIRCLE_COSINE:
+            self.cropWindow = circ_cosine_window((self.cropRadius[0] * 2, self.cropRadius[1] * 2), self.cropRadius, self.cropWindowSkinThickness)
+        elif self.cropMask == self.CUSTOM:
+            self.cropWindow = self.customCropWindow
+        else:
+            self.cropWindow = None
+        
     
     def off_axis_background_field(self):
         """ Demodulate the background hologram.

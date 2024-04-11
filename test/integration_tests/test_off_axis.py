@@ -6,11 +6,11 @@ Tests object oriented off axis holography functionality of PyHoloscope
 Applied Optics Group
 University of Kent
 """
+import time
 
 from matplotlib import pyplot as plt
 
 import numpy as np
-import time
 
 import context              # Load paths       
 
@@ -24,17 +24,18 @@ pixelSize = .3e-6
 hologram = pyh.load_image("test data\\tissue_paper_oa.tif")
 background = pyh.load_image("test data\\tissue_paper_oa_background.tif") 
 
-# Create object
+# Create the Holo object that will be used for demodulation
 holo = pyh.Holo(pyh.OFF_AXIS, 
                 wavelength = wavelength, 
                 pixelSize = pixelSize, 
                 background = background,
-                relativePhase = True)
-               
+                cropMask = pyh.Holo.CIRCLE_COSINE,
+                cropWindowSkinThickness = 10,
+                relativePhase = True)               
                     
 # Find modulation frequency and generate background and normalisation fields
-holo.calib_off_axis()     
-
+# and create window
+holo.calib_off_axis()   
 
 # Remove modulation
 t1 = time.perf_counter()
