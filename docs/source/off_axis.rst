@@ -25,7 +25,7 @@ We also need to know the spatial frequency of the modulation. We can determine t
     
 where we have provided a background hologram to use for this purpose. It is possible 
 to use the image hologram as well for this purpose, but this may be unreliable if there
-is another strong spatial frequency.  If a background images has first been set using::
+is another strong spatial frequency.  If a background image has first been set using::
 
     holo.set_background(backgroundImg)
     

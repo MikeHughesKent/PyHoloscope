@@ -87,7 +87,7 @@ class Holo:
         self.set_normalise(kwargs.get('normalise', None))
         
         # Phase
-        self.relativeAmplitude = kwargs.get('relativeAmplitude', None)
+        self.relativeAmplitude = kwargs.get('relativeAmplitude', False)
         
         # Widowing
         self.autoWindow = kwargs.get('autoWindow', False)
@@ -129,33 +129,9 @@ class Holo:
         self.precision = self.set_precision(kwargs.get('precision', 'single'))
     
         
-    def process(self, img):
-        """ Process a hologram using the currently selected parameters. 
-        Calls process_inline or process_off_axis depending  on mode.
-        """
-      
-        # If we are refocusing we must have a wavelength, pixel size and depth specified
-        if self.mode == self.INLINE or (self.mode == self.OFF_AXIS and self.refocus == True):
-            assert self.pixelSize is not None, "Pixel size not specified."
-            assert self.wavelength is not None, "Wavelength not specified."
-            assert self.depth is not None, "Refocus depth not specified."
+           
         
-        if img is None: 
-            warnings.warn('Image provided to process was None, output will be None.')
-            return None
-        
-        assert img.ndim == 2, "Input must be a 2D numpy array."        
-        
-        if self.mode == self.INLINE_MODE or self.mode == self.INLINE: 
-            return self.process_inline(img)
-        elif self.mode == self.OFFAXIS_MODE or self.mode == self.OFF_AXIS: 
-            return self.process_off_axis(img) 
-        else: 
-            raise Exception("Invalid processing mode.")
-        
-        
-        
-    def process_inline(self, img):
+    def __process_inline(self, img):
         """ Process an inline hologram image, img, using the currently selected 
         parameters.
         """
@@ -193,7 +169,7 @@ class Holo:
         return imgOut
         
    
-    def process_off_axis(self, img):
+    def __process_off_axis(self, img):
         """ Process an off-axis hologram image using the currently selected parameters.
         """
                         
@@ -268,14 +244,48 @@ class Holo:
         return demod            
     
     
+    def __apply_window(self, img):
+        """ Applies the current window to a hologram 'img'.
+        """        
+        img = pre_process(img, window = self.window)
+        return img  
+   
+    
     def __str__(self):
         return "PyHoloscope Holo Class. Wavelength: " + str(self.wavelength) + ", Pixel Size: " + str(self.pixelSize)
 
 
-    def set_depth(self, depth):
-        """ Set the depth for numerical refocusing 
+
+
+###############################################################################
+####################################### API ###################################
+
+    def process(self, img):
+        """ Process a hologram using the currently selected parameters. 
+        Calls _process_inline or __process_off_axis depending  on mode.
         """
-        self.depth = depth
+      
+        # If we are refocusing we must have a wavelength, pixel size and depth specified
+        if self.mode == self.INLINE or (self.mode == self.OFF_AXIS and self.refocus == True):
+            assert self.pixelSize is not None, "Pixel size not specified."
+            assert self.wavelength is not None, "Wavelength not specified."
+            assert self.depth is not None, "Refocus depth not specified."
+        
+        if img is None: 
+            warnings.warn('Image provided to process was None, output will be None.')
+            return None
+        
+        assert img.ndim == 2, "Input must be a 2D numpy array."        
+        
+        if self.mode == self.INLINE_MODE or self.mode == self.INLINE: 
+            return self.__process_inline(img)
+        elif self.mode == self.OFFAXIS_MODE or self.mode == self.OFF_AXIS: 
+            return self.__process_off_axis(img) 
+        else: 
+            raise Exception("Invalid processing mode.")
+        
+
+############### PHYSICAL PARAMETERS ##########################################
 
         
     def set_wavelength(self, wavelength):
@@ -289,7 +299,9 @@ class Holo:
         """
         self.pixelSize = pixelSize     
         
-        
+ 
+########### BACKGROUND AND FLAT-FIELDING #####################################        
+ 
     def set_background(self, background):
         """ Set the background hologram. Use None to remove background. 
         """
@@ -336,17 +348,11 @@ class Holo:
          assert boolean == True or boolean == False, "Argument of set_relative_phase must be True or False"
          self.relativePhase = boolean
          
-    
-    def set_precision(self, precision):
-        """ Sets whether to use single or double precision.
-        """
-        assert (precision == 'single' or precision == 'double'), "Precision must be 'single' or 'double'."
-        self.precision = precision
-        if self.precision == 'double':
-            self.imType = 'float64'
-        else:
-            self.imType = 'float32'
+
             
+            
+############################# WINDOW #####################################
+           
             
     def create_window(self, imgSize, radius, skinThickness, shape = 'square'):
         """ Creates and stores the window used for pre or post processing. 
@@ -373,55 +379,36 @@ class Holo:
             self.window = square_cosine_window(imgSize, radius, skinThickness, dataType = self.imageType)
     
     
+  
+    
     def set_window(self, window):
         """ Sets the window to a pre-generated 'window', a 2D numpy array.
         """
         self.clear_window()
         if window is not None: 
-            self.window = window.astype(self.imageType)       
-    
-    
-    def set_window_shape(self, windowShape):
-        """ Sets the window shape, 'cicle' or 'square'.
-        """
-        if windowShape == 'circle' or windowShape == 'square':
-            self.windowShape = windowShape
-        else:
-            raise Exception ("Invalid window shape.")
-        
+            self.window = window.astype(self.imageType)     
+       
             
     def clear_window(self):
         """ Removes existing window, equivalent to set_window(None)
         """
-        self.window = None
-        
+        self.window = None        
+    
         
     def set_auto_window(self, autoWindow):
         """ Sets whether or not use auto create a window (boolean).
         """
-        assert autoWindow == True or autoWindow == False, "set_auto_window must be True or Falses"
+        assert autoWindow == True or autoWindow == False, "set_auto_window must be True or False"
         self.autoWindow = autoWindow
         
         
     def set_post_window(self, postWindow):
-        """ Sets whether or not to re- apply the window after refocusing (boolean).
+        """ Sets whether or not to apply the window after refocusing (boolean).
         """
         assert postWindow == True or postWindow == False, "set_post_window must be True or False"
-        self.postWindow = postWindow    
+        self.postWindow = postWindow  
         
-        
-    def set_window_radius(self, windowRadius):
-        """ Sets the radius of the cropping window.
-        """
-        self.windowRadius = windowRadius
-        
-        
-    def set_window_thickness(self, windowThickness): 
-        """ Sets the edge thickness of the cropping window.
-        """
-        self.windowThickness = windowThickness
-
-
+  
     def update_auto_window(self, img):
         """ Create or re-create the automatic window using current parameters.
         Provide an 'img', a 2D numpy array of the same size as the image to
@@ -450,7 +437,31 @@ class Holo:
                                    (int(windowRadiusX / self.downsample), int(windowRadiusY / self.downsample) ),
                                    self.windowThickness / self.downsample,
                                    shape = self.windowShape)
-               
+  
+    
+    def set_window_shape(self, windowShape):
+        """ Sets the auto window shape, 'cicle' or 'square'.
+        """
+        if windowShape == 'circle' or windowShape == 'square':
+            self.windowShape = windowShape
+        else:
+            raise Exception ("Invalid window shape.")
+        
+        
+    def set_window_radius(self, windowRadius):
+        """ Sets the auto window radius.
+        """
+        self.windowRadius = windowRadius
+        
+        
+    def set_window_thickness(self, windowThickness): 
+        """ Sets the auto window edge thickness.
+        """
+        self.windowThickness = windowThickness
+
+
+    
+################## OFF AXIS DEMODULTION ######################################               
 
     def set_off_axis_mod(self, cropCentre, cropRadius):
         """ Sets the location of the frequency domain position of the OA modulation.
@@ -460,15 +471,26 @@ class Holo:
             cropRadius  : radius
         """
         self.cropCentre = cropCentre
-        self.cropRadius = cropRadius
+        self.cropRadius = cropRadius        
         
-        
-    def set_stable_ROI(self, roi):
-        """ Set the location of the the ROI used for maintaining a constant 
-        background phase, i.e. this should be a background region of the image. 
-        The roi should be an instance of the Roi class.
+               
+    def set_crop_centre(self, centre):
+        """ Set the location of the modulation frequency in frequency domain. 
+        'centre' is a tuple of (x,y).
         """
-        self.stableROI = roi
+        self.cropCentre = centre        
+     
+        
+    def set_crop_radius(self, radius):
+        """ Set the size of the region to extract in frequency domain to demodulate. """
+        self.cropRadius = radius
+        
+        
+    def set_return_FFT(self, returnFFT):
+        """ Sets whether the FFT, rather than the demodualted image, is returned in OAH. 
+        Set True to obtain FFT, False to obtain image. 
+        """        
+        self.returnFFT = returnFFT            
 
         
     def auto_find_off_axis_mod(self, maskFraction = 0.1):
@@ -531,6 +553,25 @@ class Holo:
         self.normaliseAbs = np.abs(self.normaliseField)      # Store these now for speed
         self.normalisePhase = np.angle(self.normaliseField)
         
+        
+##################### PHASE #############################################        
+            
+    def set_stable_ROI(self, roi):
+        """ Set the location of the the ROI used for maintaining a constant 
+        background phase, i.e. this should be a background region of the image. 
+        The roi should be an instance of the Roi class.
+        """
+        self.stableROI = roi    
+        
+
+
+##################### REFOCUSING #########################################
+
+    def set_depth(self, depth):
+        """ Set the depth for numerical refocusing 
+        """
+        self.depth = depth
+        
             
     def update_propagator(self, img):
         """ Create or re-create the propagator using current parameters. img 
@@ -556,25 +597,6 @@ class Holo:
         if self.cuda and cudaAvailable:
            self.propagator = cp.array(self.propagator)    
     
-           
-    def set_oa_centre(self, centre):
-        """ Set the location of the modulation frequency in frequency domain. 
-        'centre' is a tuple of (x,y).
-        """
-        self.cropCentre = centre        
-     
-        
-    def set_oa_radius(self, radius):
-        """ Set the size of the region to extract in frequency domain to demodulate. """
-        self.cropRadius = radius
-        
-        
-    def set_return_FFT(self, returnFFT):
-        """ Sets whether the FFT, rather than the demodualted image, is returned in OAH. 
-        Set True to obtain FFT, False to obtain image. 
-        """        
-        self.returnFFT = returnFFT
-        
         
     def set_downsample(self, downsample):
         """ Set the downsample factor. This will cause the propagator to be
@@ -585,20 +607,8 @@ class Holo:
             
         self.downsample = downsample
         
-        
-    def set_use_cuda(self, useCuda):
-        """ Set whether to use GPU if available, useCuda is True to use GPU or 
-        False to not use GPU.
-        """
-        self.cuda = useCuda
-        
-        
-    def set_use_numba(self, useNumba):
-        """ Set whether to use Numba JIT if available, useNumba is True to use 
-        Numba or False to not use Numba.
-        """
-        self.useNumba = useNumba    
-                
+   
+############### AUTO FOCUS ###################################################                
         
     def set_find_focus_parameters(self, **kwargs):
         """ Sets the parameters used by the find_focus method.
@@ -626,18 +636,6 @@ class Holo:
         self.findFocusMethod = kwargs.get('method', 'Brenner')
         self.findFocusMargin = kwargs.get('margin', None)
         self.coarseSearchInterval = kwargs.get('coarseSearchInterval', None)       
-              
-        
-    def make_propagator_LUT(self, img, depthRange, nDepths):
-        """ Creates a LUT of propagators for faster finding of focus.
-        """
-        self.propagatorLUT = PropLUT(np.shape(img)[0], self.wavelength, self.pixelSize, depthRange, nDepths, numba = (numbaAvailable and self.useNumba), precision = self.precision)
-     
-        
-    def clear_propagator_LUT(self):
-        """ Deletes the LUT of propagators.
-        """
-        self.propagatorLUT = None
         
         
     def find_focus(self, img):    
@@ -656,6 +654,24 @@ class Holo:
         
         
         return find_focus(img, self.wavelength, self.pixelSize, self.findFocusDepthRange, self.findFocusMethod, precision = self.precision, **args)
+    
+
+################### PROPAGATOR LUT ###########################################
+              
+        
+    def make_propagator_LUT(self, img, depthRange, nDepths):
+        """ Creates a LUT of propagators for faster finding of focus.
+        """
+        self.propagatorLUT = PropLUT(np.shape(img)[0], self.wavelength, self.pixelSize, depthRange, nDepths, numba = (numbaAvailable and self.useNumba), precision = self.precision)
+     
+        
+    def clear_propagator_LUT(self):
+        """ Deletes the LUT of propagators.
+        """
+        self.propagatorLUT = None
+        
+
+################### DEPTH STACK ##############################################        
     
 
     def depth_stack(self, img, depthRange, nDepths):
@@ -683,12 +699,7 @@ class Holo:
         return refocus_stack(img, self.wavelength, self.pixelSize, depthRange, nDepths, precision = self.precision, **args)
 
 
-    def apply_window(self, img):
-        """ Applies the current window to a hologram 'img'.
-        """        
-        img = pre_process(img, window = self.window)
-        return img
-    
+  
     
     def auto_focus(self, img, **kwargs):
         """ Customisable auto-focus.
@@ -706,3 +717,31 @@ class Holo:
                                roi = kwargs.get('roi', None) ,
                                precision = self.precision) 
         return focusDepth
+    
+    
+    
+    ########################### GENERAL SETTINGS ################################
+         
+    def set_use_cuda(self, useCuda):
+        """ Set whether to use GPU if available, useCuda is True to use GPU or 
+        False to not use GPU.
+        """
+        self.cuda = useCuda
+        
+        
+    def set_use_numba(self, useNumba):
+        """ Set whether to use Numba JIT if available, useNumba is True to use 
+        Numba or False to not use Numba.
+        """
+        self.useNumba = useNumba    
+        
+        
+    def set_precision(self, precision):
+        """ Sets whether to use single or double precision.
+        """
+        assert (precision == 'single' or precision == 'double'), "Precision must be 'single' or 'double'."
+        self.precision = precision
+        if self.precision == 'double':
+            self.imType = 'float64'
+        else:
+            self.imType = 'float32'    

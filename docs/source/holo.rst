@@ -2,8 +2,12 @@
 Holo Class
 ----------
 
-The ``Holo`` class is the preferred way to access the core functionality of PyHoloscope. A full list of method is below. Examples are provided in 'examples\\inline_examply.py' and 'examples\\off_axis_example.py' in the Github repository. Also see the `Inline Holography <inline.html>`_ 
-and `Off-Axis Holography <off_axis.html>`_ getting started pages. The class is generally used by setting various parameters and then calling ``process`` to process individual holograms.
+The ``Holo`` class is the preferred way to access the core functionality of PyHoloscope. The class is generally used by setting various parameters, either by passing them at instantiation or by calling methods, and then by calling the ``process`` method to process each raw hologram.
+
+Examples are provided of `Inline Holography <https://github.com/MikeHughesKent/PyHoloscope/tree/main/examples/inline_example.py>`_ and 
+`Off-Axis Holography <https://github.com/MikeHughesKent/PyHoloscope/tree/main/examples/off_axis_example.py>`_ in the Github repository. Also see the `Inline Holography <inline.html>`_ 
+and `Off-Axis Holography <off_axis.html>`_ getting started pages.
+
 
 ^^^^^^^^^^^^^^^
 Instantiatation
@@ -14,7 +18,85 @@ Instantiatation
 
 Intantiation of a Holo object. ``mode`` determines the pipeline of processing to apply to images, either ``PyHoloscope.offaxis`` or ``PyHoloscope.inline``.
 ``wavelength`` is the light wavelength, ``pixelSize`` is the camera pixel size (as projected onto the object plane if magnification is present). 
-``wavelength`` and ``pixelSize`` should be in the same units. Returns an instance of ``Holo`` class.
+``wavelength`` and ``pixelSize`` should be in the same units, and the same units must later be used for refocusing distance, if relevant.
+
+There are a large number of additional optional keywords arguments, specified for example as ``useNumba = True``, which are listed below:
+
+
+**General:**
+
+* ``useNumba`` : boolean, ``True`` to use Numba JIT if available (default = ``True``).
+* ``cuda`` : boolean, ``True`` to use CUDA for GPU processing if available (default = ``True``).
+* ``precision`` : str, ``'single'`` or ``'double'``, determines output precision (default = ``'single'``).
+
+**Background and normalisation**
+
+These properties control background subtraction and normalisation (flat-fielding).
+
+* ``background`` : 2D numpy array, background hologram. For off-axis holography, this is used to recover relative amplitude and relative phase if ``relativeAmplitude`` and ``relativePhase`` are True, respectively. For inline holography, the background hologram is subtracted prior to refoucsing, and if it is ``None`` there is no background subtraction (default = ``None``).
+* ``normalise`` : 2D numpy array, normalisation image used for flat-field correction. If specified, this is used to produce a flat amplitude map prior to refocusing. (default = ``None``).
+
+ 
+**Numerical refocusing:**
+
+These properties control numerical refocusing using the angular spectrum method. Numerical refocusing is always performed when
+performing inline holography, but must be specified by setting ``refocus = True`` for off-axis holography.
+
+* ``refocus`` : boolean, if ``True`` and in off-axis mode, numerical refocusing will be performed (refocusing is **always** performed for inline mode, regardless of this setting) (default = ``False``).
+* ``depth`` : float, distance to refocus to in same units as wavelength and pixelSize (default = 0).      
+* ``downsample`` : float, hologram will be downsampled by this factor before refocusing for improved speed (default = 1, i.e. no downsampling).        
+
+
+**Refocus Widowing:**
+
+These properties control whether a spatial window is applied before and after numerical refocusing, and the properties of the window.
+
+* ``autoWindow`` : boolean, if ``True``, a spatial cosine window will be created the first time a hologram is refocused, and applied *prior* to the numerical refocusing. The shape and size of the window are determined by the parameters below. (default = ``False``).
+* ``postWindow`` : boolean, if ``True`` the window will also be applied *after* refocusing (default = ``False``).
+* ``window`` : 2D numpy array or ``None``, a custom spatial window to use. This must be the same size as the raw hologram (for inline holography) or the demodulated hologram (for off-axis holography). (default = ``None``) 
+* ``windowShape`` : str, the shape of the automatically generated window, ``'circle'`` or ``'square'`` (default = ``'square'``)        
+* ``windowRadius`` : int or ``None``, radius of circular window or half-side length of sqaure window. If ``None``, the window will be the same size as the hologram. (default = ``None``)
+* ``windowThickness`` : float, thickness of cosine smoothed edge of window in pixels (default = 10).
+
+   
+**Autofocus:**
+
+These properties control the behaviour of the auto focusing methods.
+
+* ``findFocusMethod`` : str, focus metric to use, (default = ``'Brenner'``)
+* ``findFocusRoi``: Roi or None, region of interest to apply focus metric to (default = ``None``)
+* ``findFocusMargin`` : int or None, margin around ``findFocusRoi`` to refocus. If ``None``, the whole image is refocused during focus search (default = ``None``).
+* ``findFocusCoarseSearchInterval`` : int or None, if specified, a coarse focus search will be performed at a this number of positions (default = ``None``)
+* ``findFocusDepthRange`` : (float, float), depth range to search between (default = (0,1))
+
+
+**Off-axis demodulation:**
+
+These properties control the behaviour of the demodulation step of off-axis holography.
+
+* ``cropCentre`` : (int, int), location of modulation peak in FFT (default = ``None``)
+* ``cropRadius`` : (int) or (int, int), semi-diameter of region to crop around modulation peak. Provide a single value for a square and a tuple of (w,h) for a rectange. (default = ``None``)
+* ``returnFFT`` : boolean, if True ``process`` will return a tuple of the demodulated hologram and the FFT. (default = ``False``)
+* ``cropMask`` : (default = ``None``)
+* ``customCropWindow`` : 2D numpy array or None, a custom mask to apply to the cropped region. Must be same size as cropped region, as determined by ``cropRadius``. (default = ``None``)
+* ``cropWindowSkinThickness`` : float or (float, float), if using a cosine window, this is the thickness of the smootheed edge. If a tuple if provided, the horizontal and vertical sides can have different thickness. (default = 10)
+
+
+**Phase:**
+
+These properties control the phase part of the returned complex reconstruction.
+
+* ``relativeAmplitude`` : boolean, if ``True`` then for off-axis holography, if a 2D numpy array was provided in ``background``, the returned reconstruction will have an amplitude relative to the background hologram amplitude (default = ``False``).
+* ``relativePhase`` : boolean, if ``True`` then for off-axis holography, if a 2D numpy array was provided in ``background``, the returned reconstruction will have a phase map which is relative to the background hologram phase map (default = ``False``).
+* ``stablePhase`` : boolean, if ``True``, then for off-axis holography, if a ROI is provided in ``stableROI``, then the returned reconstruction will have a phase relative to the average phase in the ROI (default = ``False``).
+* ``stableROI`` : Roi, a region of interest used for stable phase (default = ``None``)
+ 
+ 
+**Display:**
+
+* ``invert`` : boolean, if ``True``, output image is brightness inverted (default = ``False``)
+
+
 
 ^^^^^^^^^^^^^^^
 Methods
@@ -23,14 +105,13 @@ Methods
 
 .. py:function::  apply_window(img)
 
-Apply the current window to a hologram ``img``.        
-
+Apply the current window to a hologram ``img`` and return the windowed hologram as a 2D numpy array.
+      
    
 
 .. py:function:: auto_find_off_axis_mod()
 
 Detect and store the modulation parameters for off-axis demodulation. 
-
 
 
  
@@ -52,21 +133,18 @@ internally for when ``process()`` is called.
 Remove a previously set background, equivalent to calling ``set_background(None)``.
 
 
-     
         
 .. py:function::  clear_propagator_LUT()
 
 Deletes a previously created look up table (LUT) of propagators.
+  
 
-   
-
-    
 
 .. py:function::  depth_stack(img, depthRange, nDepths)
 
 Create a depth stack of refocused images from a hologram ``img`` (either an inline hologram or a demodulated off-axis hologram) using current parameters, producing a set of ``nDepths`` refocused images. ``depthRange`` is a tuple of (min depth, max depth). Returns an instance of the class ``RefocusStack``. To refocus to this depth, set this as the new depth using ``set_depth``.
-   
         
+
         
 .. py:function::  find_focus(img):    
 
@@ -86,12 +164,10 @@ maximum depths to generate for.
 Performs off-axis demodulation of a background hologram which has been provided via ``set_background``.
 
 
-
-          
    
 .. py:function:: process(img)
 
-Process an image ``img`` using the currently selected options. RTeturns the processed image as 2D complex Numpy array.
+Process an image ``img`` using the currently selected options. Returns the processed image as 2D complex Numpy array.
 
 
 .. py:function:: set_auto_window(autoWindow)

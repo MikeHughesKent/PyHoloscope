@@ -6,18 +6,19 @@
 PyHoloscope
 ====================================
 
-PyHoloscope is a Python package for holographic microscopy. 
+PyHoloscope is a Python package for holographic microscopy. It supports inline and off-axis holography, 
+including numerical refocusing, automatic focuisng, and phase correction (e.g. removing tilts). 
+It is designed to be fast enough for use in imaging GUIs as well as for offline research, 
+with optional GPU and Numba JIT acceleration. 
 
-Development is led by `Mike Hughes <https://research.kent.ac.uk/applied-optics/hughes/>`_'s lab in the 
-`Applied Optics Group <https://research.kent.ac.uk/applied-optics>`_, School of Physics and Astronomy, University of Kent. 
-Bug reports, contributions and pull requests are welcome. 
+Most of the functionality of PyHoloscope can be accessed via the `Holo class <holo.html>`_. An instance of ``Holo`` is created, processing parameters are set, and then the ``process`` method
+is used to process raw holograms. Alternatively, low-level functions can be called directly for more advanced applications where custom processing pipelines are required. 
 
-The package supports inline and off-axis holography, including numerical refocusing and phase correction (e.g. removing tilts). 
-It is designed to be fast enough for use in imaging GUIs as well as for offline research, with GPU and Numpy acceleration supported. 
 
 .. toctree::
    :maxdepth: 2
    
+   installation
    inline
    off_axis
    holo
@@ -25,6 +26,7 @@ It is designed to be fast enough for use in imaging GUIs as well as for offline 
    propLUT
    roi
    functions
+   contributing
 
 
 Indices and tables

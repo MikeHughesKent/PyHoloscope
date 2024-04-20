@@ -41,8 +41,7 @@ should be unwrapped phase (i.e. real). Returns a 2D real numpy array.
     
 Carries out processing steps prior to refocus - background correction, normalisation,
 downsampling and  windowing. Also coverts image to either float64 (if input img is real) or
-complex128 (if input img is complex). Finally, image is cropped to a square
-as non-square images are not currently supported. ``img`` is the raw hologram, a 2D
+complex128 (if input img is complex). ``img`` is the raw hologram, a 2D
 numpy array, background is a background hologram (2D numpy array) to be subtracted, 
 ``normalise`` is a background hologram (2D numpy array) to be divided by. ``window`` 
 is a window to multiply by (2D numpy array). The image will be downsampled by the

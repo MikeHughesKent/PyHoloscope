@@ -32,13 +32,12 @@ from pyholoscope.utils import extract_central
 def pre_process(img, background = None, normalise = None, window = None, downsample = 1., numba = False, precision = 'single'):
     """ Carries out steps required prior to refocusing.
     
-    This includes background correction, normalisation and windowing. It also 
-    coverts image to either to a float64 (if input img is real) or
-    complex float (if input img is complex). Finally, the image is cropped to a 
-    square and, if requested, downsampled.
+    This includes background correction, normalisation and windowing and 
+    downsampling It also coverts image to either to a float64 (if input img is real) or
+    complex float (if input img is complex). 
     
     Arguments:
-          img       :  raw hologram, 2D numpy array, real or complex
+          img        :  raw hologram, 2D numpy array, real or complex
         
     Keyword Arguments:
           background : 2D numpy array (real), backround hologram to be 
@@ -92,7 +91,6 @@ def pre_process(img, background = None, normalise = None, window = None, downsam
     if downsample != 1:                
         img = cv.resize(img, (int(np.shape(img)[1]/ downsample / 2) * 2, int(np.shape(img)[0] / downsample /2) *2 )   )
          
-     
     # Apply window
     if window is not None:
     
@@ -118,7 +116,7 @@ def relative_phase(img, background):
     The function works on both fields (complex arrays) and phase maps (real 
     arrays), and returns a corrected field/phase map of the same type.
     
-    Required Arguments:
+    Arguments:
           img        :  2D numpy array, real or complex. If real
                         it is taken to be phase map, otherwise if complex
                         it is the field.
@@ -144,7 +142,7 @@ def relative_phase_self(img, roi = None):
     the whole image or a specified ROI of the image.
     
     The function works on both fields (complex arrays) and phase maps (real 
-    arrays, and returns a corrected field/phase map of the same type.
+    arrays), and returns a corrected field/phase map of the same type.
     
     Arguments:
           img        :  ndarray

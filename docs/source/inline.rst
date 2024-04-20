@@ -30,9 +30,9 @@ a background can be specified using::
     holo.set_background(backgroundImg)
     
 or by passing ``background = backgroundImg`` as an argument when creating the ``Holo`` object. 
-If we would like to divide through by a background image, to correct for
-intensity variations, we can pass ``normalise = backgroundImg`` or call
-``set_normalise(backgroundImg)``.
+If we would like to divide through by a flat-field image stored as a 2D numpy array ``flatImg``, to correct for
+intensity variations, we can pass ``normalise = flatImg`` or call
+``set_normalise(flatImg)``.
 
 We can now numerically refocus a hologram ``hologram``, again a 2D numpy array, 
 using the angular spectrum method by first setting the depth to refocus to, for example::
@@ -58,6 +58,11 @@ If we would like to smooth the edges of the hologram, we can apply a window befo
 refocusing by calling:: 
 
     holo.set_auto_window(True)
+   
+By default the window will be a rectangular cosine window. Options for the window size and shape
+are set using the ``set_window_shape``, ``set_window_radius`` and ``set_window_thickness`` methods
+of :doc:`holo`.
+    
  
 The angular spectrum propagator and the window are both created the first time
 ``process`` is called. If we prefer to pre-generate these, we can call::

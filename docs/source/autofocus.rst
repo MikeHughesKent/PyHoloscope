@@ -1,5 +1,5 @@
 ----------------------------------
-Automatic Depth Determination
+Automatic Focusing
 ----------------------------------
 
 The optimal refocus depth for a hologram can be determined using trial refocuses, assessed using a focus metric. 
