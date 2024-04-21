@@ -1,1 +1,8 @@
 sphinx-rtd-theme==1.2.2
+matplotlib>=3.3.4
+numba>=0.55.1
+numpy>=1.18
+opencv_python>=4.5.2.54
+Pillow>=9.3.0
+scipy>=1.7.3
+
