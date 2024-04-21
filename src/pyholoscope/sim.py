@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-PyHoloscope
-Python package for holgoraphic microscopy
+PyHoloscope - Python package for holgoraphic microscopy
 
-The Sim package provide utilites for simulating holograms.
+The Sim package provide utilites for simulating off-axis holograms.
 
 @author: Mike Hughes, Applied Optics Group, University of Kent
 """

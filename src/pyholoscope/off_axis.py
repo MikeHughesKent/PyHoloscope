@@ -12,7 +12,6 @@ import math
 import numpy as np
 import scipy
 
-
 import matplotlib.pyplot as plt
 
 try:
@@ -29,12 +28,12 @@ def off_axis_demod(hologram, cropCentre, cropRadius, returnFull = False, returnF
     """ Removes spatial modulation from off-axis hologram to obtain complex field.
     
     By default, returns the complex field as a 2D numpy array of size 
-    (cropRadius*2, cropRadius*2). If returnFull is True, the returned
+    determoned 2 * cropRadius. If returnFull is True, the returned
     array will instead by the same size as the input hologram. If returnFFT is
     True, function returns a tuple (field, FFT) where FFT is a log scaled
     image of the FFT of the hologram (2D numpy array, real).
         
-    Arguments:
+    Parameters:
           hologram   : ndarray
                        2D numpy array, real, raw hologram
           cropCentre : tuple of (int, int). 
@@ -59,16 +58,14 @@ def off_axis_demod(hologram, cropCentre, cropRadius, returnFull = False, returnF
                        (cropRadiusX, cropRadiusY)
           cuda      :  boolean
                        if True GPU will be used if available.  
-    Returns:
-        
-    Reconstructed field as complex numpy array.     
+    Returns:       
+          ndarray, reconstructed field as complex numpy array or 
+          tuple of (ndarray, ndarray) if returnFFT is True   
     
     """
            
     # Size of image in pixels 
-    height, width = np.shape(hologram)     
-    
-    
+    height, width = np.shape(hologram)    
    
     # Apply 2D FFT
     if cuda is False or cudaAvailable is False:
@@ -88,8 +85,7 @@ def off_axis_demod(hologram, cropCentre, cropRadius, returnFull = False, returnF
         assert np.shape(mask) == np.shape(shiftedFFT), "Incorrect mask size."
         maskedFFT = shiftedFFT * mask
     else:
-        maskedFFT = shiftedFFT
-        
+        maskedFFT = shiftedFFT        
  
     if returnFull:
         h,w = np.shape(hologram)
@@ -123,7 +119,7 @@ def off_axis_demod(hologram, cropCentre, cropRadius, returnFull = False, returnF
 def off_axis_find_mod(hologram, maskFraction = 0.1):
     """ Finds the location of the off-axis holography modulation peak in the FFT. 
     
-    Arguments:
+    Parameters:
           hologram     : ndarray
                          2D numpy array, real, raw hologram
          
@@ -133,8 +129,7 @@ def off_axis_find_mod(hologram, maskFraction = 0.1):
                          mask to avoid the d.c. peak being detected 
                          (default = 0.1).
     Returns:
-
-    Tuple of (int, int) = (y location, x location)                     
+          tuple of (int, int), modulation location in FFT (y location, x location)                     
     """
     
     # Apply 2D FFT
@@ -159,7 +154,7 @@ def off_axis_find_crop_radius(hologram, maskFraction = 0.1):
     than the crop radius is a tuple of (y radius, x radius), corresponding to to
     the half the lengths of the two axes of an ellipse.
     
-    Arguments:
+    Parameters:
           hologram     : ndarray
                          2D numpy array, real, raw hologram
          
@@ -170,8 +165,7 @@ def off_axis_find_crop_radius(hologram, maskFraction = 0.1):
                          (default = 0.1).
                          
     Returns:
-
-    Tuple of (int, int) = (y radius, x radius)                     
+          tuple of (int, int) = (y radius, x radius)                     
     """
     
     h = np.shape(hologram)[0]
@@ -203,7 +197,7 @@ def off_axis_find_crop_radius(hologram, maskFraction = 0.1):
 def off_axis_predict_mod(wavelength, pixelSize, numPixels, tiltAngle, rotation = 0): 
     """ Predicts the location of the modulation peak in the FFT.
    
-    Arguments:
+    Parameters:
           wavelegnth   : float
                          light wavelength in metres
           pixelSize    : float
@@ -218,7 +212,7 @@ def off_axis_predict_mod(wavelength, pixelSize, numPixels, tiltAngle, rotation =
                          rotation of tilt with respect to x axis, in radians (default is 0)                     
     
     Returns:
-          tuple of (int, int) = (x pixel, y pixel)
+          tuple of (int, int), location of modulation (x pixel, y pixel)
     
     """   
      
@@ -248,7 +242,7 @@ def off_axis_predict_mod(wavelength, pixelSize, numPixels, tiltAngle, rotation =
 def off_axis_predict_mod_distance(wavelength, pixelSize, numPixels, tiltAngle, rotation = 0): 
     """ Predicts the absolute distance of the modulation peak in the FFT from the dc.
    
-    Arguments:
+    Parameters:
           wavelegnth   : float
                          light wavelength in metres
           pixelSize   : float
@@ -274,9 +268,8 @@ def off_axis_predict_mod_distance(wavelength, pixelSize, numPixels, tiltAngle, r
 
 
 def off_axis_predict_tilt_angle(hologram, wavelength, pixelSize, maskFraction = 0.1):
-    """ Returns the reference beam tilt based on the hologram modulation.
-    
-    Returns the angle in radians.
+    """ Returns the reference beam tilt based on the hologram modulation. The angle
+    is returned in radians.
     
     Arguments:
           hologram     : ndarray

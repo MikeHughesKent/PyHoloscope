@@ -126,7 +126,7 @@ def refocus(img, propagator, **kwargs):
                         if True then img is assumed to be already the
                         FFT of the hologram, useful for speed when performing
                         multiple refocusing of the same hologram. (default =
-                                                                   False)
+                        False)
         cuda          : boolean
                         if True GPU will be used if available.
         others        : pass any keyword arguments from pre_process() to 

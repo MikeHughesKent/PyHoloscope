@@ -19,29 +19,40 @@ from pyholoscope.utils import dimensions
 
 @jit(nopython = True)   
 def propagator_numba(gridSize, wavelength, pixelSize, depth, geometry = 'plane', precision = 'single'):
-    """ Creates Fourier domain propagator for angular spectrum method. Speeds
-    up generation by only calculating top left quadrant and then duplicating 
-    (with flips) to create the other quadrants. Returns the propagator as a 
-    complex 2D numpy array. Uses Numba JIT, typically several times faster
-    than calling propagator().
-    
-    Arguments:
-        gridSize   : tuple of (float, float), size of image.
-        pixelSize  : float, physical size of pixels
-        wavelength : float, in same units as pixelSize
-        depth      : float, refocus depth in same units as pixelSize
-    Optional Keyword Arguments:
-        geometry   : str, 'plane' (defualt) or 'point'
-    
-        
-    NOTE: precision is currently not implemented, propagator numba will always
-          use single precision
-
-    
-    """
-    #assert gridSize % 2 == 0, "Grid size must be even"
-    
    
+    """ Numba optimised version of propagator(). 
+    Creates Fourier domain propagator for angular spectrum method. 
+    Returns the propagator as a complex 2D numpy array. Generation is sped up 
+    by only calculating top left quadrant and then duplicating 
+    (with flips) to create the other quadrants. 
+     
+    Note that 'precision' is currently not implemented in the numba version.
+     
+     
+     
+    Parameters:
+         gridSize   : float or (float, float)
+                      size of square image (in pixels) to refocus, or
+                      if tuple of (float, float), size of rectangular image.
+         pixelSize  : float
+                      physical size of pixels
+         wavelength : float
+                      in same units as pixelSize
+         depth      : float
+                      refocus depth in same units as pixelSize
+     
+    Keyword Arguments:
+         geometry   : str 
+                      'plane' (default) or 'point'
+         precision  : str
+                      numerical precision of ouptut, 'single' (defualt) 
+                      or 'double' [NOT IMPLEMENTED]
+         cascade    : int
+                      for use with cascade method, depth will be dividing by
+                      by this number             
+
+    """
+       
     gridWidth = int(gridSize[0])
     gridHeight = int(gridSize[1])  
     

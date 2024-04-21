@@ -20,15 +20,18 @@ from PIL import Image
 
 
 def get8bit(img):
-    """ Returns 8 bit repr. of amplitude and phase of field. 
+    """ Returns 8 bit representation of amplitude and phase of field. 
 
     Returns a tuple of amplitude and phase, both real 2D numpy arrays of type
     uint8. Amplitude is scaled between 0 and 255, phase is mapped to between
     0 and 255, with 0 = 0 radians and 255 = 2pi radians.
 
-    Arguments:
-          img   : 2D numpy array, complex or real
-
+    Parameters:
+          img   : ndarray
+                  2D numpy array, complex or real
+              
+    Returns:
+          tuple of (ndarray, ndarray), 8 bit amplitude and phase maps
     """
 
     if np.iscomplexobj(img):
@@ -51,14 +54,20 @@ def get8bit(img):
 
 
 def get16bit(img):
-    """ Returns 16 bit repr. of amplitude and phase of field. 
+    """ Returns 16 bit representation of amplitude and phase of field. 
 
     Returns a tuple of amplitude and phase, both real 2D numpy arrays of type
     uint16. Amplitude is scaled between 0 and 2^16 -1, phase is mapped to between
     0 and 2^16 - 1, with 0 = 0 radians and 2^16 - 1 = 2pi radians.
 
-    Arguments:
-          img   : 2D numpy array, complex          
+    Parameters:
+          img   : ndarray
+                  2D numpy array, complex or real
+                  
+    Returns:
+          tuple of (ndarray, ndarray), 16 bit amplitude and phase maps
+
+               
     """
     amp = np.abs(img).astype('double')
     amp = amp - np.min(amp)
@@ -75,13 +84,13 @@ def get16bit(img):
 
 
 def save_phase_image(img, filename):
-    """ Saves phase as 16 bit tif. 
+    """ Saves phase as 16 bit tif. The phase is scaled so that 2pi = 65536.
 
-    The phase is scaled so that 2pi = 65536.
-
-    Arguments:
-          img      : 2D numpy array, either complex field or real (phase map)
-          filename : str, file to save to. If exists will be over-written.
+    Parameters:
+          img      : ndarray
+                     2D numpy array, either complex field or real (phase map)
+          filename : str
+                     path to file to save to. If exists will be over-written.
     """
 
     if np.iscomplexobj(img):
@@ -96,56 +105,64 @@ def save_phase_image(img, filename):
 
 
 def magnitude(img):
-    """ Returns magnitude of complex image
+    """ Returns magnitude of complex image.
+    
+    Parameters:
+        img        : ndarray
+                     complex image
+                     
+    Returns:
+         ndarray, magnitude image                 
     """
     return np.abs(img)**2
 
 
 def amplitude(img):
-    """ Returns amplitude of complex image
+    """ Returns amplitude of complex image.
+    
+    Parameters:
+        img        : ndarray
+                     complex image
+                     
+    Returns:
+         ndarray, amplitude image  
     """
     return np.abs(img)
 
 
 def phase(img):
     """ Returns phase of complex image, between 0 and 2pi.
+    
+    Parameters:
+        img        : ndarray
+                     complex image
+                     
+    Returns:
+         ndarray, phase map                  
     """
     return np.angle(img) % (2 * math.pi)
 
 
-def extract_central(img, boxSize):
-    """ Extracts sqaure of size boxSize from centre of img
-    """
-    w = np.shape(img)[0]
-    h = np.shape(img)[1]
-
-    cx = w/2
-    cy = h/2
-    boxSemiSize = min(cx, cy, boxSize)
-
-    img = img[math.floor(cx - boxSemiSize):math.floor(cx + boxSemiSize),
-              math.ceil(cy - boxSemiSize): math.ceil(cy + boxSemiSize)]
-    return img
 
 
 def circ_window(imgSize, circleRadius, dataType = 'float32'):
-    """ Produce a circular or window mask on grid of imgSize.
+    """ Produces a circular or elipitcal mask on grid of imgSize.
 
-    Arguments:
-        imgSize: int or (int, int)
-                 size of output image. Provide a single int to generate a square
-                 image of that size, otherwise provide (w,h) to produce a rectangular
-                 image.
+    Parameters:
+        imgSize      : int or (int, int)
+                       size of output image. Provide a single int to generate a square
+                       image of that size, otherwise provide (w,h) to produce a rectangular
+                       image.
         circleRadius : float or (float, float)
                        Pixel values inside this radius will be 1. Provide a tuple
                        of (x,y) to have different x and y radii.
       
-    Optional Keyword Arguments:
-        dataType : str
-                   data type of returned array (default is 'float32')
+    Keyword Arguments:
+        dataType     : str
+                       data type of returned array (default is 'float32')
 
     Returns:
-        2D numpy array containing mask               
+        ndarray, 2D numpy array containing mask               
 
 
     """  
@@ -158,25 +175,25 @@ def circ_window(imgSize, circleRadius, dataType = 'float32'):
 
 
 def circ_cosine_window(imgSize, circleRadius, skinThickness, dataType='float32'):
-    """ Produce a circular or elliptical cosine window mask on grid of imgSize.
+    """ Produces a circular or elliptical cosine window mask on grid of imgSize.
 
-    Arguments:
-        imgSize: int or (int, int)
-                 size of output image. Provide a single int to generate a square
-                 image of that size, otherwise provide (w,h) to produce a rectangular
-                 image.
-        circleRadius : float or (float, float)
-                       Pixel values inside this radius will be 1. Provide a tuple
-                       of (x,y) to have different x and y radii.
+    Parameters:
+        imgSize      :  int or (int, int)
+                        size of output image. Provide a single int to generate a square
+                        image of that size, otherwise provide (w,h) to produce a rectangular
+                        image.
+        circleRadius :  float or (float, float)
+                        Pixel values inside this radius will be 1. Provide a tuple
+                        of (x,y) to have different x and y radii.
         skinThickness : float
                         size of smoothed area inside circle/ellipse
 
-    Optional Keyword Arguments:
-        dataType : str
-                   data type of returned array (default is 'float32')
+    Keyword Arguments:
+        dataType      : str
+                        data type of returned array (default is 'float32')
 
     Returns:
-        2D numpy array containing mask               
+        ndarray, 2D numpy array containing mask               
 
 
     """
@@ -220,11 +237,29 @@ def circ_cosine_window(imgSize, circleRadius, skinThickness, dataType='float32')
 
 
 def square_cosine_window(imgSize, radius, skinThickness, dataType='float32'):
-    """ Produce a square cosine window mask on grid of imgSize * imgSize. 
-
+    """ Produces a square cosine window mask on grid of imgSize * imgSize. 
     Mask is 0 for radius > circleSize and 1 for radius < (circleSize - 
-                                                          skinThickness)
-    The intermediate region is a smooth cosine function.
+    skinThickness).  The intermediate region is a smooth squared cosine function.
+    
+    Parameters:
+        imgSize       : int or (int, int)
+                        size of output image. Provide a single int to generate a square
+                        image of that size, otherwise provide (w,h) to produce a rectangular
+                        image.
+        circleRadius :  float or (float, float)
+                        Pixel values inside this radius will be 1. Provide a tuple
+                        of (x,y) to have different x and y radii.
+        skinThickness : float
+                        size of smoothed area inside circle/ellipse
+
+    Keyword Arguments:
+        dataType      : str
+                        data type of returned array (default is 'float32')
+
+    Returns:
+        ndarray, 2D numpy array containing mask   
+    
+    
     """
 
     w, h = dimensions(imgSize)
@@ -270,14 +305,17 @@ def pil2np(im):
 def load_image(file, square=False):
     """ Loads an image from a file and returns as numpy array. 
 
-    Arguments:
+    Parameters:
+        file   : str
+                 filename to load image from, including exension.
 
-        file : Filename to load image from, including exension.
-
-    Optional Arguments:
-
-        square : If True, non-square will be made square by taking the largest
+    Keyword Arguments:
+        square : boolean
+                 if True, non-square will be made square by taking the largest
                  possible central square, default is False.
+                 
+    Returns:
+        ndarray, 2D image
     """
     img = Image.open(file)
     im = pil2np(img)
@@ -292,20 +330,42 @@ def load_image(file, square=False):
 
 def save_image(img, file):
     """ Saves an image stored as numpy array to an 8 bit tif.
+    
+    Parameters:
+        img    : ndarray
+                 image to save
+        file   : str
+                 filename to load image from, including extension.
+    
     """
     img = Image.fromarray(get8bit(img)[0])
     img.save(file)
 
 
 def save_amplitude_image8(img, filename):
-    """ Saves amplitude information as an 8 bit tif"""
+    """ Saves amplitude information as an 8 bit tif.
+   
+    Parameters:
+        img    : ndarray
+                 image to save
+        file   : str
+                 filename to load image from, including extension.
+    """
 
     im = Image.fromarray(get8bit(img)[0])
     im.save(filename)
 
 
 def save_amplitude_image16(img, filename):
-    """ Saves amplitude information as 16 bit, normalised"""
+    """ Saves amplitude information as a 16 bit tif.
+    
+    Parameters:
+        img    : ndarray
+                 image to save
+        file   : str
+                 filename to load image from, including extension.
+    """
+    
     amp = amplitude(img)
 
     im = Image.fromarray(get16bit(img)[0])
@@ -313,15 +373,20 @@ def save_amplitude_image16(img, filename):
 
 
 def extract_central(img, boxSize=None):
-    """ Extract a central square from an image. 
-
-    The extracted square is centred on the input image, with size 2 * boxSize 
-    if possible, otherwise the largest square that can be extracted.
-
-    Arguments:
-        img        : 2D numpy array, input image
-        boxSize    : int, half of side length
-
+    """ Extracts square of size boxSize*2 from centre of img. If boxSize is
+    not specified, the largest possible square will be extracted.
+    
+    Parameters:
+        img        : ndarray
+                     complex or real image
+                     
+    Keyword Arguments:
+        boxSize    : int or None
+                     size of square to be extracted                 
+                     
+    Returns:
+         ndarray, central square from image 
+    
     """
     w = np.shape(img)[0]
     h = np.shape(img)[1]
@@ -340,13 +405,29 @@ def extract_central(img, boxSize=None):
 
 
 def invert(img):
+    """ Inverts an image, largest value becomes smallest and vice versa.
+
+    Parameters:
+        img        : ndarray
+                     numpy array, input image
+  
+    Returns:
+        ndarray, inverted image
+    """
 
     return np.max(img) - img
 
 
 def dimensions(inp):
     """ Helper to obtain width and height in functions which accept multiple
-    ways to send this information.
+    ways to send this information. The input may either be a single value,
+    for a square image, a tuple of (h, w) or a 2D array.
+    
+    Parameters:
+        inp        : int or (int, int) or ndarray
+        
+    Returns:
+        tuple of (int, int), width and height
     """
 
     if type(inp) is np.ndarray:
