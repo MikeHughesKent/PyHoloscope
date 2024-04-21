@@ -30,23 +30,29 @@ from pyholoscope.utils import dimensions
 
 def propagator(gridSize, wavelength, pixelSize, depth, geometry = 'plane', precision = 'single', cascade = 1):
     """ Creates Fourier domain propagator for angular spectrum method. 
-    Returns the propagator as a complex 2D numpy array.
-    
-    Speed up by only calculating top left quadrant and then duplicating 
+    Returns the propagator as a complex 2D numpy array. Generation is sped up 
+    by only calculating top left quadrant and then duplicating 
     (with flips) to create the other quadrants. 
     
-    Arguments:
-        gridSize   : float, size of square image (in pixels) to refocus, or
-                     tuple of (float, float), size of rectangular image.
-        pixelSize  : float, physical size of pixels
-        wavelength : float, in same units as pixelSize
-        depth      : float, refocus depth in same units as pixelSize
+    Parameters:
+        gridSize   : float or (float, float)
+                     size of square image (in pixels) to refocus, or
+                     if tuple of (float, float), size of rectangular image.
+        pixelSize  : float
+                     physical size of pixels
+        wavelength : float
+                     in same units as pixelSize
+        depth      : float
+                     refocus depth in same units as pixelSize
     
     Keyword Arguments:
-        geometry   : str, 'plane' (default) or 'point'
-        precision  : str, numerical precision of ouptut, 'single' (defualt) 
+        geometry   : str 
+                     'plane' (default) or 'point'
+        precision  : str
+                     numerical precision of ouptut, 'single' (defualt) 
                      or 'double'
-        cascade    : int, for use with cascade method, depth will be dividing by
+        cascade    : int
+                     for use with cascade method, depth will be dividing by
                      by this number             
 
     """
@@ -103,18 +109,26 @@ def propagator(gridSize, wavelength, pixelSize, depth, geometry = 'plane', preci
 
 def refocus(img, propagator, **kwargs):    
     """ 
-    Refocus a hologram using the angular spectrum method. 
+    Refocuses a hologram using the angular spectrum method. 
+    Takes a hologram 'hologram' wich may be a real or
+    complex 2D numpy array (with any pre-processing
+    such as background removal already performed) and a pre-computed 'propagator' 
+    which can be generated using the function 'propagator()'.
     
-    Arguments:
-        img           : 2D numpy array, raw hologram.  
-        propagator    : 2D numpy array, as returned from propagator().
+    Parameters:
+        img           : ndarray
+                        2D numpy arrayraw hologram.  
+        propagator    : ndarray
+                        2D numpy array, as returned from propagator().
     
     Keyword Arguments:
-        FourierDomain : boolean, if True then img is assumed to be already the
+        FourierDomain : boolean
+                        if True then img is assumed to be already the
                         FFT of the hologram, useful for speed when performing
                         multiple refocusing of the same hologram. (default =
                                                                    False)
-        cuda          : boolean, if True GPU will be used if available.
+        cuda          : boolean
+                        if True GPU will be used if available.
         others        : pass any keyword arguments from pre_process() to 
                         apply this pre-processing prior to refocusing
     """
@@ -155,14 +169,15 @@ def refocus(img, propagator, **kwargs):
     
    
 def focus_score(img, method):
-    """ Returns score of how 'in focus' an amplitude image is.
-    
+    """ Returns score of how 'in focus' an amplitude image is.     
     Score is returned as a float, the lower the better the focus.
     
-    Arguments:
-        img     : 2D numpy array, real, image
-        method  : str, scoring method, options are: Brenner, Sobel, 
-                         SobelVariance, Var, DarkFcous or Peak
+    Parameters:
+        img          : ndarray
+                       2D numpy array, real, image
+        method       : str
+                       scoring method, options are: Brenner, Sobel, 
+                       SobelVariance, Var, DarkFcous or Peak
                       
     """
 
@@ -218,7 +233,7 @@ def refocus_and_score(depth, imgFFT, pixelSize, wavelength, method, scoreROI = N
     """ Refocuses an image to specificed depth and returns focus score, used by
     findFocus.
     
-    Arguments:
+    Parameters:
         depth     : float
                     depth to focus to
         imgFFT    : ndarray, complex
@@ -231,7 +246,7 @@ def refocus_and_score(depth, imgFFT, pixelSize, wavelength, method, scoreROI = N
                     scoring method (see focus_score for list)
 
                          
-     Keyword Arguments:                    
+    Keyword Arguments:                    
         scoreROI  : ROI or None
                     region of image to apply scoring to (default is None, in
                     which case it applies to whole image.)
@@ -270,20 +285,25 @@ def refocus_and_score(depth, imgFFT, pixelSize, wavelength, method, scoreROI = N
 
 def find_focus(img, wavelength, pixelSize, depthRange, method, **kwargs):
     """ Determine the refocus depth which maximises the focus metric on image.
+    To depth score using only a subset of the image, provide an instance of Roi in scoreROI. Note that 
+    the entire image will still be refocused, i.e. this does not provide a speed improvement. To refocus only
+    a small region of the image around the ROI (which is faster), provide a margin in margin, a region with this margin
+    around the ROI will then be refocused. A pre-computed propagator LUT, an instance of PropLUT can be 
+    provided in propLUT. Note that if margin is specified, the propagator LUT must be of the correct size, i.e. the same size as the area to be refocused.
+    To perform an initial coarse search to identify the region likely to have the best focus, provide the number of
+    search regions to split the search range into in coarseSearchInterval.
     
-    Arguments:
-    
-        pixelSize : float
-                    real pixel size of hologram
-        wavelength: float
-                    wavelength of light source
-        depthRange: tuple of (float, float)
-                    min and max depths to search between
-        method    : str
-                    scoring method (see focus_score for list)
+    Parameters:    
+        pixelSize   : float
+                      real pixel size of hologram
+        wavelength  : float
+                      wavelength of light source
+        depthRange  : tuple of (float, float)
+                      min and max depths to search between
+        method      : str
+                      scoring method (see focus_score for list)
       
-    Keyword Arguments:
-        
+    Keyword Arguments:        
         background : ndarray or None
                      background image (default is None)
         window     : ndarray or None
@@ -354,8 +374,10 @@ def find_focus(img, wavelength, pixelSize, depthRange, method, **kwargs):
 def coarse_focus_search(imgFFT, depthRange, nIntervals, pixelSize, wavelength, method, scoreROI, propLUT):
     """ An initial check for approximate location of good focus depths prior to a finer search. 
     Used by findFocus, see this function for arguments.
-
-    nIntervals : number of intervals to divide depth range into.
+    
+    Parameters:    
+        nIntervals : int
+                     number of intervals to divide depth range into.
     
     """
     searchDepths = np.linspace(depthRange[0], depthRange[1], nIntervals)
@@ -416,8 +438,7 @@ def focus_score_curve(img, wavelength, pixelSize, depthRange, nPoints, method, *
 def refocus_stack(img, wavelength, pixelSize, depthRange, nDepths, **kwargs):
     """ Numerical refocusing of a hologram to produce a depth stack. 
     
-    Arguments:
-    
+    Parameters:    
         pixelSize : float
                     real pixel size of hologram
         wavelength: float
@@ -427,8 +448,7 @@ def refocus_stack(img, wavelength, pixelSize, depthRange, nDepths, **kwargs):
         nDepths   : int
                     number of depths to refocus to within depthRange
              
-    Keyword Arguments:
-        
+    Keyword Arguments:        
         background : ndarray or None
                      background image (default is None)
         window     : ndarray or None

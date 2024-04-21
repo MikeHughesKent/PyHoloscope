@@ -30,24 +30,28 @@ from pyholoscope.utils import extract_central
 
 
 def pre_process(img, background = None, normalise = None, window = None, downsample = 1., numba = False, precision = 'single'):
-    """ Carries out steps required prior to refocusing.
-    
+    """ Carries out steps required prior to refocusing.  
     This includes background correction, normalisation and windowing and 
     downsampling It also coverts image to either to a float64 (if input img is real) or
     complex float (if input img is complex). 
     
-    Arguments:
-          img        :  raw hologram, 2D numpy array, real or complex
+    Parameters:
+          img        :  ndarray
+                        raw hologram, 2D numpy array, real or complex
         
     Keyword Arguments:
-          background : 2D numpy array (real), backround hologram to be 
+          background : ndaarray
+                       2D numpy array (real), backround hologram to be 
                        subtracted (default = None)
-          normalise  : 2D numpy array (real), background hologram to be 
+          normalise  : ndarray
+                       2D numpy array (real), background hologram to be 
                        divided (default = None)
-          window     : 2D numpy array (real), window to smooth edges. Will be  
+          window     : ndarray
+                       2D numpy array (real), window to smooth edges. Will be  
                        resized to match size of img if necessary. 
                        (default = None)
-          downsample : float, factor to downsample image by (default = 1)
+          downsample : float
+                       factor to downsample image by (default = 1)
     """    
     
     # Ensure the input hologram is a float or a complex float          
@@ -116,7 +120,7 @@ def relative_phase(img, background):
     The function works on both fields (complex arrays) and phase maps (real 
     arrays), and returns a corrected field/phase map of the same type.
     
-    Arguments:
+    Parameters:
           img        :  2D numpy array, real or complex. If real
                         it is taken to be phase map, otherwise if complex
                         it is the field.
@@ -144,7 +148,7 @@ def relative_phase_self(img, roi = None):
     The function works on both fields (complex arrays) and phase maps (real 
     arrays), and returns a corrected field/phase map of the same type.
     
-    Arguments:
+    Parameters:
           img        :  ndarray
                         2D numpy array, real or complex. If real
                         it is taken to be phase map, otherwise if complex
@@ -178,7 +182,7 @@ def obtain_tilt(img):
     tilt in the coverglass. Returns a phase map approximating the tilt as 
     a 2D real numpy array.
     
-    Arguments:
+    Parameters:
           img        :  ndarray
                         2D numpy array, real. Unwrapped phase.
           
@@ -199,8 +203,9 @@ def obtain_tilt(img):
 def phase_unwrap(img):
     """ Returns unwrapped version of 2D phase map. 
     
-    Arguments:
-          img        :  2D numpy array, real. Wrapped phase.
+    Parameters:
+          img        :  ndarray
+                        2D numpy array, real. Wrapped phase.
     """
     
     img = unwrap_phase(img)
@@ -213,8 +218,9 @@ def fourier_plane_display(img):
     
     Returns a 2D numpy array, real.
     
-    Arguments:
-          img        :  2D numpy array, real or complex.
+    Parameters:
+          img        :  ndarray
+                        2D numpy array, real or complex.
     """
     
     cameraFFT = np.log(np.abs(np.fft.fftshift(np.fft.fft2(img)) ) )
@@ -230,7 +236,7 @@ def synthetic_DIC(img, shearAngle = math.pi):
     shear angle direction (default is horizontal = 0 rad). The input must
     be the complex field, not a phase map.
     
-    Arguments:
+    Parameters:
           img        :  ndarray
                         2D numpy array, complex, the field.
     
@@ -266,7 +272,7 @@ def phase_gradient_dir(img):
     The output is a complex 2D numpy array, with the horizontal and vertical
     gradients encoded in the real and imaginary parts.
     
-    Arguments:
+    Parameters:
           img        :  ndarray
                         2D numpy array, real or complex, the field or phase map
     
@@ -292,7 +298,7 @@ def phase_gradient_amp(img):
     find an edge whenever the phase is wrapped, phase_gradient avoids this 
     problem.
     
-    Arguments:
+    Parameters:
           img        :  ndarray
                         2D numpy array, real or complex, the field or phase map
     
@@ -318,7 +324,7 @@ def phase_gradient(img):
     at the wrap points. Returns a 2D numpy array, real containing the amplitude
     of the gradient at each point.
     
-    Arguments:
+    Parameters:
           img        :  ndarray
                         2D numpy array, real or complex, the field or phase map
      
@@ -342,7 +348,7 @@ def phase_gradient(img):
 def mean_phase(img):
     """ Returns the mean phase of a field or phase map.
     
-    Arguments:
+    Parameters:
           img        :  ndarray
                         2D numpy array, real or complex, the field or phase map   
     """
