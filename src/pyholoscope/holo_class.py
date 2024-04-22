@@ -15,7 +15,8 @@ import warnings
 from pyholoscope.utils import circ_cosine_window, circ_window, square_cosine_window, dimensions
 from pyholoscope.off_axis import off_axis_find_mod, off_axis_find_crop_radius, off_axis_demod
 from pyholoscope.focusing import propagator, refocus, find_focus, refocus_stack
-from pyholoscope.general import pre_process, relative_phase
+from pyholoscope.general import pre_process
+from pyholoscope.phase_proc import relative_phase
 from pyholoscope.prop_lut import PropLUT
 
 

@@ -50,10 +50,13 @@ class PropLUT:
  
     def propagator(self, depth): 
         """ Returns the propagator from the LUT which is closest to requested 
-        depth. 
+        depth. If depth is outside the range of the propagators, function returns None.
         
-        If depth is outside the range of the propagators, function returns None.
+        Parameters:
+            depth     : float
+                        refocus depth for requested propagator
         """
+        
         # Find nearest propagator
         if self.nDepths == 1:   # Otherwise the algorithm to get the index will fail 
             return self.propTable[0,:,:]

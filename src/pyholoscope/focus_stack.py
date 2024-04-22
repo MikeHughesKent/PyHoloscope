@@ -9,7 +9,6 @@ Class to store stack of images numerically refocused to different depths.
 
 import math
 
-
 import numpy as np
 from PIL import Image
 
@@ -19,9 +18,14 @@ class FocusStack:
      
     def __init__(self, img, depthRange, nDepths):
         """ Initialise stack.
-        img : example image of the correct size, 2D numpy array
-        depthRange : tuple of min depth and max depth in stack
-        nDepths : number of images to be stored in stack
+        
+        Parameters:
+            img        : ndarray
+                         example image of the correct size and type, 2D numpy array
+            depthRange : (float, float)
+                         tuple of min depth and max depth in stack
+            nDepths    : int
+                         number of images to be stored in stack
         """
         self.stack = np.zeros((nDepths, np.shape(img)[0], np.shape(img)[1]), dtype = img.dtype)
         self.depths = np.linspace(depthRange[0], depthRange[1], nDepths)
@@ -36,38 +40,96 @@ class FocusStack:
         
     
     def add_idx(self, img, idx):
-        """ Add a refocused image to a specific idx"""
+        """ Adds an image to a specific index position.
+        
+        Parameters:
+            img      : ndarray
+                       image as a 2D numpy array
+            idx      : int
+                       index position                       
+        """
         self.stack[idx, :,:] = img  
         
         
     def add_depth(self, img, depth):
-        """ Add an image image to index closest to the the specifed depth """
+        """ Adds an image to index position closest to the the specifed depth.
+        
+        Parameters:
+            img      : ndarray
+                       image as a 2D numpy array
+            depth    : float
+                       refocus depth of image         
+        """
         self.stack[self.depth_to_index(depth),:,:] = img
     
         
     def get_index(self, idx):
-        """ Return the refocused image at the specified index """
+        """ Returns the refocused image stored at the specified index.
+        
+        Parameters:
+            idx      : int
+                       index position to return image from
+                       
+        Returns:
+            ndarray, image               
+        
+        """
         return self.stack[idx, : , :]
     
     
     def get_depth(self, depth):
-        """ Return the closest refocused image to the specifed depth """
+        """ Returns the closest refocused image to the specifed depth.
+        
+        Parameters:
+            depth     : float
+                        depth to return image from
+                        
+        Returns:
+            ndarray, image                
+        
+        """
         return self.get_index(self.depth_to_index(depth))
     
     
     def get_depth_intensity(self, depth):
-        """ Return the amplitude of the refocused image closest to the specified depth """
+        """ Returns the amplitude of the refocused image closest to the specified depth.
+        
+        Parameters:
+            depth     : float
+                        depth to return image from
+                        
+        Returns:
+            ndarray, image                
+                
+        """
         return np.abs(self.get_depth(depth))
 
     
     def get_index_intensity(self, idx):
-        """ Return the amplitude of the refocused image at the specified index """        
+        """ Return the amplitude of the refocused image at the specified index.
+        
+        Parameters:
+            idx     : int
+                      index position to return image from
+                        
+        Returns:
+            ndarray, image                
+                
+        """        
         return np.abs(self.get_index(idx))
     
     
     def depth_to_index(self, depth):
-        """ Return the index closest to the specified depth """
+        """ Returns the index closest to the specified depth.
         
+        Parameters:
+            depth     : float
+                        depth to obtain closest index to
+                        
+        Returns:
+            int, index                
+                
+        """ 
         idx = round((depth - self.minDepth) / (self.maxDepth - self.minDepth) * (self.nDepths-1))
         if idx < 0:
             idx = 0
@@ -77,16 +139,32 @@ class FocusStack:
     
     
     def index_to_depth(self, idx):
-        """ Return depth corresponding to the specified index """
+        """ Returns depth corresponding to the specified index.
+        
+        Parameters:
+            idx     : int
+                      index position
+                        
+        Returns:
+            float, depth           
+                
+        """ 
         return self.depths[idx]
                            
     
-    def write_intensity_to_tif(self, filename, **kwargs):
-        """ Write the amplitudes of the stack of refocused images to a tif stack 
-        If autoContrast == True, all images will be normalised.
-        """
+    def write_intensity_to_tif(self, filename, autoContrast = True):
+        """ Writes the amplitudes of the stack of refocused images to a 16 bit tif stack 
+        If autoContrast == True, all images will be autoscaled (across the whole
+        stack, not individually) to use the full bit depth.
         
-        autoContrast = kwargs.get('autoContrast', True)
+        Parameters:
+            filename     : str
+                           path/file to save to, should have .tif extension.
+                           
+        Keyword Arguments:
+            autoContrast : boolean
+                           if True (default) images are autoscaled         
+        """
        
         if autoContrast:
            maxVal = np.max(np.abs(self.stack))
@@ -107,8 +185,12 @@ class FocusStack:
         
         
     def write_phase_to_tif(self, filename):
-        """ Write the phases of the stack of refocused images to 16 bit tif stack 
+        """ Writes the phases of the stack of refocused images to a 16 bit tif stack 
         -pi is mapped to 0, pi is mapped to 255.
+        
+        Parameters:
+            filename     : str
+                           path/file to save to, should have .tif extension.
         """
 
         imlist = []

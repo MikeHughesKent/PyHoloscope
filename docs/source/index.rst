@@ -21,9 +21,10 @@ is used to process raw holograms. Alternatively, low-level functions can be call
    installation
    inline
    off_axis
-   holo
    autofocus
-   propLUT
+   holo
+   focus_stack
+   propLUT   
    roi
    functions
    contributing

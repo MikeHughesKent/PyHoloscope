@@ -12,7 +12,7 @@ from pyholoscope.focus_stack import *
 from pyholoscope.roi import *
 from pyholoscope.holo_class import *
 from pyholoscope.focusing import *
-from pyholoscope.phase import *
+from pyholoscope.phase_proc import *
 try:
     from pyholoscope.focusing_numba import *
 except:
