@@ -80,7 +80,7 @@ def pre_process(img, background = None, normalise = None, window = None, downsam
         img = img / normalise        
     
     # Apply downsampling
-    if downsample != 1:                
+    if downsample != 1 and not np.iscomplexobj(img):                
         img = cv.resize(img, (int(np.shape(img)[1]/ downsample / 2) * 2, int(np.shape(img)[0] / downsample /2) *2 )   )
          
     # Apply window

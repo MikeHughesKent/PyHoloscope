@@ -28,7 +28,7 @@ def off_axis_demod(hologram, cropCentre, cropRadius, returnFull = False, returnF
     """ Removes spatial modulation from off-axis hologram to obtain complex field.
     
     By default, returns the complex field as a 2D numpy array of size 
-    determoned 2 * cropRadius. If returnFull is True, the returned
+    2 * cropRadius. If returnFull is True, the returned
     array will instead by the same size as the input hologram. If returnFFT is
     True, function returns a tuple (field, FFT) where FFT is a log scaled
     image of the FFT of the hologram (2D numpy array, real).
@@ -66,6 +66,9 @@ def off_axis_demod(hologram, cropCentre, cropRadius, returnFull = False, returnF
            
     # Size of image in pixels 
     height, width = np.shape(hologram)    
+    
+    cropCentre = dimensions(cropCentre)
+    cropRadius = dimensions(cropRadius)
    
     # Apply 2D FFT
     if cuda is False or cudaAvailable is False:
@@ -276,8 +279,8 @@ def off_axis_predict_tilt_angle(hologram, wavelength, pixelSize, maskFraction = 
                          2D numpy array, real, hologram
           wavelength   : float
                          light wavelength in metres
-          pixelSizze   : float
-                         hologram physical pixel size
+          pixelSize    : float
+                         hologram physical pixel size in metres
     
     Optional Keyword Arguments:
           maskFraction : float 

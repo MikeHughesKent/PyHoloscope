@@ -140,7 +140,6 @@ class Holo:
         # If we have are doing autowindow, and we either don't have
         # a window, or it is the wrong size, we make a new window   
         self.update_auto_window(img)
-                   
         # Apply background, normalisation, windowing, downsampling    
         if self.normaliseField is not None:
             normalise = np.abs(self.normaliseField)
@@ -148,7 +147,6 @@ class Holo:
             normalise = None
             
         imgPreprocessed = pre_process(img, downsample = self.downsample, window = self.window, background = self.background, normalise = self.normalise, precision = self.precision)
-              
         # If the propagator is not the correct one for the current parameters, regenerate it
         if np.shape(self.propagator) != np.shape(imgPreprocessed) or self.propagator is None or self.propagatorDepth != self.depth or self.propagatorWavelength != self.wavelength or self.propagatorPixelSize != self.pixelSize * self.downsample:
             self.update_propagator(img)
@@ -194,7 +192,10 @@ class Holo:
         if self.relativePhase == True:
             if self.backgroundField is not None:
                 demod = relative_phase(demod, self.backgroundField)
-            else:
+            elif self.background is not None:
+                self.off_axis_background_field()
+
+            else:    
                 warnings.warn('Relative phase requested but no background field available, call off_axis_background_field() to create this first.')
  
         if demod is None:
@@ -284,7 +285,13 @@ class Holo:
             return self.__process_off_axis(img) 
         else: 
             raise Exception("Invalid processing mode.")
+ 
         
+    def set_mode(self, mode):
+        self.mode = mode
+    
+    def set_refocus(self, refocus):
+        self.refocus = refocus
 
 ############### PHYSICAL PARAMETERS ##########################################
 
@@ -306,9 +313,11 @@ class Holo:
     def set_background(self, background):
         """ Set the background hologram. Use None to remove background. 
         """
-        self.clear_background()
-        if background is not None: self.background = background.astype(self.imageType) 
-      
+        #self.clear_background()
+        if background is not None: 
+            self.background = background.astype(self.imageType) 
+        else:
+            self.background = None
             
     def set_normalise(self, normalise):
         """ Set the normalisation hologram. Use None to remove normalisation. 
@@ -479,12 +488,12 @@ class Holo:
         """ Set the location of the modulation frequency in frequency domain. 
         'centre' is a tuple of (x,y).
         """
-        self.cropCentre = centre        
+        self.cropCentre = dimensions(centre)        
      
         
     def set_crop_radius(self, radius):
         """ Set the size of the region to extract in frequency domain to demodulate. """
-        self.cropRadius = radius
+        self.cropRadius = dimensions(radius)
         
         
     def set_return_FFT(self, returnFFT):
@@ -564,7 +573,8 @@ class Holo:
         """
         self.stableROI = roi    
         
-
+    def set_relative_phase(self, relative_phase):
+        self.relativePhase = relative_phase
 
 ##################### REFOCUSING #########################################
 
@@ -578,16 +588,20 @@ class Holo:
         """ Create or re-create the propagator using current parameters. img 
         should be an 2D numpy array of the same size as the images to be processed.
         """
+        
+        
         self.propagatorWavelength = self.wavelength
         self.propagatorDepth = self.depth
 
         if self.mode == self.INLINE_MODE: 
             self.propagatorPixelSize = self.pixelSize * self.downsample
+            downsample = self.downsample
         else:
-            self.propagatorPixelSize = self.oaPixelSize * self.downsample
+            self.propagatorPixelSize = self.oaPixelSize 
+            downsample = 1
         
-        propWidth = int(np.shape(img)[1] / self.downsample / 2 ) * 2   
-        propHeight = int(np.shape(img)[0] / self.downsample / 2) * 2    
+        propWidth = int(np.shape(img)[1] / downsample / 2 ) * 2   
+        propHeight = int(np.shape(img)[0] / downsample / 2) * 2    
         
         if numbaAvailable and self.useNumba:
             self.propagator = propagator_numba((propWidth, propHeight), self.wavelength, self.propagatorPixelSize, self.depth, precision = self.precision)

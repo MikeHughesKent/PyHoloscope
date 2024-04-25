@@ -264,9 +264,9 @@ def refocus_and_score(depth, imgFFT, pixelSize, wavelength, method, scoreROI = N
     # Whether we are using a look up table of propagators or calculating it each time  
     if propLUT is None:
         if useNumba:
-            prop = propagator_numba(np.shape(imgFFT)[0], wavelength, pixelSize, depth, precision = precision)
+            prop = propagator_numba(np.shape(imgFFT.transpose()), wavelength, pixelSize, depth, precision = precision)
         else:
-            prop = propagator(np.shape(imgFFT)[0], wavelength, pixelSize, depth, precision = precision)
+            prop = propagator(np.shape(imgFFT.transpose()), wavelength, pixelSize, depth, precision = precision)
 
     else:
         prop = propLUT.propagator(depth)        
