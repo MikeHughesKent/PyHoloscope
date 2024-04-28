@@ -22,6 +22,7 @@ is used to process raw holograms. Alternatively, low-level functions can be call
    inline
    off_axis
    autofocus
+   sim
    holo
    focus_stack
    propLUT   
