@@ -2,8 +2,6 @@
 """
 PyHoloscope - Python package for holgoraphic microscopy
 
-@author: Mike Hughes, Applied Optics Group, University of Kent
-
 PropLUT is the class for generating and storing propagator look up tables.
 
 """
@@ -24,9 +22,23 @@ class PropLUT:
     def __init__(self, imgSize, wavelength, pixelSize, depthRange, nDepths, numba = False, precision = 'single'):
         """ Create the propagator Look-Up-Table (LUT). 
 
-        depthRange is a tuple of (min depth, max depth), and nDepths
-        propagators will be generated equally specifed within this range.
-        
+        Arguments:
+            imgSize   : int or tuple of (int, int)
+                        size of propagators, square or rectangular
+            wavelength: float
+                        wavelength of light
+            pixelSize : float
+                        physical size of pixels
+            depthRange: tuple
+                        range of depths to generate propagators for
+            nDepths   : int
+                        number of depths to generate propagators for
+
+        Keyword Arguments:
+            numba     : bool
+                        flag to use numba for speed up (default = False)
+            precision : str
+                        'single' or 'double' (default = 'single')
         """
         
         if precision == 'double':

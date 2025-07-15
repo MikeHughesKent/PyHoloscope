@@ -1,11 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-PyHoloscope
-Python package for holgoraphic microscopy
-
-Mike Hughes, Applied Optics Group, University of Kent
-
-PyHoloscope is a python library for holographic microscopy.
+PyHoloscope - Python package for holgoraphic microscopy 
 
 This file contains functions related to estimating depth from shifted images.
 
@@ -35,10 +30,17 @@ def determine_shift(img1, img2, **kwargs):
     from the centre of img2 is compared with a sqaure region extracted from the reference image img1. The size 
     of the template (templateSize) must be less than the size of the reference (refSize). The maximum
     detectable shift is the (refSize - templateSize) / 2.
-    : param img1 : image as 2D numpy array
-    : param img2 : image as 2D numpy array
-    : upsample : factor to scale images by prior to template matching to
-                 allow for sub-pixel registration.        
+
+    Arguments:
+        img1     : numpy.ndarray
+                   reference image
+        img2     : numpy.ndarray
+                   image to be compared with reference
+
+    Keyword Arguments:    
+        upsample : int
+                   factor to scale images by prior to template matching to
+                   allow for sub-pixel registration.        
     """
     
     returnMax = kwargs.get('returnMax', False)

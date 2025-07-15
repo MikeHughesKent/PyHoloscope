@@ -2,7 +2,6 @@
 """
 Runs all tests of PyHoloscope. 
 
-@author: Mike Hughes. Applied Optics Group, University of Kent
 """
 
 import context                    # Relative paths
@@ -31,12 +30,6 @@ import test_relative_phase
 
 print('# Relative phase refocus')
 import test_relative_phase_refocus
-
-print("# Estimate Tilt Angle")
-import test_estimate_tilt_angle
-
-print("# Find Mod Frequency and Radius")
-import test_find_mod_and_radius
 
 print("# Numba")
 import test_numba

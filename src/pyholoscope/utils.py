@@ -2,12 +2,10 @@
 """
 PyHoloscope - Python package for holgoraphic microscopy
 
-@author: Mike Hughes, Applied Optics Group, University of Kent
-
 This file contains utility functions.
 
-
 """
+
 import math
 import numpy as np
 
@@ -27,11 +25,11 @@ def get8bit(img):
     0 and 255, with 0 = 0 radians and 255 = 2pi radians.
 
     Parameters:
-          img   : ndarray
+          img   : numpy.ndarray
                   2D numpy array, complex or real
               
     Returns:
-          tuple of (ndarray, ndarray), 8 bit amplitude and phase maps
+          tuple of (ndarray, ndarray) : 8 bit amplitude and phase maps
     """
 
     if np.iscomplexobj(img):
@@ -61,11 +59,11 @@ def get16bit(img):
     0 and 2^16 - 1, with 0 = 0 radians and 2^16 - 1 = 2pi radians.
 
     Parameters:
-          img   : ndarray
+          img   : numpy.ndarray
                   2D numpy array, complex or real
                   
     Returns:
-          tuple of (ndarray, ndarray), 16 bit amplitude and phase maps
+          tuple of (ndarray, ndarray) : 16 bit amplitude and phase maps
 
                
     """
@@ -87,7 +85,7 @@ def save_phase_image(img, filename):
     """ Saves phase as 16 bit tif. The phase is scaled so that 2pi = 65536.
 
     Parameters:
-          img      : ndarray
+          img      : numpy.ndarray
                      2D numpy array, either complex field or real (phase map)
           filename : str
                      path to file to save to. If exists will be over-written.
@@ -97,7 +95,7 @@ def save_phase_image(img, filename):
         phase = np.angle(img).astype('double')
     else:
         phase = img.astype('double')
-    phase = phase - np.min(phase)
+    phase = phase % (2 * math.pi)
     phase = ((phase / (2 * math.pi)) * 65536).astype('uint16')
 
     im = Image.fromarray(phase)
@@ -108,11 +106,11 @@ def magnitude(img):
     """ Returns magnitude of complex image.
     
     Parameters:
-        img        : ndarray
+        img        : numpy. ndarray
                      complex image
                      
     Returns:
-         ndarray, magnitude image                 
+        numpy.ndarray  : magnitude image                 
     """
     return np.abs(img)**2
 
@@ -125,7 +123,7 @@ def amplitude(img):
                      complex image
                      
     Returns:
-         ndarray, amplitude image  
+         numpy.ndarray : amplitude image  
     """
     return np.abs(img)
 
@@ -134,14 +132,39 @@ def phase(img):
     """ Returns phase of complex image, between 0 and 2pi.
     
     Parameters:
-        img        : ndarray
+        img        : numpy.ndarray
                      complex image
                      
     Returns:
-         ndarray, phase map                  
+         numpy.ndarray : phase map                  
     """
     return np.angle(img) % (2 * math.pi)
 
+
+def load_image(filename):
+    """
+    Loads an image or stack of images from a file. 
+    
+    Parameters:
+        filename    : str or Path
+                      path to file
+    
+    Returns:
+        numpy.ndarray : 2D, 3D or 4D numpy array representing image or stack  
+
+    """
+    im = Image.open(filename)
+    
+    if im.n_frames > 1:
+        h,w = np.shape(im)
+        dt = np.array(im).dtype
+        stack = np.zeros((im.n_frames, h,w), dtype = dt)
+        for i in range(im.n_frames):
+            im.seek(i)
+            stack[i,:,:] = np.array(im)
+        return stack
+    else:    
+        return np.array(Image.open(filename))
 
 
 
@@ -162,7 +185,7 @@ def circ_window(imgSize, circleRadius, dataType = 'float32'):
                        data type of returned array (default is 'float32')
 
     Returns:
-        ndarray, 2D numpy array containing mask               
+        numpy.ndarray : 2D numpy array containing mask               
 
 
     """  
@@ -193,7 +216,7 @@ def circ_cosine_window(imgSize, circleRadius, skinThickness, dataType='float32')
                         data type of returned array (default is 'float32')
 
     Returns:
-        ndarray, 2D numpy array containing mask               
+        numpy.ndarray : 2D numpy array containing mask               
 
 
     """
@@ -257,7 +280,7 @@ def square_cosine_window(imgSize, radius, skinThickness, dataType='float32'):
                         data type of returned array (default is 'float32')
 
     Returns:
-        ndarray, 2D numpy array containing mask   
+        numpy.ndarray : 2D numpy array containing mask   
     
     
     """
@@ -315,7 +338,7 @@ def load_image(file, square=False):
                  possible central square, default is False.
                  
     Returns:
-        ndarray, 2D image
+        numpy.ndarray : 2D image
     """
     img = Image.open(file)
     im = pil2np(img)
@@ -328,25 +351,55 @@ def load_image(file, square=False):
     return im
 
 
-def save_image(img, file):
-    """ Saves an image stored as numpy array to an 8 bit tif.
+def save_image(img, file, autoscale = True):
+    """ Saves an image stored as numpy array to an 8 bit image file.
     
     Parameters:
-        img    : ndarray
+        img    : numpy.ndarray
                  image to save
         file   : str
-                 filename to load image from, including extension.
+                 filename to save to, type will be determined by extension.
+                 
+    Optional Keyword Arguments:
+        autoscale : boolean
+                    if True (default), image is scaled to use full bit depth             
     
     """
-    img = Image.fromarray(get8bit(img)[0])
+    if autoscale:
+        img = Image.fromarray(get8bit(img)[0])
+    else:
+        img = Image.fromarray(img.astype('uint8'))  
     img.save(file)
+    
+    
+def save_image16(img, file, autoscale = True):
+    """ Saves an image stored as numpy array to an 16 bit image file.
+    
+    Parameters:
+        img    : numpy.ndarray
+                 image to save
+        file   : str
+                 filename to save to including extension, type will be 
+                 determined by extension and must support 16 bit images (e.g. tif)
+    
+    Optional Keyword Arguments:
+        autoscale : boolean
+                    if True (default), image is scaled to use full bit depth             
+                  
+    
+    """
+    if autoscale:
+        img = Image.fromarray(get16bit(img)[0])
+    else:
+        img = Image.fromarray(img.astype('uint16'))  
+    img.save(file)    
 
 
 def save_amplitude_image8(img, filename):
     """ Saves amplitude information as an 8 bit tif.
    
     Parameters:
-        img    : ndarray
+        img    : numpy.ndarray
                  image to save
         file   : str
                  filename to load image from, including extension.
@@ -360,7 +413,7 @@ def save_amplitude_image16(img, filename):
     """ Saves amplitude information as a 16 bit tif.
     
     Parameters:
-        img    : ndarray
+        img    : numpy.ndarray
                  image to save
         file   : str
                  filename to load image from, including extension.
@@ -377,7 +430,7 @@ def extract_central(img, boxSize=None):
     not specified, the largest possible square will be extracted.
     
     Parameters:
-        img        : ndarray
+        img        : numpy.ndarray
                      complex or real image
                      
     Keyword Arguments:
@@ -385,7 +438,7 @@ def extract_central(img, boxSize=None):
                      size of square to be extracted                 
                      
     Returns:
-         ndarray, central square from image 
+        numpy.ndarray : central square from image 
     
     """
     w = np.shape(img)[0]
@@ -408,11 +461,11 @@ def invert(img):
     """ Inverts an image, largest value becomes smallest and vice versa.
 
     Parameters:
-        img        : ndarray
+        img        : numpy.ndarray
                      numpy array, input image
   
     Returns:
-        ndarray, inverted image
+        numpy.ndarray : inverted image
     """
 
     return np.max(img) - img

@@ -2,19 +2,16 @@
 """
 PyHoloscope - Python package for holographic microscopy
 
-@author: Mike Hughes, Applied Optics Group, University of Kent
-
 This file contains general functions, mostly for handling and displaying phase
 maps.
 
 """
-
-import numpy as np
-import math
-import scipy
-import scipy.optimize
 import warnings
 import time
+import math
+
+import numpy as np
+import scipy.optimize
 
 from skimage.restoration import unwrap_phase
     
@@ -25,8 +22,7 @@ import cv2 as cv
 from pyholoscope.roi import Roi
 from pyholoscope.focus_stack import FocusStack
 from pyholoscope.prop_lut import PropLUT
-from pyholoscope.utils import extract_central
-
+from pyholoscope.utils import extract_central, phase
  
 
 def relative_phase(img, background):
@@ -36,13 +32,16 @@ def relative_phase(img, background):
     arrays), and returns a corrected field/phase map of the same type.
     
     Parameters:
-          img        :  ndarray
+          img        :  numpy.ndarray
                         2D numpy array, real or complex. If real
                         it is taken to be phase map, otherwise if complex
                         it is the field.
-          background :  ndarray
+          background :  numpy.ndarray
                         2D numpy array, real or complex. Backround phase/field
-                        to subtract. Must be same type and size as img.          
+                        to subtract. Must be same type and size as img. 
+                        
+    Returns:
+          numpy.ndarray : float or complex                        
     """    
     
     assert np.iscomplexobj(img) == np.iscomplexobj(background), "img and background must both be real or both be complex"
@@ -59,23 +58,26 @@ def relative_phase(img, background):
  
 
 def relative_phase_self(img, roi = None):    
-    """ Makes the phase in an image relative to the mean phase in either
-    the whole image or a specified ROI of the image.
+    """ Makes the phase in an image relative to the mean phase in either the 
+    whole image or a specified ROI of the image.
     
-    The function works on both fields (complex arrays) and phase maps (real 
+    The function works on either fields (complex arrays) and phase maps (float 
     arrays), and returns a corrected field/phase map of the same type.
     
     Parameters:
-          img        :  ndarray
-                        2D numpy array, real or complex. If real
+          img        :  numpy.ndarray
+                        2D array, real or complex. If real
                         it is taken to be phase map, otherwise if complex
-                        it is the field.
+                        it taken to be the complex field.
     
     Keyword Arguments:
           roi        :  pyholoscope.Roi
                         region of interest to make phase relative to. In the output image
                         the mean phase in this region will be zero. 
                         (default = None)
+                        
+    Returns:
+          numpy.ndarray : float or complex                  
     """
 
     if roi is None:
@@ -101,7 +103,10 @@ def obtain_tilt(img):
     Parameters:
           img        :  ndarray
                         2D numpy array, real. Unwrapped phase.
-          
+
+    Returns:
+          numpy.ndarray : 2D real array, map of tilt.         
+
     """
     
     # If there is a tilt then there will be a phase gradient across the image
@@ -121,8 +126,15 @@ def phase_unwrap(img):
     
     Parameters:
           img        :  ndarray
-                        2D numpy array, real. Wrapped phase.
+                        2D numpy array. Either complex (the complex field) or
+                        float (the wrapped phase).
+    Returns:
+          numpy.ndarray : 2D array of floats, unwrapped phase.
+
     """
+    
+    if np.iscomplexobj(img):
+        img = phase(img)
     
     img = unwrap_phase(img)
 
@@ -146,6 +158,9 @@ def synthetic_DIC(img, shearAngle = math.pi):
           shearAngle :  float
                         angle in radians of the shear direction. 
                         (default = pi)
+                        
+    Returns:
+          numpy.ndarray : 2D arrays of floats, the DIC image.                    
     """
     
     # Calculate gradient on original image and image phase shifted by pi. Using
@@ -177,7 +192,8 @@ def phase_gradient_dir(img):
     Parameters:
           img        :  ndarray
                         2D numpy array, real or complex, the field or phase map
-    
+    Returns:
+          numpy.ndarray : 2D complex array, phase gradient image.    
     """
     
     if np.iscomplexobj(img):
@@ -203,7 +219,8 @@ def phase_gradient_amp(img):
     Parameters:
           img        :  ndarray
                         2D numpy array, real or complex, the field or phase map
-    
+    Returns:
+          numpy.ndarray : 2D arrays of floats, maps of amplitudes of phase gradient.
     """
     
     # If we are given the field, calculate the phase map
@@ -230,6 +247,8 @@ def phase_gradient(img):
           img        :  ndarray
                         2D numpy array, real or complex, the field or phase map
      
+    Returns:
+          numpy.ndarray : 2D array of floats, maps of amplitudes of phase gradient.    
     """
     
     # We calculate the phase gradient twice, once adding a pi phase shift. If
@@ -252,21 +271,13 @@ def mean_phase(img):
     
     Parameters:
           img        :  ndarray
-                        2D numpy array, real or complex, the field or phase map   
+                        2D array, real or complex, the field or phase map  
+                        
+    Returns:
+          float      : mean phase of the image.               
     """
     
     if np.iscomplexobj(img):
         return np.angle(np.sum(img))    # The way to average the phase in a field
     else:
         return np.mean(img)
-    
-
-
-
-
-   
-   
-
-
-
-        

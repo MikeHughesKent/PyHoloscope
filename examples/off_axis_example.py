@@ -36,8 +36,8 @@ wavelength = 630e-9
 pixelSize = .3e-6
 
 # Load images
-holoFile = Path('../test/test data/tissue_paper_oa.tif')
-backFile = Path('../test/test data/tissue_paper_oa_background.tif')
+holoFile = Path('../test/integration_tests/test data/tissue_paper_oa.tif')
+backFile = Path('../test/integration_tests/test data/tissue_paper_oa_background.tif')
 
 hologram = pyh.load_image(holoFile)
 background = pyh.load_image(backFile)

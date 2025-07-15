@@ -1,25 +1,21 @@
 # -*- coding: utf-8 -*-
 """
-PyHoloscope
-Python package for holgoraphic microscopy
-
-Mike Hughes, Applied Optics Group, University of Kent
-
-PyHoloscope is a python library for holographic microscopy.
+PyHoloscope - Python package for holographic microscopy
 
 This file contains numba-optimised functions relaatd to numrical refocusing.
 
 """
 import math
-import cmath
+
 import numpy as np
+
 import numba
 from numba import jit, njit
+
 from pyholoscope.utils import dimensions
 
 @jit(nopython = True)   
-def propagator_numba(gridSize, wavelength, pixelSize, depth, geometry = 'plane', precision = 'single'):
-   
+def propagator_numba(gridSize, wavelength, pixelSize, depth, geometry = 'plane', precision = 'single'):   
     """ Numba optimised version of propagator(). 
     Creates Fourier domain propagator for angular spectrum method. 
     Returns the propagator as a complex 2D numpy array. Generation is sped up 
@@ -27,8 +23,6 @@ def propagator_numba(gridSize, wavelength, pixelSize, depth, geometry = 'plane',
     (with flips) to create the other quadrants. 
      
     Note that 'precision' is currently not implemented in the numba version.
-     
-     
      
     Parameters:
          gridSize   : float or (float, float)
@@ -77,7 +71,6 @@ def propagator_numba(gridSize, wavelength, pixelSize, depth, geometry = 'plane',
              for y in range(centreY + 1) :
             
                  vSq = (delta0y*y)**2
-
                  phase = fac*(uSq + vSq)
 
                  # This is about as twice as fast as using np.exp(1j * phase)
@@ -106,6 +99,5 @@ def propagator_numba(gridSize, wavelength, pixelSize, depth, geometry = 'plane',
     prop[:centreY + 1, :centreX + 1] = propCorner                      # top left
     prop[:centreY + 1, centreX:] = (np.fliplr(propCorner[:, 1:]) )     # top right
     prop[centreY:, :] = np.flipud(prop[1:centreY + 1, :])              # bottom left
-
    
     return prop

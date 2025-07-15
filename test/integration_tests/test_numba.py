@@ -3,7 +3,6 @@
 Tests speed increase from using Numba and qaudrant version of angular spectrum
 propagator generator in PyHoloscope.
 
-@author: Mike Hughes, Applied Optics Group, University of Kent
 """
 
 from matplotlib import pyplot as plt

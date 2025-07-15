@@ -2,7 +2,6 @@
 """
 Tests FocusStack Class of PyHoloscope.
 
-@author: Mike Hughes, Applied Optics Group, University of Kent
 """
 import context
 import numpy as np

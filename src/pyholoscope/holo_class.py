@@ -4,8 +4,6 @@ PyHoloscope - Fast Holographic Microscopy in Python
 
 The Holo Class provides an object-oriented interface to most of the 
 PyHoloscope functionality.
-
-@author: Mike Hughes, Applied Optics Group, Physics & Astronomy, University of Kent
 """
 
 import numpy as np
@@ -42,6 +40,7 @@ class Holo:
     # Processing pipeline
     INLINE = 1
     OFF_AXIS = 2
+    modes = ["NONE", "INLINE", "OFF AXIS"]
     INLINE_MODE = 1   # deprecated, kept for backwards compatibility
     OFFAXIS_MODE = 2  # deprecated, kept for backwards compatibility
     
@@ -127,7 +126,7 @@ class Holo:
         self.cudaAvailable = cudaAvailable
         
         # Image data type
-        self.precision = self.set_precision(kwargs.get('precision', 'single'))
+        self.set_precision(kwargs.get('precision', 'single'))
     
         
            
@@ -151,9 +150,9 @@ class Holo:
         if np.shape(self.propagator) != np.shape(imgPreprocessed) or self.propagator is None or self.propagatorDepth != self.depth or self.propagatorWavelength != self.wavelength or self.propagatorPixelSize != self.pixelSize * self.downsample:
             self.update_propagator(img)
 
+
         # Numerical refocusing           
         imgOut = refocus(imgPreprocessed, self.propagator, cuda = (self.cuda and cudaAvailable))
-        
         if imgOut is None:
             warnings.warn('Output from refocusing was None.')
             return None
@@ -254,7 +253,7 @@ class Holo:
    
     
     def __str__(self):
-        return "PyHoloscope Holo Class. Wavelength: " + str(self.wavelength) + ", Pixel Size: " + str(self.pixelSize)
+        return "PyHoloscope Holo Class. Mode: self.modes(self.) + Wavelength: " + str(self.wavelength) + ", Pixel Size: " + str(self.pixelSize)
 
 
 
@@ -294,7 +293,6 @@ class Holo:
         self.refocus = refocus
 
 ############### PHYSICAL PARAMETERS ##########################################
-
         
     def set_wavelength(self, wavelength):
         """ Set the wavelength of the hologram 
@@ -318,6 +316,7 @@ class Holo:
             self.background = background.astype(self.imageType) 
         else:
             self.background = None
+
             
     def set_normalise(self, normalise):
         """ Set the normalisation hologram. Use None to remove normalisation. 
@@ -352,12 +351,6 @@ class Holo:
          self.relativeAmplitude = boolean 
         
     
-    def set_relative_phase(self, boolean):
-         """ Sets whether or not calculate relative amplitude in off-axis holography.
-         """
-         assert boolean == True or boolean == False, "Argument of set_relative_phase must be True or False"
-         self.relativePhase = boolean
-         
 
             
             
@@ -571,9 +564,15 @@ class Holo:
         background phase, i.e. this should be a background region of the image. 
         The roi should be an instance of the Roi class.
         """
-        self.stableROI = roi    
+        self.stableROI = roi 
+           
         
     def set_relative_phase(self, relative_phase):
+        """ Sets whether or not to use relative phase, i.e. phase
+        is relative to the phase of the background hologram.
+        """
+        
+        assert boolean == True or boolean == False, "Argument of set_relative_phase must be True or False"
         self.relativePhase = relative_phase
 
 ##################### REFOCUSING #########################################
@@ -588,7 +587,6 @@ class Holo:
         """ Create or re-create the propagator using current parameters. img 
         should be an 2D numpy array of the same size as the images to be processed.
         """
-        
         
         self.propagatorWavelength = self.wavelength
         self.propagatorDepth = self.depth

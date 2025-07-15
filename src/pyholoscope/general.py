@@ -2,44 +2,47 @@
 """
 PyHoloscope - Python package for holographic microscopy
 
-@author: Mike Hughes, Applied Optics Group, University of Kent
-
 This file contains general functions, mostly for handling and displaying phase
 maps.
 
 """
 
-import math
 import warnings
 
 import numpy as np
-import scipy
 import cv2 as cv
 
 
 def pre_process(img, background = None, normalise = None, window = None, downsample = 1., numba = False, precision = 'single'):
     """ Carries out steps required prior to refocusing.  
     This includes background correction, normalisation and windowing and 
-    downsampling It also coverts image to either to a float64 (if input img is real) or
-    complex float (if input img is complex). 
+    downsampling. It also coverts image to either type depending in specified
+    precision (default is single precision).
     
     Parameters:
-          img        :  ndarray
-                        raw hologram, 2D numpy array, real or complex
+          img        : numpy.ndarray
+                       raw hologram, 2D array, real or complex
         
     Keyword Arguments:
-          background : ndaarray
-                       2D numpy array (real), backround hologram to be 
-                       subtracted (default = None)
-          normalise  : ndarray
-                       2D numpy array (real), background hologram to be 
-                       divided (default = None)
-          window     : ndarray
-                       2D numpy array (real), window to smooth edges. Will be  
+          background : numpy.ndaarray
+                       backround hologram to be subtracted
+                       2D real array (default = None)
+          normalise  : numpy.ndarray
+                       background hologram to be divided 
+                       2D real array (default = None)
+          window     : numpy.ndarray
+                       window to smooth edges. 2D real array. Will be  
                        resized to match size of img if necessary. 
                        (default = None)
           downsample : float
                        factor to downsample image by (default = 1)
+          numba      : bool
+                       flag to use numba for speed up (default = False)
+          precision  : str
+                       'single' or 'double' (default = 'single')
+    Returns:    
+          numpy.ndarray  : pre-processed hologram, 2D array, real or complex
+
     """    
     
     # Ensure the input hologram is a float or a complex float          
@@ -104,15 +107,16 @@ def pre_process(img, background = None, normalise = None, window = None, downsam
 
 
 def fourier_plane_display(img):
-    """ Returns a log-scale Fourier plane for display purposes.
+    """ Returns a real, log-scale Fourier plane for display purposes.
     
-    Returns a 2D numpy array, real.
-    
-    Parameters:
-          img        :  ndarray
-                        2D numpy array, real or complex.
+    Arguments:
+          img             : numpy.ndarray
+                            2D numpy array, real or complex.
+    Returns:
+           numpy.ndarray  : 2D real array, log scale of the Fourier plane.
+           
     """
     
-    cameraFFT = np.log(np.abs(np.fft.fftshift(np.fft.fft2(img)) ) )
+    fourierPlane = np.log(np.abs(np.fft.fftshift(np.fft.fft2(img)) ) )
     
-    return cameraFFT    
+    return fourierPlane   

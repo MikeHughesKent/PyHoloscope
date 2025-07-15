@@ -14,7 +14,7 @@ We instantiate a 'Holo' object and pass in the system parameters and some
 options.
 
 We call the 'process' method of 'Holo' to refocus the hologram. If you have 
-a GPU and Cupy is installed the GPU will be used, otherwise it will revert to 
+a GPU and CuPy is installed the GPU will be used, otherwise it will revert to 
 CPU.
 
 Finally we use the 'amplitude' function to extract the amplitude of the 
@@ -30,8 +30,8 @@ import pyholoscope as pyh
 
 
 # Load hologram and background images
-holoFile = Path('../test/test data/inline_example_holo.tif')
-backFile = Path('../test/test data/inline_example_back.tif')
+holoFile = Path('../test/integration_tests/test data/inline_example_holo.tif')
+backFile = Path('../test/integration_tests/test data/inline_example_back.tif')
 
 hologram = pyh.load_image(holoFile)
 background = pyh.load_image(backFile)

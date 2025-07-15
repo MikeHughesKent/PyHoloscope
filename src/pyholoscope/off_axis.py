@@ -2,10 +2,7 @@
 """
 PyHoloscope - Python package for holographic microscopy
 
-@author: Mike Hughes, Applied Optics Group, University of Kent
-
 This file contains functions for working with off-axis holograms.
-
 """
 
 import math
@@ -33,8 +30,8 @@ def off_axis_demod(hologram, cropCentre, cropRadius, returnFull = False, returnF
     True, function returns a tuple (field, FFT) where FFT is a log scaled
     image of the FFT of the hologram (2D numpy array, real).
         
-    Parameters:
-          hologram   : ndarray
+    Arguments:
+          hologram   : numpy.ndarray
                        2D numpy array, real, raw hologram
           cropCentre : tuple of (int, int). 
                        pixel location in FFT of modulation frequency
@@ -45,23 +42,22 @@ def off_axis_demod(hologram, cropCentre, cropRadius, returnFull = False, returnF
         
     Keyword Arguments:
           returnFull : boolean
-                       if true, the returned reconstruction will be the same
-                       size as the input hologram, otherwise it will be the
+                       if True, the returned reconstruction will be the same
+                       size as the input hologram, otherwise it will be
                        2 * cropRadius. (Default is False)
           returnFFT  : boolean 
                        if True will return a tuple of (demod image,
                        log scaled FFT) for display purposes
                        (Default is False)
           mask       : ndarray
-                       2D numpy array, complex. Custom mask to use around
+                       2D complex array. Custom mask to use around
                        demodulation frequency. Must match size of 
                        (cropRadiusX, cropRadiusY)
           cuda      :  boolean
                        if True GPU will be used if available.  
     Returns:       
-          ndarray, reconstructed field as complex numpy array or 
-          tuple of (ndarray, ndarray) if returnFFT is True   
-    
+          numpy. ndarray   : reconstructed field as complex numpy array or 
+                             tuple of (ndarray, ndarray) if returnFFT is True       
     """
            
     # Size of image in pixels 
@@ -122,7 +118,7 @@ def off_axis_demod(hologram, cropCentre, cropRadius, returnFull = False, returnF
 def off_axis_find_mod(hologram, maskFraction = 0.1):
     """ Finds the location of the off-axis holography modulation peak in the FFT. 
     
-    Parameters:
+    Arguments:
           hologram     : ndarray
                          2D numpy array, real, raw hologram
          
@@ -152,21 +148,20 @@ def off_axis_find_mod(hologram, maskFraction = 0.1):
 
 
 def off_axis_find_crop_radius(hologram, maskFraction = 0.1):
-    """ Estimates the off axis crop radius based on modulation peak position. If the
+    """ Estimates the off-axis crop radius based on modulation peak position. If the
     hologram is square, this is the radius of a circle, otherwise if it is rectangular 
-    than the crop radius is a tuple of (y radius, x radius), corresponding to to
-    the half the lengths of the two axes of an ellipse.
+    than the crop radius is a tuple of (y radius, x radius), corresponding to 
+    half the lengths of the two axes of an ellipse.
     
-    Parameters:
-          hologram     : ndarray
-                         2D numpy array, real, raw hologram
+    Arguments:
+          hologram     : numpy.ndarray
+                         raw hologram, 2D real array
          
     Keyword Arguments:
           maskFraction : float 
                          between 0 and 1, fraction of image around d.c. to 
                          mask to avoid the d.c. peak being detected 
-                         (default = 0.1).
-                         
+                         (default = 0.1).                         
     Returns:
           tuple of (int, int) = (y radius, x radius)                     
     """
@@ -179,8 +174,7 @@ def off_axis_find_crop_radius(hologram, maskFraction = 0.1):
     # The crop radii will have the same ratio as the width and height of the hologram
     aspectRatio = h/w
     
-    peakLocSquare = (peakLocY * aspectRatio, peakLocX)
-    
+    peakLocSquare = (peakLocY * aspectRatio, peakLocX)    
     
     # In the optimal case, the radius is 1/3rd of the modulation position
     if peakLocX < h /2:
@@ -192,7 +186,6 @@ def off_axis_find_crop_radius(hologram, maskFraction = 0.1):
       
     cropRadiusX = int(round(cropRadiusSquare))
     cropRadiusY = int(round(cropRadiusSquare / aspectRatio))
-
    
     return cropRadiusY, cropRadiusX
 
@@ -200,7 +193,7 @@ def off_axis_find_crop_radius(hologram, maskFraction = 0.1):
 def off_axis_predict_mod(wavelength, pixelSize, numPixels, tiltAngle, rotation = 0): 
     """ Predicts the location of the modulation peak in the FFT.
    
-    Parameters:
+    Arguments:
           wavelegnth   : float
                          light wavelength in metres
           pixelSize    : float
@@ -233,8 +226,7 @@ def off_axis_predict_mod(wavelength, pixelSize, numPixels, tiltAngle, rotation =
         modFreqPxY = round(refFreq / maxSF * np.abs(np.sin(rotation)) * imSizeY / 2)
     else:
         modFreqPxX = round(refFreq / maxSF * np.abs(np.cos(math.pi  - rotation)) * imSizeX / 2)
-        modFreqPxY = imSizeY - round(refFreq / maxSF * np.abs(np.sin(rotation)) * imSizeY / 2)
-        
+        modFreqPxY = imSizeY - round(refFreq / maxSF * np.abs(np.sin(rotation)) * imSizeY / 2)        
     
     if modFreqPxX < 0: modFreqPxX = modFreqPxX + imSizeX
     if modFreqPxY < 0: modFreqPxY = modFreqPxY + imSizeY
@@ -245,10 +237,10 @@ def off_axis_predict_mod(wavelength, pixelSize, numPixels, tiltAngle, rotation =
 def off_axis_predict_mod_distance(wavelength, pixelSize, numPixels, tiltAngle, rotation = 0): 
     """ Predicts the absolute distance of the modulation peak in the FFT from the dc.
    
-    Parameters:
+    Arguments:
           wavelegnth   : float
                          light wavelength in metres
-          pixelSize   : float
+          pixelSize    : float
                          hologram physical pixel size in metres
           numPixels    : int or (int, int)
                          hologram size in pixels,             
@@ -260,12 +252,11 @@ def off_axis_predict_mod_distance(wavelength, pixelSize, numPixels, tiltAngle, r
                          rotation of tilt with respect to x axis, in radians (default is 0)                     
     
     Returns:
-          float, distance in pixels
+          float        : distance in pixels
     
     """
    
     x,y = off_axis_predict_mod(wavelength, pixelSize, numPixels, tiltAngle, rotation)
-
     
     return math.sqrt(x**2 + y**2)
 
@@ -289,7 +280,7 @@ def off_axis_predict_tilt_angle(hologram, wavelength, pixelSize, maskFraction = 
                          (default = 0.1).  
                          
     Returns:
-          float, tilt angle in radians
+          float        : tilt angle in radians
     """
     
     # Wavenumber

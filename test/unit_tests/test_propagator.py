@@ -2,7 +2,6 @@
 """
 Test propagator creation
 
-@author: Mike Hughes, Applied Optics Group, University of Kent
 """
 
 import unittest
@@ -42,8 +41,7 @@ class TestPropagator(unittest.TestCase):
         prop = pyh.propagator((self.gridSize1, self.gridSize2), self.wavelength, self.pixelSize, self.depth, geometry = 'point', precision = 'single')
         assert np.max(np.isnan(prop) == 0)
         assert np.shape(prop) == (self.gridSize2, self.gridSize1)
-        assert(prop.dtype == 'complex64')
-       
+        assert(prop.dtype == 'complex64')       
        
         prop = pyh.propagator((self.gridSize1,self.gridSize2), self.wavelength, self.pixelSize, self.depth, geometry = 'point', precision = 'double')
         assert np.max(np.isnan(prop) == 0)

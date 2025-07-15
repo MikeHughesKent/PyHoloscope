@@ -2,7 +2,6 @@
 """
 Tests circular windowing functionality of PyHoloscope
 
-@author: Mike Hughes, Applied Optics Group, University of Kent
 """
 
 from matplotlib import pyplot as plt

@@ -2,7 +2,6 @@
 """
 Tests off-axis holography functionality of PyHoloscope using low level functions.
 
-@author: Mike Hughes, Applied Optics Group, University of Kent
 """
 
 from matplotlib import pyplot as plt

@@ -3,7 +3,6 @@
 Tests object oriented off axis holography with numerical refocusing
 functionality of PyHoloscope using direct calling of lower-level functions.
 
-@author: Mike Hughes, Applied Optics Group, University of Kent
 """
 
 import context

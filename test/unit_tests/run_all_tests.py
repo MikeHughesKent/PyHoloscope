@@ -2,9 +2,7 @@
 """
 Runs all tests of PyHoloscope. 
 
-@author: Mike Hughes. Applied Optics Group, University of Kent
 """
-
 
 import unittest
 

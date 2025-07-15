@@ -2,7 +2,6 @@
 """
 Tests windowing functionality of PyHoloscope
 
-@author: Mike Hughes, Applied Optics Group, University of Kent
 """
 
 import unittest 
@@ -10,6 +9,7 @@ import unittest
 import numpy as np
 
 import context                    # Relative paths
+
 import pyholoscope as pyh
 
 

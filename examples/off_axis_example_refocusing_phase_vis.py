@@ -16,7 +16,7 @@ options.
 We call the 'process' method of 'Holo' to demodulate the hologram to recover 
 the phase and to numerically refocus.
  
-If you have a GPU and Cupy is installed the GPU will be used, otherwise it 
+If you have a GPU and CuPy is installed the GPU will be used, otherwise it 
 will revert to CPU.
 
 We use the 'amplitude' and 'phase' functions to extract the amplitude 
@@ -40,8 +40,8 @@ pixelSize = 1e-6
 
 
 # Load images
-holoFile = Path('../test/test data/paramecium_oa_oof.tif')
-backFile = Path('../test/test data/paramecium_oa_oof_background.tif')
+holoFile = Path('../test/integration_tests/test data/paramecium_oa_oof.tif')
+backFile = Path('../test/integration_tests/test data/paramecium_oa_oof_background.tif')
 
 hologram = pyh.load_image(holoFile)
 background = pyh.load_image(backFile)

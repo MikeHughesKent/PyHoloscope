@@ -2,9 +2,6 @@
 """
 Tests object oriented off axis holography functionality of PyHoloscope
 
-@author: Mike Hughes
-Applied Optics Group
-University of Kent
 """
 import time
 
@@ -65,4 +62,8 @@ phaseGrad = pyh.phase_gradient(reconField)
 plt.figure(dpi = 150)
 plt.imshow(phaseGrad, cmap='gray')
 plt.title('Phase Gradient')
+
+
+
+
 

@@ -16,13 +16,12 @@ options, including a flag to tell it to refocus to a particular depth.
 We call the 'process' method of 'Holo' to demodulate the hologram to recover 
 the phase and numerically refocus.
  
-If you have a GPU and Cupy is installed the GPU will be used, otherwise it 
+If you have a GPU and CuPy is installed the GPU will be used, otherwise it 
 will revert to CPU.
 
 We use the 'amplitude' and 'phase' functions to extract the amplitude 
 and phase of the complex demodulated image. 
 
-We then use some functions to process and display the phase in different ways.
 """
 
 
@@ -40,8 +39,9 @@ pixelSize = 1e-6
 refocusDepth = -0.0012
 
 # Load images
-holoFile = Path('../test/test data/paramecium_oa_oof.tif')
-backFile = Path('../test/test data/paramecium_oa_oof_background.tif')
+# Load images
+holoFile = Path('../test/integration_tests/test data/paramecium_oa_oof.tif')
+backFile = Path('../test/integration_tests/test data/paramecium_oa_oof_background.tif')
 
 hologram = pyh.load_image(holoFile)
 background = pyh.load_image(backFile)
@@ -82,8 +82,3 @@ plt.imshow(pyh.amplitude(reconField), cmap = 'gray')
 plt.figure(dpi = 150); plt.title('Phase')
 plt.imshow(pyh.phase(reconField), cmap = 'twilight', interpolation='none')
 
-plt.figure(dpi = 150); plt.title('Unwrapped Phase')
-plt.imshow(phaseUnwrapped, cmap = 'twilight', interpolation='none')
-
-plt.figure(dpi = 150); plt.title('Unwrapped Phase with Tilt Removed')
-plt.imshow(phaseUntilted, cmap = 'twilight', interpolation='none')

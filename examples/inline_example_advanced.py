@@ -16,7 +16,7 @@ We instantiate a 'Holo' object and then pass in the system parameters and
 various options.
 
 We call the 'process' method of 'Holo' to refocus the hologram. If you have 
-a GPU and Cupy is installed the GPU will be used, otherwise it will revert to 
+a GPU and CuPy is installed the GPU will be used, otherwise it will revert to 
 CPU.
 
 We then add normalisation, background subtraction and windowing.
@@ -35,8 +35,8 @@ import pyholoscope as pyh
 from pathlib import Path
 
 # Load images
-holoFile = Path('../test/test data/inline_example_holo.tif')
-backFile = Path('../test/test data/inline_example_back.tif')
+holoFile = Path('../test/integration_tests/test data/inline_example_holo.tif')
+backFile = Path('../test/integration_tests/test data/inline_example_back.tif')
 
 hologram = pyh.load_image(holoFile)
 backHologram = pyh.load_image(backFile)

@@ -2,7 +2,6 @@
 """
 Tests off-axis holography functions of PyHoloscope
 
-@author: Mike Hughes, Applied Optics Group, University of Kent
 """
 
 import math

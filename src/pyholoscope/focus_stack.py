@@ -4,7 +4,6 @@ PyHoloscope: focus_stack
 
 Class to store stack of images numerically refocused to different depths.
 
-@author: Mike Hughes, Applied Optics Group, Physics & Astronomy, University of Kent
 """
 
 import math
@@ -19,8 +18,8 @@ class FocusStack:
     def __init__(self, img, depthRange, nDepths):
         """ Initialise stack.
         
-        Parameters:
-            img        : ndarray
+        Arguments:
+            img        : numpy.ndarray
                          example image of the correct size and type, 2D numpy array
             depthRange : (float, float)
                          tuple of min depth and max depth in stack
@@ -42,7 +41,7 @@ class FocusStack:
     def add_idx(self, img, idx):
         """ Adds an image to a specific index position.
         
-        Parameters:
+        Arguments:
             img      : ndarray
                        image as a 2D numpy array
             idx      : int
@@ -54,7 +53,7 @@ class FocusStack:
     def add_depth(self, img, depth):
         """ Adds an image to index position closest to the the specifed depth.
         
-        Parameters:
+        Arguments:
             img      : ndarray
                        image as a 2D numpy array
             depth    : float
@@ -66,12 +65,12 @@ class FocusStack:
     def get_index(self, idx):
         """ Returns the refocused image stored at the specified index.
         
-        Parameters:
+        Arguments:
             idx      : int
                        index position to return image from
                        
         Returns:
-            ndarray, image               
+            numpy.ndarray : image               
         
         """
         return self.stack[idx, : , :]
@@ -80,12 +79,12 @@ class FocusStack:
     def get_depth(self, depth):
         """ Returns the closest refocused image to the specifed depth.
         
-        Parameters:
+        Arguments:
             depth     : float
                         depth to return image from
                         
         Returns:
-            ndarray, image                
+            numpy.ndarray : image                
         
         """
         return self.get_index(self.depth_to_index(depth))
@@ -99,7 +98,7 @@ class FocusStack:
                         depth to return image from
                         
         Returns:
-            ndarray, image                
+            numpy.ndarray : image                
                 
         """
         return np.abs(self.get_depth(depth))
@@ -113,7 +112,7 @@ class FocusStack:
                       index position to return image from
                         
         Returns:
-            ndarray, image                
+            numpy.ndarray : image                
                 
         """        
         return np.abs(self.get_index(idx))
@@ -127,7 +126,7 @@ class FocusStack:
                         depth to obtain closest index to
                         
         Returns:
-            int, index                
+            int       : index                
                 
         """ 
         idx = round((depth - self.minDepth) / (self.maxDepth - self.minDepth) * (self.nDepths-1))
@@ -146,7 +145,7 @@ class FocusStack:
                       index position
                         
         Returns:
-            float, depth           
+            float   : depth           
                 
         """ 
         return self.depths[idx]
@@ -157,7 +156,7 @@ class FocusStack:
         If autoContrast == True, all images will be autoscaled (across the whole
         stack, not individually) to use the full bit depth.
         
-        Parameters:
+        Arguments:
             filename     : str
                            path/file to save to, should have .tif extension.
                            
@@ -185,10 +184,10 @@ class FocusStack:
         
         
     def write_phase_to_tif(self, filename):
-        """ Writes the phases of the stack of refocused images to a 16 bit tif stack 
+        """ Writes the phases of the stack of refocused images to a 16 bit tif stack.
         -pi is mapped to 0, pi is mapped to 255.
         
-        Parameters:
+        Arguments:
             filename     : str
                            path/file to save to, should have .tif extension.
         """

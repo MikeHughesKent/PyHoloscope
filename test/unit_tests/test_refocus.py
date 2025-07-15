@@ -2,7 +2,6 @@
 """
 Test refocus function.
 
-@author: Mike Hughes, Applied Optics Group, University of Kent
 """
 
 

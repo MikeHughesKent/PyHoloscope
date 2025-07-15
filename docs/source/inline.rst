@@ -23,8 +23,8 @@ The pixel size and wavelength can be in any units as long as they are the same,
 and subsequently the refocus depth will be in the same units.
     
 Better quality inline holography refocusing is normally achieved if we first
-subtract a background image, acquired with no object in the field-of-view.
-Assuming the background image is stored in the 2D numpy array ``backgroundImg``, 
+subtract a background image, acquired with no object in the field-of-view, forming
+what is known as a contrast hologram. Assuming the background image is stored in the 2D numpy array ``backgroundImg``, 
 a background can be specified using::
 
     holo.set_background(backgroundImg)
@@ -63,9 +63,8 @@ By default the window will be a rectangular cosine window. Options for the windo
 are set using the ``set_window_shape``, ``set_window_radius`` and ``set_window_thickness`` methods
 of :doc:`holo`.
     
- 
 The angular spectrum propagator and the window are both created the first time
-``process`` is called. If we prefer to pre-generate these, we can call::
+``process`` is called for a particular set of a parameters. If we prefer to pre-generate these, we can call::
 
     holo.update_propagator()
     holo_update_auto_window()
@@ -81,10 +80,7 @@ explicitly enabled/disabled using::
         
     holo.set_numba(True/False)
     
-If using the lower-level functions, the Numba variant of the propagator generator function must be called explicitly::
-
-    pyh.propagator_numba(gridSize, wavelength, pixelSize, depth)    
-    
+   
 
 ^^^^^^^^^^^^^^^^
 GPU acceleration
@@ -97,17 +93,17 @@ explictly enabled/disabled using::
 This requires the CuPy package and a compatible GPU, otherwise ``Holo`` will 
 revert to CPU processing.  
 
-If using the lower-level functions, it is necessary to specify ``cuda = True``
-when refocusing, e.g.::
-
-    holo.refocus(hologram, propagator, cuda = True)
 
     
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Getting Started Using Lower-Level Functions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-As an alternative to using the ``Holo`` class, low-level functions can be called directly. Begin by importing the library::
+As an alternative to using the ``Holo`` class, low-level functions can be called directly. For most applications this is
+not the recommended approach as it involves more steps and the API is more likely to change in the future, however it
+may be necessary if implementing more customised processing pipelines.
+
+Begin by importing the library::
     
     import pyholoscope as pyh
 
@@ -128,6 +124,26 @@ The returned image is a 2D complex numpy array, to obtain the amplitude image as
 
     refocusedAmp = pyh.amplitude(refocusedAmp)
     
-        
+Flat-fielding (normalisation) and windowsing can also be applied by passing 2D numpy arrays using ``normalise=`` and ``window=`` respecively.
+Windows can be generated manually or by using the circ_window, circ_cosine_window or square_cosine_window functions. For example, to 
+create a square cosine window which drops to 0 at the edges of the image, with a skin thickness of 10 pixels we could do the following::
+
+    imgSize = np.shape(hologram)
+    radius = np.shape(hologram) / 2
+    skinThickness = 10
+    window = pyh.square_cosine_window(imgSize, radius, skinThickness)
+ 
+and then call::
+
+    refocusedImg = pyh.refocus(hologram, propagator, background = backgroundImg, window = window, normalise = backgroundImg)
+    
+To use the Numba acceleration for propagator generator, the Numba version of the function must be called explicitly::
+
+    pyh.propagator_numba(gridSize, wavelength, pixelSize, depth)    
+  
+Similarly, to use a GPU it is necessary to specify ``cuda = True``
+when refocusing, e.g.::
+
+    holo.refocus(hologram, propagator, cuda = True)         
     
     
