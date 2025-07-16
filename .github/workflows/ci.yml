@@ -1,0 +1,34 @@
+name: ci
+
+on:
+  push:
+    branches:
+      - main 
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        python-version: [3.9]  # Add other versions if needed
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt || true  # adjust if you use Pipfile, poetry, etc.
+
+      - name: Run tests
+        run: |
+          python -m unittest discover -s test/unit_tests  # assuming your tests are in a "tests" subfolder
