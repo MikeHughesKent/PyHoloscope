@@ -3,15 +3,16 @@
 Tests FocusStack Class of PyHoloscope.
 
 """
+
 import context
 import numpy as np
 from pyholoscope import FocusStack
 
-img = np.ones((100,100), dtype = 'complex64')
+img = np.ones((100, 100), dtype="complex64")
 
-stack = FocusStack(img, (0,100), 20)
+stack = FocusStack(img, (0, 100), 20)
 
-testImg = np.zeros((100,100), dtype = 'complex64')
+testImg = np.zeros((100, 100), dtype="complex64")
 
 # Add image at idx
 stack.add_idx(testImg, 10)
