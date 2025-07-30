@@ -3,8 +3,4 @@ numpy>=1.18
 opencv_python>=4.5.2.54
 Pillow>=9.3.0
 scipy>=1.7.3
-<<<<<<< HEAD
 scikit-image
-=======
-scikit-image
->>>>>>> 1278b6797e854b5b0d1f09cc48f05524a857016e
