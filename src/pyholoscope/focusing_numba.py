@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-PyHoloscope - Python package for holographic microscopy
+PyHoloscope - Fast Holographic Microscopy for Python
 
 This file contains numba-optimised functions relaatd to numrical refocusing.
 

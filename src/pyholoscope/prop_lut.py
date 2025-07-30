@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-PyHoloscope - Python package for holgoraphic microscopy
+PyHoloscope - Fast Holographic Microscopy for Python
 
 PropLUT is the class for generating and storing propagator look up tables.
 
@@ -16,31 +16,32 @@ from pyholoscope.utils import dimensions
 class PropLUT:
     """Stores a propagator look up table (LUT).
 
-    The LUT contains angular spectrum propagators for the specified parameters.
+    The LUT contains angular spectrum propagators for the specified parameters. 
+   
     """
 
     def __init__(
         self,
-        imgSize,
+        img_size,
         wavelength,
-        pixelSize,
-        depthRange,
-        nDepths,
+        pixel_size,
+        depth_range,
+        num_depths,
         numba=False,
         precision="single",
     ):
-        """Create the propagator Look-Up-Table (LUT).
+        """ Creates a propagator look up table (LUT) containing angular spectrum propagators.
 
         Arguments:
-            imgSize   : int or tuple of (int, int)
+            img_size   : int or tuple of (int, int)
                         size of propagators, square or rectangular
             wavelength: float
                         wavelength of light
-            pixelSize : float
+            pixel_size : float
                         physical size of pixels
-            depthRange: tuple
+            depth_range: tuple
                         range of depths to generate propagators for
-            nDepths   : int
+            num_depths : int
                         number of depths to generate propagators for
 
         Keyword Arguments:
@@ -55,21 +56,21 @@ class PropLUT:
         else:
             dataType = "complex64"
 
-        self.depths = np.linspace(depthRange[0], depthRange[1], nDepths)
-        self.size = imgSize
-        self.nDepths = nDepths
+        self.depths = np.linspace(depth_range[0], depth_range[1], num_depths)
+        self.size = img_size
+        self.num_depths = num_depths
         self.wavelength = wavelength
-        self.pixelSize = pixelSize
-        w, h = dimensions(imgSize)
-        self.propTable = np.zeros((nDepths, h, w), dtype=dataType)
+        self.pixel_size = pixel_size
+        w, h = dimensions(img_size)
+        self.prop_table = np.zeros((num_depths, h, w), dtype=dataType)
         for idx, depth in enumerate(self.depths):
             if numba is True:
-                self.propTable[idx, :, :] = propagator_numba(
-                    (w, h), wavelength, pixelSize, depth
+                self.prop_table[idx, :, :] = propagator_numba(
+                    (w, h), wavelength, pixel_size, depth
                 )
             else:
-                self.propTable[idx, :, :] = propagator(
-                    (w, h), wavelength, pixelSize, depth
+                self.prop_table[idx, :, :] = propagator(
+                    (w, h), wavelength, pixel_size, depth
                 )
 
     def propagator(self, depth):
@@ -82,23 +83,23 @@ class PropLUT:
         """
 
         # Find nearest propagator
-        if self.nDepths == 1:  # Otherwise the algorithm to get the index will fail
-            return self.propTable[0, :, :]
+        if self.num_depths == 1:  # Otherwise the algorithm to get the index will fail
+            return self.prop_table[0, :, :]
         if depth < self.depths[0] or depth > self.depths[-1]:
             return None
 
         idx = round(
             (depth - self.depths[0])
             / (self.depths[-1] - self.depths[0])
-            * (self.nDepths - 1)
+            * (self.num_depths - 1)
         )
 
-        return self.propTable[idx, :, :]
+        return self.prop_table[idx, :, :]
 
     def __str__(self):
         return (
             "LUT of "
-            + str(self.nDepths)
+            + str(self.num_depths)
             + " propagators from depth of "
             + str(self.depths[0])
             + " to "
@@ -106,7 +107,7 @@ class PropLUT:
             + ". Wavelength: "
             + str(self.wavelength)
             + ", Pixel Size: "
-            + str(self.pixelSize)
+            + str(self.pixel_size)
             + " ,Size:"
             + str(self.size)
         )

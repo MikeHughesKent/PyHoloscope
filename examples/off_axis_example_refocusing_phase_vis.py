@@ -36,7 +36,8 @@ import pyholoscope as pyh
 
 # Experimental Parameters
 wavelength = 630e-9
-pixelSize = 1e-6
+pixel_size = 1e-6
+refocus_depth = 0.001129
 
 
 # Load images
@@ -51,12 +52,14 @@ background = pyh.load_image(backFile)
 holo = pyh.Holo(
     mode=pyh.OFF_AXIS,
     wavelength=wavelength,
-    pixelSize=pixelSize,
+    pixel_size=pixel_size,
     background=background,  # For correcting background phase
-    relativePhase=True,  # We will remove the background phase
+    relative_phase=True,  # We will remove the background phase
+    normalise=background,
     refocus=True,  # We will numerically refocus
-    depth=-0.0012,
-)  # Refocus distance in m
+    depth=refocus_depth,
+    off_axis_real_fft = True,
+) 
 
 holo.calib_off_axis()  # Finds modulation frequency and
 # pre-computes background phase
@@ -68,56 +71,63 @@ holo.update_propagator(hologram)
 
 
 # In a single step we remove the off-axis modulation and refocus
-reconField = holo.process(hologram)
+recon_field = holo.process(hologram)
 
 
-# We had set relativePhase = True which means that we subtracted the phase
+# We had set relative_phase = True which means that we subtracted the phase
 # from the background image. The alternative is to call relative_phase to do
 # this manually.
 
 
 # The output from holo.process is complex. If we extract the phase it will be
 # wrapped
-phase = pyh.phase(reconField)
+phase = pyh.phase(recon_field)
 
 
 # We can perform 2D phase unwrapping using
-phaseUnwrapped = pyh.phase_unwrap(phase)
+phase_unwrapped = pyh.phase_unwrap(phase)
 
 
 # It is sometimes the case that there is still a tilt in the phase after
 # we removed the background. For example, maybe the cover slip is slightly
 # angle. We can detect this using:
-tilt = pyh.obtain_tilt(phaseUnwrapped)
+tilt = pyh.obtain_tilt(phase_unwrapped)
 
 # And remove the tilted phase:
-phaseUntilted = pyh.relative_phase(phaseUnwrapped, tilt)
+phase_untilted = pyh.relative_phase(phase_unwrapped, tilt)
 
 
 # We can create a DIC style image from the field - we have to provide
 # the field as the DIC relies on both amplitude and phase
-DIC = pyh.synthetic_DIC(reconField)
+DIC = pyh.synthetic_DIC(recon_field)
 
 
 # We can also create a phase gradient image. We can do this either from the
 # raw field or the raw phase (results will be the same) or from any of the
 # processed phase maps (results will tend to be similar but not identical).
-phaseGrad = pyh.phase_gradient(phaseUntilted)
-phaseGradRaw = pyh.phase_gradient(reconField)
+phase_grad = pyh.phase_gradient(phase_untilted)
+phase_grad_raw = pyh.phase_gradient(recon_field)
 
+
+amp = pyh.amp(recon_field)
 
 """ Display results """
+
+plt.figure(dpi=150)
+plt.title("Amplitude")
+plt.imshow(amp, cmap="gray", interpolation="none")
+
 plt.figure(dpi=150)
 plt.title("Raw Phase")
 plt.imshow(phase, cmap="twilight", interpolation="none")
 
 plt.figure(dpi=150)
 plt.title("Unwrapped Phase")
-plt.imshow(phaseUnwrapped, cmap="twilight", interpolation="none")
+plt.imshow(phase_unwrapped, cmap="twilight", interpolation="none")
 
 plt.figure(dpi=150)
 plt.title("Unwrapped and Untilted Phase")
-plt.imshow(phaseUntilted, cmap="twilight", interpolation="none")
+plt.imshow(phase_untilted, cmap="twilight", interpolation="none")
 
 plt.figure(dpi=150)
 plt.title("Synthetic DIC from Raw Field")
@@ -125,8 +135,8 @@ plt.imshow(DIC, cmap="gray", interpolation="none")
 
 plt.figure(dpi=150)
 plt.title("Phase Gradient from Processed Phase")
-plt.imshow(phaseGrad, cmap="gray", interpolation="none")
+plt.imshow(phase_grad, cmap="gray", interpolation="none")
 
 plt.figure(dpi=150)
 plt.title("Phase Gradient from Raw Field")
-plt.imshow(phaseGradRaw, cmap="gray", interpolation="none")
+plt.imshow(phase_grad_raw, cmap="gray", interpolation="none")

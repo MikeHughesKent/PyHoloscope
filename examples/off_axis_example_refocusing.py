@@ -34,8 +34,8 @@ import pyholoscope as pyh
 
 # Experimental Parameters
 wavelength = 630e-9
-pixelSize = 1e-6
-refocusDepth = -0.0012
+pixel_size = 1e-6
+refocus_depth = 0.001129
 
 # Load images
 # Load images
@@ -51,11 +51,11 @@ holo = pyh.Holo(
     mode=pyh.OFF_AXIS,
     wavelength=wavelength,
     precision="single",
-    pixelSize=pixelSize,
+    pixel_size=pixel_size,
     background=background,  # For correcting background phase
-    relativePhase=True,  # We will remove the background phase
+    relative_phase=True,  # We will remove the background phase
     refocus=True,  # We will numerically refocus
-    depth=refocusDepth,
+    depth=refocus_depth,
 )  # Refocus distance in m
 
 holo.calib_off_axis()  # Finds modulation frequency and
@@ -63,24 +63,24 @@ holo.calib_off_axis()  # Finds modulation frequency and
 
 
 # In a single step we remove the off-axis modulation and refocus
-reconField = holo.process(hologram)
+recon_field = holo.process(hologram)
 
 
 # Unwrap phase
-phaseUnwrapped = pyh.phase_unwrap(pyh.phase(reconField))
+phase_unwrapped = pyh.phase_unwrap(pyh.phase(recon_field))
 
 
 # Detect a global tilt in the phase and remove it (note we must supply the
 # unwrapped phase here)
-tilt = pyh.obtain_tilt(phaseUnwrapped)
-phaseUntilted = pyh.relative_phase(phaseUnwrapped, tilt)
+tilt = pyh.obtain_tilt(phase_unwrapped)
+phase_untilted = pyh.relative_phase(phase_unwrapped, tilt)
 
 
 """ Display results """
 plt.figure(dpi=150)
 plt.title("Intensity")
-plt.imshow(pyh.amplitude(reconField), cmap="gray")
+plt.imshow(pyh.amplitude(recon_field), cmap="gray")
 
 plt.figure(dpi=150)
 plt.title("Phase")
-plt.imshow(pyh.phase(reconField), cmap="twilight", interpolation="none")
+plt.imshow(pyh.phase(recon_field), cmap="twilight", interpolation="none")

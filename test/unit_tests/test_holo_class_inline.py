@@ -1,0 +1,203 @@
+# -*- coding: utf-8 -*-
+"""
+Test that holo_class produces same output as low-level functions
+
+"""
+
+import numpy as np
+import unittest
+import scipy
+import context
+
+import pyholoscope as pyh
+
+
+class TestPropagator(unittest.TestCase):
+    grid_size1 = 512
+    grid_size2 = 1024
+    wavelength = 500e-9
+    pixel_size = 2e-6
+    depth = 0.001
+
+    rng = np.random.default_rng()
+    img = rng.standard_normal((grid_size1, grid_size2)).astype("float32")
+    background = rng.standard_normal((grid_size1, grid_size2)).astype("float32")
+
+
+    def test_plane_single_precision(self):
+        prop = pyh.propagator(
+            (self.grid_size1, self.grid_size2),
+            self.wavelength,
+            self.pixel_size,
+            self.depth,
+        )
+        img_refocus = pyh.refocus(self.img, prop)
+
+        holo = pyh.Holo(mode=pyh.INLINE, wavelength = self.wavelength, pixel_size = self.pixel_size, depth = self.depth)
+        img_refocus_oop = holo.process(self.img)
+        
+        assert( (img_refocus == img_refocus_oop).all())
+
+
+    def test_plane_double_precision(self):
+        prop = pyh.propagator(
+            (self.grid_size1, self.grid_size2),
+            self.wavelength,
+            self.pixel_size,
+            self.depth,
+            geometry="plane",
+            precision="double",
+        )
+        img_refocus = pyh.refocus(self.img, prop)
+        
+        holo = pyh.Holo(mode=pyh.INLINE, wavelength = self.wavelength, 
+                        pixel_size = self.pixel_size, 
+                        depth = self.depth, 
+                        geometry = 'plane', 
+                        precision = 'double')
+
+        img_refocus_oop = holo.process(self.img)
+        assert( (img_refocus == img_refocus_oop).all())
+
+
+    def test_point_double_precision(self):
+        prop = pyh.propagator(
+            (self.grid_size1, self.grid_size2),
+            self.wavelength,
+            self.pixel_size,
+            self.depth,
+            geometry="point",
+            precision="double",
+        )
+        img_refocus = pyh.refocus(self.img, prop)
+
+        holo = pyh.Holo(mode=pyh.INLINE, wavelength = self.wavelength, 
+                        pixel_size = self.pixel_size, 
+                        depth = self.depth, 
+                        geometry = 'point', 
+                        precision = 'double')
+
+        img_refocus_oop = holo.process(self.img)
+        assert( (img_refocus == img_refocus_oop).all())
+        
+     
+    def test_background_normalisation(self):
+        prop = pyh.propagator(
+            (self.grid_size1, self.grid_size2),
+            self.wavelength,
+            self.pixel_size,
+            self.depth,
+            geometry="point",
+            precision="single",
+        )
+        img_refocus = pyh.refocus(self.img, prop, background = self.background, normalise = self.background)
+
+        holo = pyh.Holo(mode=pyh.INLINE, wavelength = self.wavelength, 
+                        pixel_size = self.pixel_size, 
+                        depth = self.depth, 
+                        geometry = 'point', 
+                        precision = 'single',
+                        background = self.background,
+                        normalise = self.background,
+                       )
+
+        img_refocus_oop = holo.process(self.img)
+        assert( (img_refocus == img_refocus_oop).all())    
+
+    
+    def test_window(self):
+   
+        prop = pyh.propagator(
+            (self.grid_size1, self.grid_size2),
+            self.wavelength,
+            self.pixel_size,
+            self.depth,
+            geometry = 'point', 
+            precision = 'single',
+            )
+        window = pyh.square_cosine_window(self.img, 100, 10)
+        
+        img_refocus = pyh.refocus(self.img, prop, window = window)
+        
+        holo = pyh.Holo(mode=pyh.INLINE, wavelength = self.wavelength, 
+                        pixel_size = self.pixel_size, 
+                        depth = self.depth,
+                        window = window,
+                        geometry = 'point', 
+                        precision = 'single',
+                       )
+        
+
+        img_refocus_oop = holo.process(self.img)
+        assert( (img_refocus == img_refocus_oop).all())
+     
+        
+    def test_auto_window(self):
+        
+        prop = pyh.propagator(
+            (self.grid_size1, self.grid_size2),
+            self.wavelength,
+            self.pixel_size,
+            self.depth,
+            geometry = 'point', 
+            precision = 'single',
+            )
+        window = pyh.square_cosine_window(self.img, 100, 10)
+        
+        img_refocus = pyh.refocus(self.img, prop, window = window)
+        
+        holo = pyh.Holo(mode=pyh.INLINE, wavelength = self.wavelength, 
+                        pixel_size = self.pixel_size, 
+                        depth = self.depth,
+                        auto_window = True,
+                        window_radius = 100,
+                        window_thickness = 10,
+                        precision = 'single',
+                       )
+        
+
+        img_refocus_oop = holo.process(self.img)
+        assert( (img_refocus == img_refocus_oop).all())
+        
+      
+    def test_post_window(self):
+        
+        prop = pyh.propagator(
+            (self.grid_size1, self.grid_size2),
+            self.wavelength,
+            self.pixel_size,
+            self.depth,
+            geometry = 'point', 
+            precision = 'single',
+            )
+        window = pyh.square_cosine_window(self.img, 100, 10)
+        
+        img_refocus = pyh.refocus(self.img, prop, window = window)
+        
+        # Manually apply window post refocus
+        img_refocus = pyh.pre_process(img_refocus, window = window)
+        
+        holo = pyh.Holo(mode=pyh.INLINE, wavelength = self.wavelength, 
+                        pixel_size = self.pixel_size, 
+                        depth = self.depth,
+                        auto_window = True, 
+                        post_window = True,
+                        window_radius = 100,
+                        window_thickness = 10,
+                        precision = 'single',
+                       )
+        
+
+        img_refocus_oop = holo.process(self.img)
+        assert( (img_refocus == img_refocus_oop).all())
+        
+        
+
+ 
+        
+        
+
+
+
+if __name__ == "__main__":
+    unittest.main()

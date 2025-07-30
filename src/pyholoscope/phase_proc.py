@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-PyHoloscope - Python package for holographic microscopy
+PyHoloscope - Fast Holographic Microscopy for Python
 
-This file contains general functions, mostly for handling and displaying phase
+This file contains functions for handling and displaying phase
 maps.
 
 """
@@ -85,16 +85,16 @@ def relative_phase_self(img, roi=None):
     """
 
     if roi is None:
-        avPhase = mean_phase(img)
+        av_phase = mean_phase(img)
     else:
-        avPhase = mean_phase(roi.crop(img))
+        av_phase = mean_phase(roi.crop(img))
 
     if np.iscomplexobj(img):
-        outImage = img * np.exp(1j * -1 * avPhase)
+        out_image = img * np.exp(1j * -1 * av_phase)
     else:
-        outImage = img - avPhase
+        out_image = img - av_phase
 
-    return outImage
+    return out_image
 
 
 def obtain_tilt(img):
@@ -114,13 +114,13 @@ def obtain_tilt(img):
     """
 
     # If there is a tilt then there will be a phase gradient across the image
-    tiltX, tiltY = np.gradient(img)
-    tiltX = np.mean(tiltX)
-    tiltY = np.mean(tiltY)
+    tilt_x, tilt_y = np.gradient(img)
+    tilt_x = np.mean(tilt_x)
+    tilt_y = np.mean(tilt_y)
 
     mx, my = np.indices(np.shape(img))
 
-    tilt = mx * tiltX + my * tiltY
+    tilt = mx * tilt_x + my * tilt_y
 
     return tilt
 
@@ -145,7 +145,7 @@ def phase_unwrap(img):
     return img
 
 
-def synthetic_DIC(img, shearAngle=math.pi):
+def synthetic_DIC(img, shear_angle=math.pi):
     """Generates a simple, non-rigorous DIC-style image for display.
 
     The ouput should appear similar to a relief map, with dark and light
@@ -158,7 +158,7 @@ def synthetic_DIC(img, shearAngle=math.pi):
                         2D numpy array, complex, the field.
 
     Keyword Arguments:
-          shearAngle :  float
+          shear_angle :  float
                         angle in radians of the shear direction.
                         (default = pi)
 
@@ -168,6 +168,8 @@ def synthetic_DIC(img, shearAngle=math.pi):
 
     # Calculate gradient on original image and image phase shifted by pi. Using
     # the smallest phase gradient avoids effects due to phase wrapping
+    if not np.iscomplexobj(img):
+        img = np.exp(1j * img)  # Convert phase map to field
     sobelC1 = phase_gradient_dir(img)
     sobelC2 = phase_gradient_dir(img * np.exp(1j * math.pi))
 
@@ -178,7 +180,7 @@ def synthetic_DIC(img, shearAngle=math.pi):
     sobelC = sobelC1 + sobelC2
 
     # Rotate the gradient to shear angle
-    sobelC = sobelC * np.exp(1j * shearAngle)
+    sobelC = sobelC * np.exp(1j * shear_angle)
 
     # DIC is product of phase gradient along one direction and image intensity
     DIC = np.real(sobelC) * (np.max(np.abs(img)) - np.abs(img))
@@ -257,14 +259,14 @@ def phase_gradient(img):
     # the phase has wrapped at a point, this will produce a much bigger phase
     # gradient which we remove by taking the minimum of the two gradients.
 
-    phaseGrad1 = phase_gradient_amp(img)
+    phase_grad1 = phase_gradient_amp(img)
 
     if np.iscomplexobj(img):
-        phaseGrad2 = phase_gradient_amp(img * np.exp(1j * math.pi))
+        phase_grad2 = phase_gradient_amp(img * np.exp(1j * math.pi))
     else:
-        phaseGrad2 = phase_gradient_amp(np.exp(1j * img))
+        phase_grad2 = phase_gradient_amp(np.exp(1j * img))
 
-    return np.minimum(phaseGrad1, phaseGrad2)
+    return np.minimum(phase_grad1, phase_grad2)
 
 
 def mean_phase(img):

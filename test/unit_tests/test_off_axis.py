@@ -14,7 +14,7 @@ import context
 
 import pyholoscope as pyh
 import pyholoscope.sim
-from pyholoscope.utils import circ_cosine_window, circ_window
+from pyholoscope.windows import circ_cosine_window, circ_window
 
 
 class TestOffAxis(unittest.TestCase):

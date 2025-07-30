@@ -1,3 +1,7 @@
+"""
+PyHoloscope - Fast Holographic Microscopy for Python
+"""
+
 INLINE = 1
 OFF_AXIS = 2
 
@@ -13,6 +17,8 @@ from pyholoscope.roi import *
 from pyholoscope.holo_class import *
 from pyholoscope.focusing import *
 from pyholoscope.phase_proc import *
+from pyholoscope.windows import *
+
 
 try:
     from pyholoscope.focusing_numba import *

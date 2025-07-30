@@ -1,6 +1,6 @@
 ## -*- coding: utf-8 -*-
 """
-PyHoloscope - Fast Holographic Microscopy in Python
+PyHoloscope - Fast Holographic Microscopy for Python
 
 The Holo Class provides an object-oriented interface to most of the
 PyHoloscope functionality.
@@ -10,11 +10,10 @@ import numpy as np
 import time
 import warnings
 
-from pyholoscope.utils import (
+from pyholoscope.windows import (
     circ_cosine_window,
     circ_window,
     square_cosine_window,
-    dimensions,
 )
 from pyholoscope.off_axis import (
     off_axis_find_mod,
@@ -26,6 +25,8 @@ from pyholoscope.general import pre_process
 from pyholoscope.phase_proc import relative_phase
 from pyholoscope.prop_lut import PropLUT
 from pyholoscope.roi import Roi
+from pyholoscope.utils import dimensions
+
 
 
 # Check if cupy is available
@@ -83,22 +84,140 @@ class Holo:
     propagator = None
 
     def __init__(self, mode=None, wavelength=None, pixel_size=None, **kwargs):
+        """Initialises the Holo class with the specified mode, wavelength, pixel size and other parameters.
+        
+
+        Optional Keyword Arguments:
+                
+            mode:   enum
+                          Processing mode, either pyholoscope.INLINE or pyholsocope.OFF_AXIS.
+
+        Numerical Refocusing Parameters:
+            refocus: bool
+                        Flag to enable numerical refocusing (default = False) in OFF_AXIS mode. For INLINE mode,
+                        refocusing is always enabled and this parameter is ignored.                          
+            wavelength: float
+                        Wavelength of light (m). Only needed if refocusing is required.
+            pixel_size: float
+                        Size of the pixels in the hologram (m). Only needed if refocusing is required.
+            depth:  float
+                        Refocus depth in same units as pixel_size and wavelength. Only needed if refocusing is required.
+            geometry: str
+                        Geometry of the angular spectum propagator used for refocusing, 'plane' or 'point' (default = 'point'). 
+                        Only needed if refocusing is required.
+
+        Auto Focus Parameters:
+            find_focus_depth_range: tuple
+                        Depth range to use for finding the focus, (min_depth, max_depth) in same units as pixel_size and wavelength.
+                        default = (0, 1).
+            find_focus_method: str
+                        Method to use for autofocus, (default = 'Brenner'). Only needed if autofocus is 
+                        used.                                    
+            find_focus_roi: Roi or None
+                        Region of interest to use for finding the autofocus, (default = None). Only used for autofocus.
+            find_focus_margin: int or None
+                        Margin to use for autofocus, in pixels (default = None). Only used for autofocus.
+            find_focus_coarse_search_interval: int or None
+                        Interval to use for coarse search during autofocus, in m (default = None, in which case the coarse
+                        search is not used). 
+        
+
+        Backgound and Normalisation Parameters:
+            background: numpy.ndarray  or None
+                        Background hologram to be subtracted in inline holography, a 2D real array or None for no subtraction
+                        (default = None). This will also be used to create the background field in off-axis holography if relative 
+                        phase is requested.
+            normalise: numpy.ndarray  or None
+                        Normalisation hologram to be divided by, 2D real array (default = None) during inline 
+                        or off-axis holography. 
+            relative_amplitude: bool
+                        Flag to calculate relative amplitude in off-axis holography (default = False). If True, the background
+                        hologram will be used to calculate the relative amplitude.  
+            relative_phase: bool
+                        Flag to make the phase relative to the mean phase in the whole image or a specified ROI (default = False) 
+                        in off-axis holography. !!!!            
+            
+        Windowing Parameters:    
+            auto_window: bool
+                        Flag to automatically create a window for pre or post processing (default = False). If True, a window will be created
+                        based on the image size and the specified window radius and thickness.
+            post_window: bool
+                        Flag to apply the window after refocusing (default = False). If True, the window will be applied after refocusing.
+            window: numpy.ndarray or None
+                        Window to smooth edges. 2D real array. Will be resized to match size of img if necessary.
+                        (default = None). If None, the window will be created automatically if auto_window is True. 
+            window_shape: str
+                        Shape of the automatically generated window, 'circle' or 'square' (default = 'square'). Only used if auto_window is True.
+            window_radius: int or tuple
+                        Radius of the automatically generated window, for 'circle' this is the radius, for 'square' this is half the side length. 
+                        For 'circle' provide an int, for 'square' either provide an int (resulting in a square window) or a tuple of (width, height).
+                        (default = None). If None, the window radius will be set to half the image size.    
+            window_thickness: int
+                        The number of pixels inside the window over which it transitions from opaque to transparent (default = 10). 
+                        Only used if auto_window is True.
+
+        Off-Axis Demodulation Parameters:
+            crop_centre: tuple or None
+                        Centre of the crop in the off-axis demodulation, (x, y) in pixels (default = None). If None, the calib_off_axis()
+                        method must be called to find the crop centre.
+            crop_radius: int or None
+                        Radius of the crop in the off-axis demodulation, in pixels (default = None). If None, the calib_off_axis()
+                        method must be called to find the crop radius.
+            crop_mask: numpy.ndarray or None
+                        Shape of crop mask to use in the off-axis demodulation, pyholoscope.CIRCLE, pyholoscope.CIRCLE_COSINE, or 
+                        pyholsocope.CUSTOM. (default = None). If specified as pyholoscope.CUSTOM, the mask must be specified
+                        using the custom_crop_window parameter. Otherwise, the crop mask will be a circle or a circle with a cosine 
+                        transition depending on the value of crop_mask and will be generated either when calib_off_axis() is called
+                        or when process() is first called.
+            custom_crop_window: numpy.ndarray or None
+                        Custom crop window to use in the off-axis demodulation when crop_mask is set to pyholsocope.CUSTOM.
+                        Provide a 2D real array (default = None). 
+            crop_window_skin_thickness: int
+                        When crop_mask = pyholoscope.CIRCLE_COSINE, this parameter contols the number of pixels inside the 
+                        crop window over which it transitions from opaque to transparent (default = 10).
+            return_fft: bool    
+                        Flag to return the FFT of the off-axis demodulated image (default = False). 
+                        If True, the process() method will be return a tuple of (demodulated image, fft)          
+            off_axis_real_fft: bool 
+                        Flag to use a real FFT for off-axis demodulation (default = False). If True, the real FFT will be used instead 
+                        of the complex FFT. This is faster but should only be used if the reference beam is not tilted in such a way that
+                        the cross-term crosses the vetical axis in the FFT.
+        Phase Processing Parameters:
+            relative_phase: bool
+                        Flag to make the phase relative to the mean phase in the whole image or a specified ROI (default = False).
+            stable_phase: bool  
+                        Flag to make the phase stable, i.e. to remove the global phase from the image (default = False).
+            stable_roi: pyholoscope.Roi or None
+                        Region of interest to use for making the phase stable. In the output image  
+                        the mean phase in this region will be zero. (default = None). If None, the whole image will be used.
+
+        Display Parameters: 
+               invert: bool 
+                        Flag to invert the image, i.e. largest value becomes smallest and vice versa (default = False).
+            downsample: float
+                        Factor to downsample the image by (default = 1). If > 1, the image will be downsampled by this factor.
+        
+                
+        Back-end and Processing Parameters:    
+            numba:  bool
+                        Flag to use numba for speed up (default = True). If False, numba optimised functions will not be used.
+            cuda:   bool
+                        Flag to use CUDA for GPU acceleration (default = True). If False, GPU functions will not be used.
+            precision: str
+                        Numerical precision of output, 'single' (default) or 'double'. This will determine the data type of the images
+                        processed by the Holo class. If 'double', images will be processed as float64, otherwise as float32.
+        """
+
         self.mode = mode
         self.wavelength = wavelength
         self.pixel_size = pixel_size
         self.oa_pixel_size = pixel_size
-
-        self.use_numba = kwargs.get("numba", True)
-        self.cuda = kwargs.get("cuda", True)
 
         # Numerical refocusing
         self.depth = kwargs.get("depth", 0)
         self.set_background(kwargs.get("background", None))
         self.set_normalise(kwargs.get("normalise", None))
         self.geometry = kwargs.get("geometry", 'point')
-
-        # Phase
-        self.relative_amplitude = kwargs.get("relative_amplitude", False)
 
         # Widowing
         self.auto_window = kwargs.get("auto_window", False)
@@ -123,7 +242,9 @@ class Holo:
         self.return_fft = kwargs.get("return_fft", False)
         self.crop_mask = kwargs.get("crop_mask", None)
         self.custom_crop_window = kwargs.get("custom_crop_window", None)
-        self.crop_window_skin_thickness = kwargs.get("crop_window_skin_thickness", 10)
+        self.__crop_window_skin_thickness = kwargs.get("crop_window_skin_thickness", 10)
+        self.off_axis_real_fft = kwargs.get("off_axis_real_fft", False)
+        self.relative_amplitude = kwargs.get("relative_amplitude", False)
 
         # Phase
         self.relative_phase = kwargs.get("relative_phase", False)
@@ -135,11 +256,14 @@ class Holo:
         self.refocus = kwargs.get("refocus", False)
         self.downsample = kwargs.get("downsample", 1)
 
-        # GPU
+        # GPU and Numba
         self.cuda_available = cuda_available
+        self.use_numba = kwargs.get("numba", True)
+        self.cuda = kwargs.get("cuda", True)
 
         # Image data type
         self.set_precision(kwargs.get("precision", "single"))
+
 
     def __process_inline(self, img):
         """Process an inline hologram image, img, using the currently selected
@@ -150,7 +274,7 @@ class Holo:
         # a window, or it is the wrong size, we make a new window
         self.update_auto_window(img)
 
-        imgPreprocessed = pre_process(
+        img_preprocessed = pre_process(
             img,
             downsample=self.downsample,
             window=self.window,
@@ -160,27 +284,30 @@ class Holo:
         )
 
         # If the propagator is not the correct one for the current parameters, regenerate it
-        if self.propagator is None or not self.propagator.has_attributes(wavelength=self.wavelength,
+        if self.propagator is None or self.propagator.has_attributes(wavelength=self.wavelength,
                                           pixel_size=self.pixel_size,
                                           depth=self.depth) is False:
             self.update_propagator(img)
 
+        if np.shape(self.propagator.propagator) != np.shape(img_preprocessed):
+            self.update_propagator(img_preprocessed)
+
         # Numerical refocusing
-        imgOut = refocus(
-            imgPreprocessed, self.propagator, cuda=(self.cuda and cuda_available)
+        img_out = refocus(
+            img_preprocessed, self.propagator, cuda=(self.cuda and cuda_available)
         )
-        if imgOut is None:
+        if img_out is None:
             warnings.warn("Output from refocusing was None.")
             return None
 
         # Post refocusing processing
         if self.post_window is True and self.window is not None:
-            imgOut = pre_process(imgOut, window=self.window, precision=self.precision)
+            img_out = pre_process(img_out, window=self.window, precision=self.precision)
 
         if self.invert is True:
-            imgOut = np.max(imgOut) - imgOut
+            img_out = np.max(img_out) - img_out
 
-        return imgOut
+        return img_out
 
     def __process_off_axis(self, img):
         """Process an off-axis hologram image using the currently selected parameters."""
@@ -188,14 +315,20 @@ class Holo:
         assert self.crop_centre is not None, "Off-Axis demodulation frequency not defined."
         assert self.crop_radius is not None, "Off-Axis demodulation radius not defined."
 
-        # Removes the off-axis modulation to obtain complex image
+        if self.crop_mask == self.CUSTOM and self.custom_crop_window is not None:
+            self.__crop_window = self.custom_crop_window
+        elif self.crop_mask == self.CIRCLE or self.crop_mask == self.CIRCLE_COSINE:
+            if self.__crop_window is None:
+                self.__create_off_axis_crop_window()
+
         demod = off_axis_demod(
             img,
             self.crop_centre,
             self.crop_radius,
-            mask=self.cropWindow,
+            mask=self.__crop_window,
             return_fft=self.return_fft,
             cuda=self.cuda,
+            real_fft = self.off_axis_real_fft,
         )
 
         if demod is None:
@@ -213,11 +346,12 @@ class Holo:
             if self.background_field is not None:
                 demod = relative_phase(demod, self.background_field)
             elif self.background is not None:
-                self.off_axis_background_field()
+                self.__off_axis_background_field()
+                demod = relative_phase(demod, self.background_field)
 
             else:
                 warnings.warn(
-                    "Relative phase requested but no background field available, call off_axis_background_field() to create this first."
+                    "Relative phase requested but no background field available, call __off_axis_background_field() to create this first."
                 )
 
         if demod is None:
@@ -240,7 +374,17 @@ class Holo:
             background = self.background_abs
         else:
             background = None
-        
+
+        # Check if we need to also demodulate the background and normalisation fields if this is the first time
+        if self.normalise is not None:
+            if self.normalise_abs is None or np.shape(self.normalise_abs) != np.shape(demod):
+                self.__off_axis_normalise_field()  
+
+        if self.relative_amplitude and self.background is not None:
+            if self.background_abs is None or np.shape(self.background_abs) != np.shape(demod):
+                self.__off_axis_background_field()  
+                  
+
         demod = pre_process(
             demod,
             downsample=self.downsample,
@@ -290,14 +434,7 @@ class Holo:
         img = pre_process(img, window=self.window)
         return img
 
-    def __str__(self):
-        return (
-            "PyHoloscope Holo Class. Wavelength: "
-            + str(self.wavelength)
-            + ", Pixel Size: "
-            + str(self.pixel_size)
-        )
-
+  
     ###############################################################################
     ####################################### API ###################################
 
@@ -374,7 +511,7 @@ class Holo:
         self.normaliseAngle = None
 
     def set_relative_amplitude(self, boolean):
-        """Sets whether or not to calculate relative phase in off-axis holography."""
+        """Sets whether or not to calculate relative amplitude in off-axis holography."""
         assert boolean == True or boolean == False, (
             "Argument of set_relative_amplitude must be True or False"
         )
@@ -382,11 +519,11 @@ class Holo:
 
     ############################# WINDOW #####################################
 
-    def create_window(self, imgSize, radius, skinThickness, shape="square"):
+    def __create_window(self, img_size, radius, skin_thickness, shape="square"):
         """Creates and stores the window used for pre or post processing.
 
         Arguments:
-            imgSize       :  the size of the window array, must be the same as the hologram it will be
+            img_size       :  the size of the window array, must be the same as the hologram it will be
                              applied to. Either provide a 2D numpy array, in which case the window will
                              be created to match the size of this, provide an int, in which case the window
                              will be a square of this size or a tuple of (width, height).
@@ -394,7 +531,7 @@ class Holo:
                              radius, for 'square' this is half the side length. For 'circle' provide
                              an int, for 'square' either provide an int (resulting in a square window)
                              or a tuple of (width, height) for rectangular window.
-            skinThickness :  The number of pixels inside the window over which it transitions from
+            skin_thickness :  The number of pixels inside the window over which it transitions from
                              opaque to transparent.
 
         Keyword Arguments:
@@ -403,11 +540,11 @@ class Holo:
 
         if shape == "circle":
             self.window = circ_cosine_window(
-                imgSize, radius, skinThickness, dataType=self.image_type
+                img_size, radius, skin_thickness, data_type=self.image_type
             )
         elif shape == "square":
             self.window = square_cosine_window(
-                imgSize, radius, skinThickness, dataType=self.image_type
+                img_size, radius, skin_thickness, data_type=self.image_type
             )
 
     def set_window(self, window):
@@ -461,7 +598,7 @@ class Holo:
                 else:
                     window_radiusX, window_radiusY = dimensions(self.window_radius)
 
-                self.create_window(
+                self.__create_window(
                     (int(imWidth / self.downsample), int(imHeight / self.downsample)),
                     (
                         int(window_radiusX / self.downsample),
@@ -520,8 +657,8 @@ class Holo:
         the d.c. from being detected.
         """
         if self.background is not None:
-            self.crop_centre = off_axis_find_mod(self.background, maskFraction=0.1)
-            self.crop_radius = off_axis_find_crop_radius(self.background)
+            self.crop_centre = off_axis_find_mod(self.background, maskFraction=0.1, real_fft = self.off_axis_real_fft)
+            self.crop_radius = off_axis_find_crop_radius(self.background, maskFraction = 0.1, real_fft = self.off_axis_real_fft)
 
     def calib_off_axis(self, hologram=None, mask_fraction=0.1):
         """Detect the modulation location in frequency domain using the
@@ -536,47 +673,54 @@ class Holo:
                 "Calib_off_axis requires a calibration image, either provided as an argument or from a previously set background."
             )
 
-        self.crop_centre = off_axis_find_mod(hologram, mask_fraction=mask_fraction)
-        self.crop_radius = off_axis_find_crop_radius(hologram)
+        self.crop_centre = off_axis_find_mod(hologram, mask_fraction=mask_fraction, real_fft = self.off_axis_real_fft)
+        self.crop_radius = off_axis_find_crop_radius(hologram, mask_fraction=mask_fraction, real_fft = self.off_axis_real_fft)
 
         if self.background is not None:
-            self.off_axis_background_field()
+            self.__off_axis_background_field()
         if self.normalise is not None:
-            self.off_axis_normalise_field()
+            self.__off_axis_normalise_field()
+
+        self.__create_off_axis_crop_window()
+
+    def __create_off_axis_crop_window(self):
+        """Create the crop window used for off-axis demodulation."""        
 
         if self.crop_mask == self.CIRCLE:
-            self.cropWindow = circ_window(
+            if isinstance(self.crop_radius, tuple):
+                self.__crop_window = circ_window(
                 (self.crop_radius[0] * 2, self.crop_radius[1] * 2), self.crop_radius
-            )
+                )
         elif self.crop_mask == self.CIRCLE_COSINE:
-            self.cropWindow = circ_cosine_window(
-                (self.crop_radius[0] * 2, self.crop_radius[1] * 2),
-                self.crop_radius,
-                self.crop_window_skin_thickness,
-            )
+            if isinstance(self.crop_radius, tuple):
+                self.__crop_window = circ_cosine_window(
+                    (self.crop_radius[0] * 2, self.crop_radius[1] * 2),
+                    self.crop_radius,
+                self.__crop_window_skin_thickness,
+                )
         elif self.crop_mask == self.CUSTOM:
-            self.cropWindow = self.custom_crop_window
+            self.__crop_window = self.custom_crop_window
         else:
-            self.cropWindow = None
+            self.__crop_window = None
 
-    def off_axis_background_field(self):
+    def __off_axis_background_field(self):
         """Demodulate the background hologram."""
         assert self.background is not None, "Background hologram not provided."
         assert self.crop_centre is not None, "Demodulation centre not provided"
         assert self.crop_radius is not None, "Demodulation radius not provided."
         self.background_field = off_axis_demod(
-            self.background, self.crop_centre, self.crop_radius
+            self.background, self.crop_centre, self.crop_radius, real_fft = self.off_axis_real_fft
         )
         self.background_abs = np.abs(self.background_field)  # Store these now for speed
         self.backgroundPhase = np.angle(self.background_field)
 
-    def off_axis_normalise_field(self):
+    def __off_axis_normalise_field(self):
         """Demodulate the background hologram."""
         assert self.background is not None, "Background hologram not provided."
         assert self.crop_centre is not None, "Demodulation centre not provided"
         assert self.crop_radius is not None, "Demodulation radius not provided."
         self.normalise_field = off_axis_demod(
-            self.normalise, self.crop_centre, self.crop_radius
+            self.normalise, self.crop_centre, self.crop_radius, real_fft = self.off_axis_real_fft
         )
         self.normalise_abs = np.abs(self.normalise_field)  # Store these now for speed
         self.normalisePhase = np.angle(self.normalise_field)
@@ -604,34 +748,38 @@ class Holo:
     ##################### REFOCUSING #########################################
 
     def set_depth(self, depth):
-        """Set the depth for numerical refocusing"""
+        """Set the depth for numerical refocusing.
+        Arguments:
+            depth       : int or float  
+                        Depth to refocus at in the same units as pixel_size and wavelength.
+        """
+        assert isinstance(depth, (int, float)), (
+            "Argument of set_depth must be an int or float."
+        )
         self.depth = depth
 
     def update_propagator(self, img):
         """Create or re-create the propagator using current parameters. img
         should be an 2D numpy array of the same size as the images to be processed.
         """
-
-        self.propagatorWavelength = self.wavelength
-        self.propagatorDepth = self.depth
-
+      
         if self.mode == self.INLINE_MODE:
-            self.propagatorpixel_size = self.pixel_size * self.downsample
+            self.propagator_pixel_size = self.pixel_size * self.downsample
             downsample = self.downsample
         else:
-            self.propagatorpixel_size = self.oa_pixel_size
-            downsample = 1
+            self.propagator_pixel_size = self.oa_pixel_size
+            downsample = 1   # The way oa_pixel_size is calculated, we already take account of the downsample factor
 
-        propWidth = int(np.shape(img)[1] / downsample / 2) * 2
-        propHeight = int(np.shape(img)[0] / downsample / 2) * 2
+        prop_width = int(np.shape(img)[1] / downsample / 2) * 2
+        prop_height = int(np.shape(img)[0] / downsample / 2) * 2
 
         self.propagator = propagator(
-            (propHeight, propWidth),
+            (prop_height, prop_width),
             self.wavelength,
-            self.pixel_size,
+            self.propagator_pixel_size,
             self.depth,
             precision=self.precision,
-            geometry = self.geometry,
+            geometry=self.geometry,
             use_numba=self.use_numba,
         )
 
@@ -642,6 +790,10 @@ class Holo:
     def set_downsample(self, downsample):
         """Set the downsample factor. This will cause the propagator to be
         recreated when next needed, call update_propagator to force this immediately.
+        Arguments:
+            downsample   : int or float
+                           Factor to downsample the image by, must be > 0.
+                           If > 1, the image will be downsampled by this factor.
         """
         if downsample != self.downsample:
             self.propagator = None  # Force to be recreated when needed
@@ -654,7 +806,7 @@ class Holo:
         """Sets the parameters used by the find_focus method.
 
         Keyword Arguments:
-            depthRange   : double
+            depth_range   : double
                            tuple of (min, max) depths to search within in m.
             roi          : instance of Roi
                            area to assess focus within, default is None in which
@@ -665,17 +817,17 @@ class Holo:
                            if specified only the Roi and a margin will be
                            refocused. If None (default) the whole image will be
                            refocused regardless. Has no effect if roi not specified.
-            coarseSearchInterval  : Number of points to check explicitly before
+            coarse_search_interval  : Number of points to check explicitly before
                                     optimising. Default is None, in which case
                                     this is not performed.
 
 
         """
-        self.find_focus_depth_range = kwargs.get("depthRange", (0, 0.1))
+        self.find_focus_depth_range = kwargs.get("depth_range", (0, 0.1))
         self.find_focus_roi = kwargs.get("roi", None)
         self.find_focus_method = kwargs.get("method", "Brenner")
         self.find_focus_,margin = kwargs.get("margin", None)
-        self.coarseSearchInterval = kwargs.get("coarseSearchInterval", None)
+        self.coarse_search_interval = kwargs.get("coarse_search_interval", None)
 
     def find_focus(self, img):
         """Automatically finds the best focus position for hologram 'img'
@@ -697,7 +849,7 @@ class Holo:
             "margin": self.find_focus_margin,
             "numba": numba_available and self.use_numba,
             "cuda": cuda_available and self.cuda,
-            "propagatorLUT": self.propagatorLUT,
+            "propagator_lut": self.propagator_lut,
             "coarseSearchInterval": self.find_focus_coarse_search_interval,
         }
 
@@ -718,7 +870,7 @@ class Holo:
             img         : ndarray
                           2D array containing hologram
         Keyword Arguments:
-            depthRange  : tuple
+            depth_range  : tuple
                           depths to search within in m, default is (0,1).
             method      : str
                           focus metric to use, default is 'Brenner'.
@@ -740,23 +892,21 @@ class Holo:
             propLUT     : instance of PropLUT or None
                           propagator LUT to use, default is None in which case
                           no LUT is used.
-            coarseSearchInterval : int or None
+            coarse_search_interval : int or None
                                    Number of points to check explicitly before
                                    optimising. Default is None, in which case
                                    this is not performed.
             precision   : str
                           precision to use, 'single' or 'double', default is 'single'.
 
-
-
-
-
-        """
+        Returns:
+            float       : determined optimal refocus depth in m.
+     """
         focusDepth = find_focus(
             img,
             self.wavelength,
             self.pixel_size,
-            kwargs.get("depthRange", (0, 1)),
+            kwargs.get("depth_range", (0, 1)),
             kwargs.get("method", "Brenner"),
             background=self.background,
             window=self.window,
@@ -764,51 +914,61 @@ class Holo:
             cuda=self.cuda and cuda_available,
             roi=kwargs.get("roi", None),
             margin=kwargs.get("margin", None),
-            propLUT=kwargs.get("propagatorLUT", None),
-            coarseSearchInterval=kwargs.get("coarseSearchInterval", None),
+            prop_LUT=kwargs.get("propagator_LUT", None),
+            coarse_search_interval=kwargs.get("coarse_search_interval", None),
             precision=self.precision,
         )
         return focusDepth
 
-    def make_propagator_LUT(self, img, depthRange, nDepths):
-        """Creates a LUT of propagators for faster finding of focus."""
-        self.propagatorLUT = PropLUT(
+    def make_propagator_LUT(self, img, depth_range, num_depth):
+        """Creates and stores a LUT of propagators for faster finding of focus.
+
+        Arguments:
+            img         : ndarray
+                          hologram, used to determine size of propagators in LUT.
+            depth_range : tuple
+                          depths range to create propagators for: (min depth, max depth)
+            num_depth   : int
+                          number of depths to create propagators for, evenly spaced within depth_range/
+        """
+        self.propagator_lut = PropLUT(
             np.shape(img)[0],
             self.wavelength,
             self.pixel_size,
-            depthRange,
-            nDepths,
+            depth_range,
+            num_depth,
             numba=(numba_available and self.use_numba),
             precision=self.precision,
         )
 
     def clear_propagator_LUT(self):
         """Deletes the LUT of propagators."""
-        self.propagatorLUT = None
+        self.propagator_lut = None
 
     ################### DEPTH STACK ##############################################
 
-    def depth_stack(self, img, depthRange, nDepths):
+    def depth_stack(self, img, depth_range, num_depth):
         """Create a depth stack using current parameters, producing a set of
-        'nDepths' refocused images equally spaced within depthRange.
+        'num_depth' refocused images equally spaced within depth_range.
+
         Arguments:
             img        : ndarray
                          hologram
-            depthRange : tuple
+            depth_range : tuple
                          depths to focus to: (min depth, max depth)
-            nDepths    : int
-                         number of depths to create images for within depthRange
+            num_depth    : int
+                         number of depths to create images for within depth_range
 
         Returns:
             ndarray    : 3D array containing images refocused to different depths.
         """
 
         if self.mode == self.INLINE_MODE:
-            preBackground = self.background
-            postBackground = None
+            pre_background = self.background
+            post_background = None
         else:
-            preBackground = None
-            postBackground = None
+            pre_background = None
+            post_background = None
         args = {
             "background": self.background,
             "window": self.window,
@@ -819,8 +979,8 @@ class Holo:
             img,
             self.wavelength,
             self.pixel_size,
-            depthRange,
-            nDepths,
+            depth_range,
+            num_depth,
             precision=self.precision,
             **args,
         )
@@ -828,11 +988,11 @@ class Holo:
 
     ########################### GENERAL SETTINGS ################################
 
-    def set_use_cuda(self, useCuda):
-        """Set whether to use GPU if available, useCuda is True to use GPU or
+    def set_use_cuda(self, use_cuda):
+        """Set whether to use GPU if available, use_cuda is True to use GPU or
         False to not use GPU.
         """
-        self.cuda = useCuda
+        self.cuda = use_cuda
 
     def set_use_numba(self, use_numba):
         """Set whether to use Numba JIT if available, use_numba is True to use
@@ -850,3 +1010,12 @@ class Holo:
             self.imType = "float64"
         else:
             self.imType = "float32"
+
+
+    def __str__(self):
+        return (
+            "PyHoloscope Holo Class. Wavelength: "
+            + str(self.wavelength)
+            + ", Pixel Size: "
+            + str(self.pixel_size)
+        )        

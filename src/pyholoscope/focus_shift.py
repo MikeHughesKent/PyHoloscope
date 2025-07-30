@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 """
-PyHoloscope - Python package for holgoraphic microscopy
+PyHoloscope - Fast Holographic Microscopy for Python
 
 This file contains functions related to estimating depth from shifted images.
+
+This is experimental and does not form part of the documented API.
 
 """
 

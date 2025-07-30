@@ -4,6 +4,9 @@ Contributions
 
 Contributions to PyHoloscope are very welcome via pull requests.
 
+You may wish to start a thread in the discussoin forum to discuss your ideas before
+submitting a pull request, or to ask for help with a particular issue.
+
 New functionality should first be introduced as functions. Once tested and working, the functionality can then be added as an option to
 the Holo class. New functionality should generally not change the default behaviour of the Holo class, or any existing functions, in order
 to maintain backwards compatibility, but should be made available via additional keyword arguments or new functions. The exception to this is a bug fix correcting

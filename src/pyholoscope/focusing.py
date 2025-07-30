@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-PyHoloscope - Fast Holographic Microscopy in Python
+PyHoloscope - Fast Holographic Microscopy for Python
 
 This file contains functions related to numerical refocusing.
 
@@ -43,7 +43,7 @@ def propagator(
     depth,
     geometry="point",
     precision="single",
-    use_numba=False,
+    use_numba=True,
 ):
     """Creates Fourier domain propagator for angular spectrum method.
     Returns the propagator as an instance of Propagator. Generation is sped up
@@ -174,10 +174,10 @@ def refocus(img, propagator, **kwargs):
         fourier_domain : boolean
                         if True then img is assumed to be already the
                         FFT of the hologram, useful for speed when performing
-                        multiple refocusing of the same hologram. (default =
+                        multiple refocusing of the same hologram. (default is
                         False)
         cuda          : boolean
-                        if True GPU will be used if available.
+                        if True (default) GPU will be used if available.
         others        : pass any keyword arguments from pre_process() to
                         apply this pre-processing prior to refocusing
 
@@ -189,7 +189,6 @@ def refocus(img, propagator, **kwargs):
     cuda = kwargs.pop("cuda", True)
 
     
-
     # If we were sent the propagator on the CPU, push to GPU now
     if (
         cuda is True

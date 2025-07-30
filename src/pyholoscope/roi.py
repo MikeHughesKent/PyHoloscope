@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-PyHoloscope - Python package for holographic microscopy
+PyHoloscope - Fast Holographic Microscopy for Python
 
 Roi: Class for region of interest.
 """
@@ -34,19 +34,25 @@ class Roi:
             + str(self.height)
         )
 
-    def constrain(self, minX, minY, maxX, maxY):
-        """Stops ROI exceeding image size by adjusting ROI coordinates and size.
+    def constrain(self, min_x, min_y, max_x, max_y):
+        """Stops ROI exceeding a specified size by adjusting ROI coordinates and size.
 
         Arguments:
-            minX, minY  : minimum x and y values
-            maxX, maxY  : maximum x and y values
+            min_x    : int
+                       minimum x coordinate
+            min_y    : int
+                       minimum y coordinate
+            max_x    : int
+                       maximum x coordinate 
+            max_y    : int
+                       maximum y coordinate
         """
 
-        self.x = max(self.x, minX, 0)
-        self.y = max(self.y, minY, 0)
+        self.x = max(self.x, min_x, 0)
+        self.y = max(self.y, min_y, 0)
 
-        self.width = max(min(self.width, maxX - self.x), 0)
-        self.height = max(min(self.height, maxY - self.y), 0)
+        self.width = max(min(self.width, max_x - self.x), 0)
+        self.height = max(min(self.height, max_y - self.y), 0)
 
     def crop(self, img):
         """Crop and image using the ROI.

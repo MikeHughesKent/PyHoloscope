@@ -15,7 +15,7 @@ import pyholoscope as pyh
 
 # Experimental Parameters
 wavelength = 630e-9
-pixelSize = 1e-6
+pixel_size = 1e-6
 depth = 0.0127
 
 # Load images
@@ -26,11 +26,11 @@ background = pyh.load_image(Path("test data/inline_example_back.tif"))
 holo = pyh.Holo(
     mode=pyh.INLINE_MODE,
     wavelength=wavelength,
-    pixelSize=pixelSize,
+    pixel_size=pixel_size,
     background=background,
     normalise=background,
     depth=depth,
-    autoWindow=True,
+    auto_window=True,
 )
 
 holo.update_propagator(hologram)  # To make timing below just for refocusing
@@ -80,6 +80,7 @@ holo.set_auto_window(False)
 holo.clear_window()
 t1 = time.perf_counter()
 recon = holo.process(hologram)
+
 print(
     f"Inline refocusing time with no window: {round((time.perf_counter() - t1) * 1000)} ms"
 )
@@ -89,8 +90,9 @@ plt.title("Refocused Hologram, no window")
 
 
 # No window or background
-holo.clear_background()
+#holo.clear_background()
 holo.clear_normalise()
+holo.clear_background()
 t1 = time.perf_counter()
 recon = holo.process(hologram)
 print(

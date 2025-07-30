@@ -1,3 +1,10 @@
+"""
+PyHoloscope - Fast Holographic Microscopy for Python
+
+The Propagator class represents a propagator for wavefront propagation in holography.
+"""
+
+
 import numpy as np
 
 
@@ -5,10 +12,14 @@ class Propagator:
     """Represents a propagator for wavefront propagation in holography.
 
     Attributes:
-        propagator: 2D complex numpy array containing the propagator.
-        wavelength: The wavelength of the light used in the propagation (m).
-        pixel_size: The size of the pixels in the hologram (m).
-        depth: Propagation distance (m).
+
+        propagator  : 2D complex numpy array containing the propagator.
+    
+        wavelength  : The wavelength of the light used in the propagation (m).
+        
+        pixel_size  : The size of the pixels in the hologram (m).
+        
+        depth       : Propagation distance (m).
     """
 
     wavelength = None
@@ -22,8 +33,20 @@ class Propagator:
         self, propagator, wavelength=None, pixel_size=None, depth=None, geometry=None
     ):
         """
-        Initialises the propagator with a specific wavelength and pixel size.
-        The depth is optional and can be used for some propagators.
+        Initializes the Propagator instance by stoing the propagator and its attributes. 
+
+        Parameters:
+            propagator: 2D complex numpy array containing the propagator.
+
+        Optional Keyword Arguments:
+            wavelength: float
+                        The wavelength of the light (m).
+            pixel_size: float
+                        The size of the pixels in the hologram (m).
+            depth: float
+                   Propagation distance (m).
+            geometry: str
+                      Geometry of the propagator ('plane' or 'point').
         """
         self.propagator = propagator
         self.wavelength = wavelength

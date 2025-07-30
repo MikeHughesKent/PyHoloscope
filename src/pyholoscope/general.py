@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-PyHoloscope - Python package for holographic microscopy
+PyHoloscope - Fast Holographic Microscopy for Python
 
-This file contains general functions, mostly for handling and displaying phase
-maps.
+This file contains general functions.
 
 """
 
@@ -11,6 +10,10 @@ import warnings
 
 import numpy as np
 import cv2 as cv
+import scipy as sp
+
+from numba import jit, njit, prange
+
 
 
 def pre_process(
@@ -68,11 +71,11 @@ def pre_process(
     if img.dtype != imType:
         img = img.astype(imType)
 
-    if background is not None:
+    if background is not None and not np.iscomplexobj(img):
         if background.dtype != imType:
             background = background.astype(imType)
 
-    if normalise is not None:
+    if normalise is not None and not np.iscomplexobj(img):
         if normalise.dtype != imType:
             normalise = normalise.astype(imType)
 
@@ -81,14 +84,18 @@ def pre_process(
         if np.iscomplexobj(img):
             imgAmp = np.abs(img)
             imgPhase = np.angle(img)
-            img.real = (imgAmp - background) * np.cos(imgPhase)
-            img.imag = (imgAmp - background) * np.sin(imgPhase)
+            img = (imgAmp - np.sqrt(background)) * np.exp(1j * imgPhase)           
         else:
             img = img - background
 
     # Background normalisation
     if normalise is not None:
-        img = img / normalise
+        if np.iscomplexobj(img):
+            imgAmp = np.abs(img)
+            imgPhase = np.angle(img)
+            img = (imgAmp / np.sqrt(normalise)) * np.exp(1j * imgPhase)          
+        else:
+            img = img / normalise
 
     # Apply window
     if window is not None:
@@ -132,3 +139,70 @@ def fourier_plane_display(img):
     fourierPlane = np.log(np.abs(np.fft.fftshift(np.fft.fft2(img))))
 
     return fourierPlane
+
+
+def fast_full_2D_fft(input, use_numba=True):
+    """"
+    Computes the full 2D FFT of a real input array using the rfft2 function and reconstructs the full FFT 
+    from the real FFT output by exploiting the symmetry. May be faster than np/sp fft2 for large arrays.
+
+    Arguments:
+          input : numpy.ndarray 
+                  2D numpy array, real
+    Keyword Arguments:
+          use_numba : bool
+                      If True, uses numba for speed up (default = True). If this is set to False, this function
+                      is likely to be slower than np.fft.fft2 or sp.fft.fft2.
+    Returns:    
+            numpy.ndarray : 2D complex numpy array, full FFT of the input.
+            
+    """
+    
+    M, N = input.shape
+
+    rfft = sp.fft.rfft2(input)
+    
+
+    if use_numba:
+        #pass
+        out = reconstruct_full_fft2(rfft, M, N)
+    else:
+        # Copy the rfft2 output into the left half
+        mid = N//2
+        out = np.zeros((M, N), dtype='complex128')
+        out[:, :mid+1] = rfft
+        
+        if N % 2 == 0:
+            reflected = np.conj(np.flipud(np.fliplr(rfft[1:, 1:])))
+            out[1:, mid:] = reflected
+            out[0, mid+1:] = np.conj(rfft[0,mid-1:0:-1])
+        else:
+            reflected = np.conj(np.flipud(np.fliplr(rfft[1:, 1:])))
+            out[1:, mid+1:] = reflected
+            out[0, mid+1:] = np.conj(rfft[0,mid:0:-1])
+
+    return out
+
+
+
+@jit(nopython=True, parallel=True)
+def reconstruct_full_fft2(rfft, M, N):
+    """ Used by fast_full_2D_fft() to reconstruct the full 2D FFT from the real FFT output.
+    """
+    out = np.zeros((M, N), dtype=np.complex128)
+    mid = N // 2
+
+    # Copy the rfft2 output into the left half
+    for i in prange(M):
+        for j in prange(mid + 1):
+            out[i, j] = rfft[i, j]
+
+    # Fill the symmetric (redundant) part manually
+    for i in prange(M):
+        for j in prange(mid + 1, N):
+            ii = (-i) % M
+            jj = (-j) % N
+            z = out[ii, jj]
+            out[i, j] = complex(z.real, -z.imag)
+
+    return out

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-PyHoloscope - Python package for holgoraphic microscopy
+PyHoloscope - Fast Holographic Microscopy for Python
 
 This file contains utility functions.
 
@@ -21,8 +21,8 @@ def get8bit(img):
     """Returns 8 bit representation of amplitude and phase of field.
 
     Returns a tuple of amplitude and phase, both real 2D numpy arrays of type
-    uint8. Amplitude is scaled between 0 and 255, phase is mapped to between
-    0 and 255, with 0 = 0 radians and 255 = 2pi radians.
+    uint8. Amplitude is scaled between 0 and 255, phase is wrapped and mapped 
+    to between 0 and 255, with 0 = 0 radians and 255 = 2pi radians.
 
     Parameters:
           img   : numpy.ndarray
@@ -106,7 +106,7 @@ def magnitude(img):
     """Returns magnitude of complex image.
 
     Parameters:
-        img        : numpy. ndarray
+        img        : numpy.ndarray
                      complex image
 
     Returns:
@@ -116,10 +116,10 @@ def magnitude(img):
 
 
 def amplitude(img):
-    """Returns amplitude of complex image.
+    """Returns amplitude of complex image. Deprecated, use `amp` instead.
 
     Parameters:
-        img        : ndarray
+        img        : numpy.ndarray
                      complex image
 
     Returns:
@@ -127,6 +127,18 @@ def amplitude(img):
     """
     return np.abs(img)
 
+
+def amp(img):
+    """Returns amplitude of complex image.
+
+    Parameters:
+        img        : numpy.ndarray
+                     complex image
+
+    Returns:
+         numpy.ndarray : amplitude image
+    """
+    return np.abs(img)
 
 def phase(img):
     """Returns phase of complex image, between 0 and 2pi.
@@ -143,7 +155,7 @@ def phase(img):
 
 def load_image(filename):
     """
-    Loads an image or stack of images from a file.
+    Loads an image or stack of images from a file. Supports all formats supported by PIL.
 
     Parameters:
         filename    : str or Path
@@ -165,197 +177,6 @@ def load_image(filename):
         return stack
     else:
         return np.array(Image.open(filename))
-
-
-def circ_window(imgSize, circleRadius, dataType="float32"):
-    """Produces a circular or elipitcal mask on grid of imgSize.
-
-    Parameters:
-        imgSize      : int or (int, int)
-                       size of output image. Provide a single int to generate a square
-                       image of that size, otherwise provide (w,h) to produce a rectangular
-                       image.
-        circleRadius : float or (float, float)
-                       Pixel values inside this radius will be 1. Provide a tuple
-                       of (x,y) to have different x and y radii.
-
-    Keyword Arguments:
-        dataType     : str
-                       data type of returned array (default is 'float32')
-
-    Returns:
-        numpy.ndarray : 2D numpy array containing mask
-
-
-    """
-
-    circleRadius = dimensions(circleRadius)
-    [xM, yM] = np.meshgrid(range(circleRadius[0] * 2), range(circleRadius[1] * 2))
-    mask = ((yM - circleRadius[1]) / circleRadius[1]) ** 2 + (
-        (xM - circleRadius[0]) / circleRadius[0]
-    ) ** 2 < 1
-
-    return mask.astype(dataType)
-
-
-def circ_cosine_window(imgSize, circleRadius, skinThickness, dataType="float32"):
-    """Produces a circular or elliptical cosine window mask on grid of imgSize.
-
-    Parameters:
-        imgSize      :  int or (int, int)
-                        size of output image. Provide a single int to generate a square
-                        image of that size, otherwise provide (w,h) to produce a rectangular
-                        image.
-        circleRadius :  float or (float, float)
-                        Pixel values inside this radius will be 1. Provide a tuple
-                        of (x,y) to have different x and y radii.
-        skinThickness : float
-                        size of smoothed area inside circle/ellipse
-
-    Keyword Arguments:
-        dataType      : str
-                        data type of returned array (default is 'float32')
-
-    Returns:
-        numpy.ndarray : 2D numpy array containing mask
-
-
-    """
-    w, h = dimensions(imgSize)
-
-    circleRadius = dimensions(circleRadius)
-    skinThickness = dimensions(skinThickness)
-
-    xM, yM = np.meshgrid(range(w), range(h))
-    xMc = xM - w / 2
-    yMc = yM - h / 2
-
-    dist = np.sqrt(xMc**2 + yMc**2)
-    xMc[xMc == 0] = 0.001
-    theta = np.arctan(yMc / xMc)
-
-    a = circleRadius[1]
-    b = circleRadius[0]
-    a2 = circleRadius[1] - skinThickness[1]
-    b2 = circleRadius[0] - skinThickness[0]
-
-    # Equations for radius of an ellipse at a given theta
-    outerRadius = a * b / np.sqrt((a * np.cos(theta)) ** 2 + (b * np.sin(theta)) ** 2)
-
-    innerRadius = (
-        a2 * b2 / np.sqrt((a2 * np.cos(theta)) ** 2 + (b2 * np.sin(theta)) ** 2)
-    )
-
-    weight = (dist - innerRadius) / np.sqrt(
-        (np.cos(theta) * skinThickness[0]) ** 2
-        + (np.sin(theta) * skinThickness[1]) ** 2
-    )
-
-    # Smooth part of mask
-    mask = np.cos(math.pi / 2 * (weight)) ** 2
-
-    mask[weight > 1] = 0
-    mask[weight < 0] = 1
-
-    # Centre point will be NaN due to sqrt of 0
-    mask[np.isnan(mask)] = 1
-
-    return mask.astype(dataType)
-
-
-def square_cosine_window(imgSize, radius, skinThickness, dataType="float32"):
-    """Produces a square cosine window mask on grid of imgSize * imgSize.
-    Mask is 0 for radius > circleSize and 1 for radius < (circleSize -
-    skinThickness).  The intermediate region is a smooth squared cosine function.
-
-    Parameters:
-        imgSize       : int or (int, int)
-                        size of output image. Provide a single int to generate a square
-                        image of that size, otherwise provide (h,w) to produce a rectangular
-                        image.
-        circleRadius :  float or (float, float)
-                        Pixel values inside this radius will be 1. Provide a tuple
-                        of (x,y) to have different x and y radii.
-        skinThickness : float
-                        size of smoothed area inside circle/ellipse
-
-    Keyword Arguments:
-        dataType      : str
-                        data type of returned array (default is 'float32')
-
-    Returns:
-        numpy.ndarray : 2D numpy array containing mask
-
-
-    """
-
-    w, h = dimensions(imgSize)
-
-    if type(radius) is tuple:
-        radiusX, radiusY = radius
-    else:
-        radiusX = radius
-        radiusY = radius
-
-    innerRadX = radiusX - skinThickness
-    innerRadY = radiusY - skinThickness
-
-    xCentre = int(w / 2)
-    yCentre = int(h / 2)
-
-    yR = np.arange(h)
-    xR = np.arange(w)
-
-    row = np.cos(math.pi / (2 * skinThickness) * (np.abs(xR - w / 2) - innerRadX)) ** 2
-    row[np.abs(xR - xCentre) < innerRadX] = 1
-    row[np.abs(xR - xCentre) > innerRadX + skinThickness] = 0
-
-    col = np.transpose(
-        np.atleast_2d(
-            np.cos(math.pi / (2 * skinThickness) * (np.abs(yR - h / 2) - innerRadY))
-            ** 2
-        )
-    )
-    col[np.abs(yR - yCentre) < innerRadY] = 1
-    col[np.abs(yR - yCentre) > innerRadY + skinThickness] = 0
-
-    maskH = np.tile(col, (1, w))
-    maskV = np.tile(row, (h, 1))
-
-    mask = maskH * maskV
-
-    return mask.astype(dataType)
-
-
-def pil2np(im):
-    """Utility to convert PIL image 'im' to numpy array. Deprecated."""
-    return np.array(im)
-
-
-def load_image(file, square=False):
-    """Loads an image from a file and returns as numpy array.
-
-    Parameters:
-        file   : str
-                 filename to load image from, including exension.
-
-    Keyword Arguments:
-        square : boolean
-                 if True, non-square will be made square by taking the largest
-                 possible central square, default is False.
-
-    Returns:
-        numpy.ndarray : 2D image
-    """
-    img = Image.open(file)
-    im = pil2np(img)
-
-    if square:
-        # Make sure image is square
-        if np.shape(im)[0] != np.shape(im)[1]:
-            im = extract_central(im, min(np.shape(im)[0:2]))
-
-    return im
 
 
 def save_image(img, file, autoscale=True):

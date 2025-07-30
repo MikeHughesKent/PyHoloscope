@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-PyHoloscope: focus_stack
+PyHoloscope - Fast Holographic Microscopy for Python
 
 Class to store stack of images numerically refocused to different depths.
 
@@ -15,14 +15,14 @@ from PIL import Image
 ################### Class for stack of images focused at different depths ####
 class FocusStack:
     def __init__(self, img, depth_range, num_depths):
-        """Initialise stack.
+        """Initialise instance of FocusStack class.
 
         Arguments:
             img        : numpy.ndarray
                          example image of the correct size and type, 2D numpy array
             num_depths : (float, float)
                          tuple of min depth and max depth in stack
-            num_depths    : int
+            num_depths : int
                          number of images to be stored in stack
         """
         self.stack = np.zeros(
@@ -97,7 +97,7 @@ class FocusStack:
     def get_depth_intensity(self, depth):
         """Returns the amplitude of the refocused image closest to the specified depth.
 
-        Parameters:
+        Arguments:
             depth     : float
                         depth to return image from
 
@@ -110,7 +110,7 @@ class FocusStack:
     def get_index_intensity(self, idx):
         """Return the amplitude of the refocused image at the specified index.
 
-        Parameters:
+        Arguments:
             idx     : int
                       index position to return image from
 
@@ -123,7 +123,7 @@ class FocusStack:
     def depth_to_index(self, depth):
         """Returns the index closest to the specified depth.
 
-        Parameters:
+        Arguments:
             depth     : float
                         depth to obtain closest index to
 
@@ -145,7 +145,7 @@ class FocusStack:
     def index_to_depth(self, idx):
         """Returns depth corresponding to the specified index.
 
-        Parameters:
+        Arguments:
             idx     : int
                       index position
 
