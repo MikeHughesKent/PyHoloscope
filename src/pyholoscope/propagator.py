@@ -39,7 +39,7 @@ class Propagator:
             propagator: 2D complex numpy array containing the propagator.
 
         Optional Keyword Arguments:
-            wavelength: float
+            wavelength: float           
                         The wavelength of the light (m).
             pixel_size: float
                         The size of the pixels in the hologram (m).

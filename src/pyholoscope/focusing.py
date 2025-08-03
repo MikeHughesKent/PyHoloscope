@@ -17,8 +17,7 @@ except:
     cuda_available = False
 
 try:
-    from pyholoscope.refocus_numba import propagator_numba
-
+    from pyholoscope.focusing_numba import propagator_numba
     numba_available = True
 except:
     numba_available = False
@@ -85,15 +84,14 @@ def propagator(
     else:
         raise Exception(f"Invalid precision {precision}, must be 'single' or 'double'.")
 
-    grid_height, grid_width = dimensions(grid_size)
-
+    grid_width, grid_height = dimensions(grid_size)
 
     if numba_available and use_numba:
         prop = propagator_numba(
             (grid_height, grid_width), wavelength, pixel_size, depth, geometry, precision
         )
         return Propagator(
-            propagagtor = prop,
+            propagator = prop,
             wavelength=wavelength,
             pixel_size=pixel_size,
             depth=depth,
@@ -171,6 +169,14 @@ def refocus(img, propagator, **kwargs):
                         2D numpy array, as returned from propagator().
 
     Keyword Arguments:
+        background    : numpy.ndarray or None
+                        background image to subtract prior to refocus, same shape as img (default is None)
+        normalise     : numpy.ndarray or None
+                        normalisation image to divide by prior to refocus, same shape as img (default is None)
+        window        : numpy.ndarray or None
+                        spatial window to apply to image prior to refocus, same shape as img (default is None)
+        downsample    : int or None 
+                        downsample factor, if not None, the image will be downsampled by this factor prior to refocus (default is None)                    
         fourier_domain : boolean
                         if True then img is assumed to be already the
                         FFT of the hologram, useful for speed when performing

@@ -1,10 +1,13 @@
 --------------------------------
-Inline Holography Basics
+Inline Holography Using Holo Class
 --------------------------------
-Inline Holography is performed using the :doc:`holo` of PyHoloscope by setting ``mode = pyholoscope.INLINE``. This allows
+Inline Holography can be performed using the :doc:`holo` of PyHoloscope by setting ``mode = pyholoscope.INLINE``. This allows
 numerical refocusing using the angular spectrum method, as well as optional backgroud subtraction, normalisation and windowing.
 See the `Holo class documentation <holo.html>`_ for a full list of methods and arguments. For code examples see the `Inline Holography Example <https://github.com/MikeHughesKent/PyHoloscope/blob/main/examples/inline_example.py>`_
 or `Inline Holography Advanced Example <https://github.com/MikeHughesKent/PyHoloscope/blob/main/examples/inline_example_advanced.py>`_ on github.
+
+Alternatively, for more customisability, the low-level functions can be used directly as described in 
+`Inline Holography Using Lower-Level Functions <inline_low_level.html>`_ .
 
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Getting Started using the Holo class

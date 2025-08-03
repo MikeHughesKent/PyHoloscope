@@ -27,7 +27,7 @@ class PropLUT:
         pixel_size,
         depth_range,
         num_depths,
-        numba=False,
+        use_numba=True,
         precision="single",
     ):
         """ Creates a propagator look up table (LUT) containing angular spectrum propagators.
@@ -64,14 +64,8 @@ class PropLUT:
         w, h = dimensions(img_size)
         self.prop_table = np.zeros((num_depths, h, w), dtype=dataType)
         for idx, depth in enumerate(self.depths):
-            if numba is True:
-                self.prop_table[idx, :, :] = propagator_numba(
-                    (w, h), wavelength, pixel_size, depth
-                )
-            else:
                 self.prop_table[idx, :, :] = propagator(
-                    (w, h), wavelength, pixel_size, depth
-                )
+                    (w, h), wavelength, pixel_size, depth, use_numba = use_numba).propagator
 
     def propagator(self, depth):
         """Returns the propagator from the LUT which is closest to requested

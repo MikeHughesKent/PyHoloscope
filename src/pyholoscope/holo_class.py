@@ -32,16 +32,15 @@ from pyholoscope.utils import dimensions
 # Check if cupy is available
 try:
     import cupy as cp
-
     cuda_available = True
 except:
     cuda_available = False
 
-# Check if numba is available
+# Check if numba is available and if it runs without an error
 try:
     import numba
     from pyholoscope.focusing_numba import propagator_numba
-    testProg = propagator_numba(
+    test_prop = propagator_numba(
         (int(6), int(6)),
         float(1.0),
         float(1.0),
@@ -56,6 +55,7 @@ except:
 
 
 class Holo:
+
     # Processing pipeline
     INLINE = 1
     OFF_AXIS = 2
@@ -76,7 +76,7 @@ class Holo:
     normalise_field = None
     normalise_abs = None
     normalise_angle = None
-    crop_window = None
+    __crop_window = None
 
     # Standard image type
     image_type = "float32"
@@ -84,13 +84,12 @@ class Holo:
     propagator = None
 
     def __init__(self, mode=None, wavelength=None, pixel_size=None, **kwargs):
-        """Initialises the Holo class with the specified mode, wavelength, pixel size and other parameters.
-        
+        """Initialises an instance of the Holo class.        
 
-        Optional Keyword Arguments:
+        Mode Parameters:
                 
             mode:   enum
-                          Processing mode, either pyholoscope.INLINE or pyholsocope.OFF_AXIS.
+                        Processing mode, either pyholoscope.INLINE or pyholsocope.OFF_AXIS.
 
         Numerical Refocusing Parameters:
             refocus: bool
@@ -143,9 +142,6 @@ class Holo:
                         based on the image size and the specified window radius and thickness.
             post_window: bool
                         Flag to apply the window after refocusing (default = False). If True, the window will be applied after refocusing.
-            window: numpy.ndarray or None
-                        Window to smooth edges. 2D real array. Will be resized to match size of img if necessary.
-                        (default = None). If None, the window will be created automatically if auto_window is True. 
             window_shape: str
                         Shape of the automatically generated window, 'circle' or 'square' (default = 'square'). Only used if auto_window is True.
             window_radius: int or tuple
@@ -155,6 +151,9 @@ class Holo:
             window_thickness: int
                         The number of pixels inside the window over which it transitions from opaque to transparent (default = 10). 
                         Only used if auto_window is True.
+            window: numpy.ndarray or None
+                        A custom window as 2D real array. Will be resized to match size of img if necessary.
+                        (default = None). If None, the window will be created automatically if auto_window is True. 
 
         Off-Axis Demodulation Parameters:
             crop_centre: tuple or None
@@ -192,7 +191,7 @@ class Holo:
                         the mean phase in this region will be zero. (default = None). If None, the whole image will be used.
 
         Display Parameters: 
-               invert: bool 
+                invert: bool 
                         Flag to invert the image, i.e. largest value becomes smallest and vice versa (default = False).
             downsample: float
                         Factor to downsample the image by (default = 1). If > 1, the image will be downsampled by this factor.
@@ -268,6 +267,13 @@ class Holo:
     def __process_inline(self, img):
         """Process an inline hologram image, img, using the currently selected
         parameters.
+
+        Argumnents:
+            img: numpy.ndarray
+                The hologram image to be processed as a 2D numpy array.
+        Returns:
+            img_out: numpy.ndarray
+                The processed hologram image as a 2D numpy array.        
         """
 
         # If we doing auto_window, and we either don't have
@@ -321,6 +327,7 @@ class Holo:
             if self.__crop_window is None:
                 self.__create_off_axis_crop_window()
 
+        # Off Axis Demodulation
         demod = off_axis_demod(
             img,
             self.crop_centre,
@@ -336,16 +343,16 @@ class Holo:
             return None
 
         # If return_fft is True, off_axis_demod returns the demodulated image and the FFT as a tuple. If we
-        # have been asked for the FFT we pull this out and return it, otherwise 'demod' is the demodulated image
+        # have been asked for the FFT we pull this out and return it, otherwise 'demod' is already just the demodulated image
         # and we continue
         if self.return_fft:
             return demod[1]
 
         # Relative phase means to subtract the phase from the background image
-        if self.relative_phase == True:
+        if self.relative_phase:
             if self.background_field is not None:
                 demod = relative_phase(demod, self.background_field)
-            elif self.background is not None:
+            elif self.background is not None:   # Need to re-generate the background field
                 self.__off_axis_background_field()
                 demod = relative_phase(demod, self.background_field)
 
@@ -375,7 +382,6 @@ class Holo:
         else:
             background = None
 
-        # Check if we need to also demodulate the background and normalisation fields if this is the first time
         if self.normalise is not None:
             if self.normalise_abs is None or np.shape(self.normalise_abs) != np.shape(demod):
                 self.__off_axis_normalise_field()  
@@ -383,8 +389,7 @@ class Holo:
         if self.relative_amplitude and self.background is not None:
             if self.background_abs is None or np.shape(self.background_abs) != np.shape(demod):
                 self.__off_axis_background_field()  
-                  
-
+        
         demod = pre_process(
             demod,
             downsample=self.downsample,
@@ -396,6 +401,7 @@ class Holo:
 
         # Numerical refocusing
         if self.refocus is True:
+            
             # Check the propagator is valid, otherwise recreate it
             if self.propagator is None or not self.propagator.has_attributes(
                 depth=self.depth,
@@ -428,6 +434,9 @@ class Holo:
             return None
 
         return demod
+    
+
+
 
     def __apply_window(self, img):
         """Applies the current window to a hologram 'img'."""
@@ -577,32 +586,32 @@ class Holo:
         be processed.
         """
 
-        imHeight = np.shape(img)[0]
-        imWidth = np.shape(img)[1]
+        im_height = np.shape(img)[0]
+        im_width = np.shape(img)[1]
 
         if self.auto_window == True:
             if self.window is None:
-                regenWindow = True
+                need_to_regenerate_window = True
             elif (
                 np.shape(self.window)[0] != np.shape(img)[0] / self.downsample
                 or np.shape(self.window)[1] != np.shape(img)[1] / self.downsample
             ):
-                regenWindow = True
+                need_to_regenerate_window = True
             else:
-                regenWindow = False
+                need_to_regenerate_window = False
 
-            if regenWindow:
+            if need_to_regenerate_window:
                 if self.window_radius is None:
-                    window_radiusX = int(imWidth / 2)
-                    window_radiusY = int(imHeight / 2)
+                    window_radius_x = int(im_width / 2)
+                    window_radius_y = int(im_height / 2)
                 else:
-                    window_radiusX, window_radiusY = dimensions(self.window_radius)
+                    window_radius_x, window_radius_y = dimensions(self.window_radius)
 
                 self.__create_window(
-                    (int(imWidth / self.downsample), int(imHeight / self.downsample)),
+                    (int(im_width / self.downsample), int(im_height / self.downsample)),
                     (
-                        int(window_radiusX / self.downsample),
-                        int(window_radiusY / self.downsample),
+                        int(window_radius_x / self.downsample),
+                        int(window_radius_y / self.downsample),
                     ),
                     self.window_thickness / self.downsample,
                     shape=self.window_shape,
@@ -713,6 +722,7 @@ class Holo:
         )
         self.background_abs = np.abs(self.background_field)  # Store these now for speed
         self.backgroundPhase = np.angle(self.background_field)
+
 
     def __off_axis_normalise_field(self):
         """Demodulate the background hologram."""
@@ -826,7 +836,7 @@ class Holo:
         self.find_focus_depth_range = kwargs.get("depth_range", (0, 0.1))
         self.find_focus_roi = kwargs.get("roi", None)
         self.find_focus_method = kwargs.get("method", "Brenner")
-        self.find_focus_,margin = kwargs.get("margin", None)
+        self.find_focus_margin = kwargs.get("margin", None)
         self.coarse_search_interval = kwargs.get("coarse_search_interval", None)
 
     def find_focus(self, img):
@@ -960,7 +970,7 @@ class Holo:
                          number of depths to create images for within depth_range
 
         Returns:
-            ndarray    : 3D array containing images refocused to different depths.
+            FocusStack : instance of FocusStack containing the refocused images.        
         """
 
         if self.mode == self.INLINE_MODE:
@@ -1010,7 +1020,6 @@ class Holo:
             self.imType = "float64"
         else:
             self.imType = "float32"
-
 
     def __str__(self):
         return (

@@ -25,7 +25,7 @@ def off_axis_demod(
     hologram,
     crop_centre,
     crop_radius,
-    real_fft=True,
+    real_fft=False,
     return_full=False,
     return_fft=False,
     mask=None,
@@ -51,7 +51,8 @@ def off_axis_demod(
 
     Keyword Arguments:
           real_fft    : boolean
-                        if True, the real FFT will be used for speed up. This only works
+                        if True, the real FFT will be used for speed up (default is False). 
+                        This only works
                         if the reference is tilted so that the modulation is at an angle of     
                         approximately 45 degrees to the x and y axes, so that the shifted
                         (modulated) signal is in one quadrant of the FFT.
@@ -96,7 +97,6 @@ def off_axis_demod(
         else:
             camera_fft = cp.fft.fftshift(cp.fft.fft2(cp.array(hologram)))
 
-
     # Shift the ROI to the centre
     shifted_fft = camera_fft[
         round(crop_centre[1] - crop_radius[1]) : round(crop_centre[1] + crop_radius[1]),
@@ -105,7 +105,7 @@ def off_axis_demod(
 
     # Apply the mask
     if mask is not None:
-        assert np.shape(mask) == np.shape(shifted_fft), "Incorrect mask size."
+        assert np.shape(mask) == np.shape(shifted_fft), f"Incorrect mask size, mask is {np.shape(mask)}, fft region is {np.shape(shifted_fft)}."
         masked_fft = shifted_fft * mask
     else:
         masked_fft = shifted_fft
@@ -139,7 +139,7 @@ def off_axis_demod(
         return recon_field
 
 
-def off_axis_find_mod(hologram, mask_fraction=0.1, real_fft=True):
+def off_axis_find_mod(hologram, mask_fraction=0.1, real_fft=False):
     """Finds the location of the off-axis holography modulation peak in the FFT.
 
     Arguments:
@@ -152,7 +152,7 @@ def off_axis_find_mod(hologram, mask_fraction=0.1, real_fft=True):
                          mask to avoid the d.c. peak being detected
                          (default = 0.1).
           real_fft    : bool    
-                          if True, then the real FFT will be used (default is True). This only 
+                          if True, then the real FFT will be used (default is False). This only 
                           works if the reference is tilted so that the modulation is at
                           an angle of appoximately 45 degrees to the x and y axes, so that
                           the shifted (modulated) signal is in one quadrant of the FFT.
@@ -189,7 +189,7 @@ def off_axis_find_mod(hologram, mask_fraction=0.1, real_fft=True):
     return peak_location[1], peak_location[0]
 
 
-def off_axis_find_crop_radius(hologram, mask_fraction=0.1, real_fft=True):
+def off_axis_find_crop_radius(hologram, mask_fraction=0.1, real_fft=False):
     """Estimates the off-axis crop radius based on modulation peak position. If the
     hologram is square, this is the radius of a circle, otherwise if it is rectangular
     than the crop radius is a tuple of (y radius, x radius), corresponding to
@@ -205,7 +205,7 @@ def off_axis_find_crop_radius(hologram, mask_fraction=0.1, real_fft=True):
                          mask to avoid the d.c. peak being detected
                          (default = 0.1).
             real_fft    : bool
-                          if True, then the real FFT will be used (default is True). This only
+                          if True, then the real FFT will be used (default is False). This only
                           works if the reference is tilted so that the modulation is at
                           an angle of appoximately 45 degrees to the x and y axes, so that
                           the shifted (modulated) signal is in one quadrant of the FFT.
@@ -233,15 +233,7 @@ def off_axis_find_crop_radius(hologram, mask_fraction=0.1, real_fft=True):
 
     mod_freq = np.sqrt(peak_x_adj**2 + peak_y_adj**2)
     crop_radius = mod_freq / 3
-
-    # If the crop radius will result in a ROI larger than the image, adjust it
-    print(
-            crop_radius,                            
-            (h - peak_y) / aspect_ratio,                # check bottom
-            peak_x,                                     # left
-            w - peak_x,                              # right
-            peak_y / aspect_ratio,                      # top
-    )   
+   
     # If the crop radius will result in a ROI larger than the image, adjust it
     crop_radius = min(
             crop_radius,                            

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Tests inline holography functionality of PyHoloscope
+Tests inline holography functionality of PyHoloscope.
 
 """
 
@@ -8,15 +8,14 @@ from matplotlib import pyplot as plt
 import time
 from pathlib import Path
 
-
 import context  # Relative paths
 
 import pyholoscope as pyh
 
 # Experimental Parameters
-wavelength = 630e-9
-pixel_size = 1e-6
-depth = 0.0127
+wavelength = 633e-9  # m
+pixel_size = 1e-6    # m
+depth = 0.0129       # m
 
 # Load images
 hologram = pyh.load_image(Path("test data/inline_example_holo.tif"))
@@ -90,7 +89,6 @@ plt.title("Refocused Hologram, no window")
 
 
 # No window or background
-#holo.clear_background()
 holo.clear_normalise()
 holo.clear_background()
 t1 = time.perf_counter()

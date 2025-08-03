@@ -13,9 +13,9 @@ import context  # Relative paths
 import pyholoscope as pyh
 
 # Experimental Parameters
-wavelength = 630e-9
+wavelength = 633e-9
 pixel_size = 1e-6
-depth = 0.0127
+depth = 0.0129
 
 # Load images
 hologram = pyh.load_image(Path("test data/inline_example_holo.tif"))
@@ -32,7 +32,7 @@ holo = pyh.Holo(
 
 # Range for depth stack
 depth_range = [0, 0.02]
-num_depths = 20
+num_depths = 50
 
 
 # Build depth stack
@@ -48,9 +48,9 @@ plt.title("Refocused Hologram")
 # Display results (focus depth)
 plt.figure(dpi=150)
 plt.imshow(stack.get_depth_intensity(depth), cmap="gray")
-plt.title("Refocused Hologram from Stack")
+plt.title("Refocused Hologram from Stack (from depth)")
 
 # Display results (should be same as above)
 plt.figure(dpi=150)
-plt.imshow(stack.get_index_intensity(12), cmap="gray")
-plt.title("Refocused Hologram from Stack")
+plt.imshow(stack.get_index_intensity(32), cmap="gray")
+plt.title("Refocused Hologram from Stack (from idx)")

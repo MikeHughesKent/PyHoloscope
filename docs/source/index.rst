@@ -31,7 +31,9 @@ Contents
    :caption: Getting Started
 
    inline
+   inline_low_level
    off_axis
+   off_axis_low_level
    phase
    autofocus
    sim

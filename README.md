@@ -31,6 +31,10 @@ pip install pyholoscope
 ```
 For more details see the [Installation Guide](https://pyholoscope.readthedocs.io/en/latest/installation.html).
 
+## Example
+
+
+
 ## Features
 
 ### General

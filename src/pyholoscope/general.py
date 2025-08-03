@@ -79,7 +79,26 @@ def pre_process(
         if normalise.dtype != imType:
             normalise = normalise.astype(imType)
 
-    # Background subtraction
+    remove_background(img, background)
+    normalise_hologram(img, normalise)
+    apply_window(img, window)
+    downsample_hologram(img, downsample)
+    
+    return img
+
+
+def remove_background(img, background):
+    """Removes the background from a hologram.
+
+    Arguments:  
+            img        : numpy.ndarray
+                            raw hologram, 2D array, real or complex
+            background : numpy.ndarray
+                            background hologram to be subtracted, same shape as img
+    Returns:
+            numpy.ndarray  : hologram with background removed, 2D array, real or complex
+    """
+
     if background is not None and np.shape(background) == np.shape(img):
         if np.iscomplexobj(img):
             imgAmp = np.abs(img)
@@ -88,21 +107,55 @@ def pre_process(
         else:
             img = img - background
 
-    # Background normalisation
-    if normalise is not None:
+    return img
+
+def normalise_hologram(img, ref_img):
+    """Normalises a hologram by dividing it by a reference image.
+
+    Arguments:
+            img        : numpy.ndarray
+                            raw hologram, 2D array, real or complex
+            ref_img    : numpy.ndarray
+                            reference image to be divided by, same shape as img
+    Returns:
+            numpy.ndarray  : normalised hologram, 2D array, real or complex
+    """
+
+    if ref_img is not None and np.shape(ref_img) == np.shape(img):
         if np.iscomplexobj(img):
             imgAmp = np.abs(img)
             imgPhase = np.angle(img)
-            img = (imgAmp / np.sqrt(normalise)) * np.exp(1j * imgPhase)          
+            img = (imgAmp / np.sqrt(ref_img)) * np.exp(1j * imgPhase)          
         else:
-            img = img / normalise
+            img = img / ref_img
 
-    # Apply window
+    return img
+
+def apply_window(img, window, allow_resize=True):
+    """Applies a window to an image. If the window is not the same size as the image, it will be resized to match.
+    
+    Arguments:
+            img        : numpy.ndarray
+                         image to apply window to, 2D array, real or complex
+            window     : numpy.ndarray
+                         window to apply, 2D real array
+    Keyword Arguments:
+            allow_resize : bool
+                           if True, allows the window to be resized to match the image size (default = True). Otherwise,
+                           if the window is not the same size as the image, the function will return the image unchanged.    
+    Returns:
+            None
+    """
+        
     if window is not None:
+
         # If the window is the wrong size, reshape it to match hologram
         if np.shape(window) != np.shape(img):
-            warnings.warn("Window needed resizing, may effect processing speed.")
-            window = cv.resize(window, (np.shape(img)[1], np.shape(img)[0]))
+            if allow_resize:
+                warnings.warn("Window needed resizing, may effect processing speed.")
+                window = cv.resize(window, (np.shape(img)[1], np.shape(img)[0]))
+            else:
+                return img
 
         if np.iscomplexobj(img):
             img.imag = img.imag * window
@@ -111,19 +164,26 @@ def pre_process(
         else:
             img = img * window
 
-    # Apply downsampling
-    if downsample != 1 and not np.iscomplexobj(img):
+def downsample_hologram(img, factor):
+    """Downsamples a hologram by a factor of 'factor'. 
+    Arguments:
+            img        : numpy.ndarray
+                         raw hologram, 2D array, real or complex
+            factor     : int
+                         factor to downsample by, should be an integer (default = 1)
+    Returns:
+            numpy.ndarray  : downsampled hologram, 2D array, real or complex
+    """
+    
+    if factor != 1 and not np.iscomplexobj(img):
         img = cv.resize(
-            img,
-            (
-                int(np.shape(img)[1] / downsample / 2) * 2,
-                int(np.shape(img)[0] / downsample / 2) * 2,
-            ),
-        )
-
-
+                img,
+                (
+                    int(np.shape(img)[1] / factor / 2) * 2,
+                    int(np.shape(img)[0] / factor / 2) * 2,
+                ),
+            )
     return img
-
 
 def fourier_plane_display(img):
     """Returns a real, log-scale Fourier plane for display purposes.
@@ -139,7 +199,6 @@ def fourier_plane_display(img):
     fourierPlane = np.log(np.abs(np.fft.fftshift(np.fft.fft2(img))))
 
     return fourierPlane
-
 
 def fast_full_2D_fft(input, use_numba=True):
     """"
@@ -183,26 +242,3 @@ def fast_full_2D_fft(input, use_numba=True):
 
     return out
 
-
-
-@jit(nopython=True, parallel=True)
-def reconstruct_full_fft2(rfft, M, N):
-    """ Used by fast_full_2D_fft() to reconstruct the full 2D FFT from the real FFT output.
-    """
-    out = np.zeros((M, N), dtype=np.complex128)
-    mid = N // 2
-
-    # Copy the rfft2 output into the left half
-    for i in prange(M):
-        for j in prange(mid + 1):
-            out[i, j] = rfft[i, j]
-
-    # Fill the symmetric (redundant) part manually
-    for i in prange(M):
-        for j in prange(mid + 1, N):
-            ii = (-i) % M
-            jj = (-j) % N
-            z = out[ii, jj]
-            out[i, j] = complex(z.real, -z.imag)
-
-    return out

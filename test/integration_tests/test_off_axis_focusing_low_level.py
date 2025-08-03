@@ -17,77 +17,75 @@ import pyholoscope as pyh
 
 # Experimental Parameters
 wavelength = 630e-9
-pixelSize = 1e-6
-gridSize = 1024
-depth = -0.0012
+pixel_size = 1e-6
+grid_size = 1024
+depth = 0.00117
 
-# Load images. Note here that we pass square = True otherwise rectangular images
-# will not work with off-axis demod
+# Load images. 
 hologram = pyh.load_image(Path("test data/paramecium_oa_oof.tif"))
 background = pyh.load_image(Path("test data/paramecium_oa_oof_background.tif"))
 
-
 # Determine Modulation
-cropCentre = pyh.off_axis_find_mod(background)
-cropRadius = pyh.off_axis_find_crop_radius(background)
+crop_centre = pyh.off_axis_find_mod(background)
+crop_radius = pyh.off_axis_find_crop_radius(background)
 
 # Remove modulation
-reconField = pyh.off_axis_demod(hologram, cropCentre, cropRadius)
-backgroundField = pyh.off_axis_demod(background, cropCentre, cropRadius)
+recon_field = pyh.off_axis_demod(hologram, crop_centre, crop_radius)
+background_field = pyh.off_axis_demod(background, crop_centre, crop_radius)
 
 # Apply background correction
-correctedField = pyh.relative_phase(reconField, backgroundField)
+corrected_field = pyh.relative_phase(recon_field, background_field)
 
-adjustedPixelSize = pixelSize / (cropRadius[0] * 2) * np.shape(hologram)[1]
+adjusted_pixel_size = pixel_size / (crop_radius[0] * 2) * np.shape(hologram)[1]
 
 prop = pyh.propagator(
-    (cropRadius[0] * 2, cropRadius[1] * 2), wavelength, adjustedPixelSize, depth
+    (crop_radius[1] * 2, crop_radius[0] * 2), wavelength, adjusted_pixel_size, depth
 )
-refocusedField = pyh.refocus(correctedField, prop)
+refocused_field = pyh.refocus(corrected_field, prop)
 
 # These lines can be uncommented to dump a depth stack to test.tif
-# refocusField = mHolo.refocus(hologram)
-# depthStack = mHolo.depth_stack(reconField, (-0.0001,0.0001), 100)
-# depthStack.writeIntensityToTif('test.tif')
+# refocus_field = mHolo.refocus(hologram)
+# depth_stack = mHolo.depth_stack(recon_field, (-0.0001,0.0001), 100)
+# depth_stack.write_intensity_to_tif('test.tif')
 
 # Unwrap phase
-phaseUnwrapped = pyh.phase_unwrap(pyh.phase(refocusedField))
-tilt = pyh.obtain_tilt(phaseUnwrapped)
+phase_unwrapped = pyh.phase_unwrap(pyh.phase(refocused_field))
+tilt = pyh.obtain_tilt(phase_unwrapped)
 
 # Remove image phase tilt
-phaseUntilted = phaseUnwrapped - tilt
+phase_untilted = phase_unwrapped - tilt
 
 # Display intensity and phase
 plt.figure(dpi=150)
-plt.imshow(pyh.amplitude(reconField), cmap="gray", interpolation="None")
-plt.title("Intensity")
+plt.imshow(pyh.amp(recon_field), cmap="gray", interpolation="None")
+plt.title("Amplitude (out of focus)")
 
 plt.figure(dpi=150)
-plt.imshow(pyh.phase(reconField), cmap="twilight", interpolation="None")
+plt.imshow(pyh.phase(recon_field), cmap="twilight", interpolation="None")
 plt.title("Phase")
 
 plt.figure(dpi=150)
-plt.imshow(pyh.amplitude(refocusedField), cmap="gray", interpolation="None")
-plt.title("Refocused Intensity")
+plt.imshow(pyh.amp(refocused_field), cmap="gray", interpolation="None")
+plt.title("Refocused Amplitude")
 
 plt.figure(dpi=150)
-plt.imshow(pyh.phase(refocusedField), cmap="twilight", interpolation="None")
+plt.imshow(pyh.phase(refocused_field), cmap="twilight", interpolation="None")
 plt.title("Refocused Phase (Wrapped)")
 
 plt.figure(dpi=150)
-plt.imshow(phaseUnwrapped, interpolation="None")
+plt.imshow(phase_unwrapped, interpolation="None")
 plt.title("Refocused Phase Unwrapped")
 
 plt.figure(dpi=150)
-plt.imshow(phaseUntilted, interpolation="None")
+plt.imshow(phase_untilted, interpolation="None")
 plt.title("Refocused Phase Unwrapped, Tilt Removed")
 
-DIC = pyh.synthetic_DIC(refocusedField, shearAngle=0)
+DIC = pyh.synthetic_DIC(refocused_field, shear_angle=0)
 plt.figure(dpi=150)
 plt.imshow(DIC, cmap="gray", interpolation="None")
 plt.title("Synthetic DIC")
 
-phaseGrad = pyh.phase_gradient(refocusedField)
+phase_grad = pyh.phase_gradient(refocused_field)
 plt.figure(dpi=150)
-plt.imshow(phaseGrad, cmap="gray")
+plt.imshow(phase_grad, cmap="gray")
 plt.title("Phase Gradient")

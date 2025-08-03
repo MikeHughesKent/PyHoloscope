@@ -109,24 +109,25 @@ def circ_cosine_window(img_size, circle_radius, skin_thickness, data_type="float
     return mask.astype(data_type)
 
 
-def square_cosine_window(img_size, radius, skin_thickness, data_type="float32"):
-    """Produces a square cosine window mask on grid of img_size * img_size.
-    Mask is 0 for radius > circleSize and 1 for radius < (circleSize -
+def square_cosine_window(img_size, radius = None, skin_thickness = 0, data_type="float32"):
+    """Produces a square/rectangular cosine window mask on grid of img_size * img_size.
+    Mask is 0 for pixels > radius and 1 for pixels < (radius -
     skin_thickness).  The intermediate region is a smooth squared cosine function.
 
-    Parameters:
+    Arguments:
         img_size       : int or (int, int)
                         size of output array. Provide a single int to generate a square
                        array of that size, otherwise provide (w,h) to produce a rectangular
                        array, or 2D numpy array in which case the size of the array
-                       will be used.
-        circle_radius :  float or (float, float)
-                        Pixel values inside this radius will be 1. Provide a tuple
-                        of (x,y) to have different x and y radii.
-        skin_thickness : float
-                        size of smoothed area inside circle/ellipse
+                       will be used.       
 
     Keyword Arguments:
+        radius        :  float or (float, float) or None
+                        Pixel values inside this radius will be 1. Provide a tuple
+                        of (x,y) to have different x and y radii. If None (default), the radius will match
+                        the size of the image.
+        skin_thickness : float or None
+                        size of smoothed area inside circle/ellipse. Default is 0.
         data_type      : str
                         data type of returned array (default is 'float32')
 
@@ -138,11 +139,15 @@ def square_cosine_window(img_size, radius, skin_thickness, data_type="float32"):
 
     w, h = dimensions(img_size)
 
-    if type(radius) is tuple:
+    if radius is None:
+        radiusX = w / 2
+        radiusY = h / 2
+    elif type(radius) is tuple:
         radiusX, radiusY = radius
     else:
         radiusX = radius
         radiusY = radius
+
 
     innerRadX = radiusX - skin_thickness
     innerRadY = radiusY - skin_thickness

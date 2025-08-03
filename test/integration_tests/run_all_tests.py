@@ -28,11 +28,7 @@ import test_off_axis_focusing_low_level
 print("# Relative phase")
 import test_relative_phase
 
-print("# Relative phase refocus")
-import test_relative_phase_refocus
-
 print("# Numba")
 import test_numba
 
-print("# Focus Stack")
-import test_focus_stack
+

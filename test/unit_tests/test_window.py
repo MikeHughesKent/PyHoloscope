@@ -195,7 +195,8 @@ class TestWindow(unittest.TestCase):
         assert np.array_equal(recon1, recon2) == True
 
     def test_create_window(self):
-        # Check that we can a window using create_window
+        # Check that using an autowindow is the same as calling the internal
+        # dunder method create_window
         holo = pyh.Holo(
             mode=pyh.INLINE_MODE,
             wavelength=self.wavelength,
@@ -203,7 +204,7 @@ class TestWindow(unittest.TestCase):
             depth=self.depth,
         )
 
-        holo.create_window(self.hologram, 100, 10)
+        holo._Holo__create_window(self.hologram, 100, 10)
 
         recon1 = holo.process(self.hologram)
 

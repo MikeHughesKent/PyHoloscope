@@ -1,7 +1,7 @@
 ----------------------------------
 Simulation
 ----------------------------------
-PyHoloscope includes a function for simulating off-axis holograms. The simulation
+PyHoloscope includes a function, :func:`pyholoscope.sim_off_axis`, for simulating off-axis holograms. The simulation
 module must be imported explicitly::
 
     import pyholoscope.sim 
@@ -16,24 +16,28 @@ the modulation along the diagonal.
     
 For this example, we generate a uniform object::
 
-    objectField = np.ones((256, 256))  
+    object_field = np.ones((256, 256))  
   
 and then generate a hologram for a tilt angle of 0.087 rad (5 degrees), assuming 3 micron
 pixels and 500 nm wavelength::  
   
-    hologram = pyholoscope.sim.off_axis(objectField, 
+    hologram = pyholoscope.sim.off_axis(object_field, 
                                         wavelength = 500e-9, 
                                         pixel_size = 3e-6, 
                                         tilt_angle = 0.087)
-                             
-We can then check the off-axis modulation using::
 
-    predictedTilt = pyh.off_axis_predict_tilt(hologram, 
+A limitation of the simulation is that it does not model the effect of integrating the interference patterns over the area
+of each pixel, so the simulated hologram will not have the same modulation depth as a real hologram. This is particularly noticeable
+for large tilt angles which results in aliased modulation which would be supressed in a real hologram.
+
+We can check the off-axis modulation is as expected using::
+
+    predicted_tilt = pyh.off_axis_predict_tilt(hologram, 
                                               wavelength = 500e-9,
                                               pixel_size = 3e-6)
 
-which returns approximately the tilt angle specified when creating the
-simulated hologram. We can also reconstruct the object field using the
+which returns (approximately) the tilt angle specified when creating the
+simulated hologram. We can also then go on to reconstruct the object field using the
 off axis functionality of PyHoloscope.
 
 A further optional argument allows the ``OPD`` to be specified, this is an
