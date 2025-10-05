@@ -1,27 +1,28 @@
+[![Documentation Status](https://app.readthedocs.org/projects/pyholoscope/badge/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
 ![PyHoloscope Logo](/res/pyholoscope_logo_.png)
-# PyHololoscope: Holographic Microscopy for Python
+# PyHololoscope: Fast Holographic Microscopy for Python
 
-PyHoloscope is a Python package for holographic microscopy image processing, both inline and off-axis. It is under development but reasonably stable and close to the first release.
+PyHoloscope is a Python package for holographic microscopy, providing perfomant reconstruction of inline and off-axis holograms.
+
+It is currently pre-release, aiming for release 1.0.0 before end of 2025.
 
 PyHoloscope is designed to be:
 * Fast (for Python) - optmised for CPU using Numpy, Scipy and Numba, with GPU support via CuPy
 * Easy to Use - a simple object-oriented API gives high performance without low-level tweaks
-* For Live Imaging - can be used as the back-end of holographic microscopy GUIs as well as for offline processing
+* Suitable for Live Imaging - can be used as the back-end of holographic microscopy GUIs as well as for offline processing
 
 Full documentation is on [Read the docs](https://pyholoscope.readthedocs.io/en/latest/index.html). 
 
-Also see the examples in the [examples folder](https://github.com/MikeHughesKent/PyHoloscope/tree/main/examples) as well as the tests in the [test folder](https://github.com/MikeHughesKent/PyHoloscope/tree/main/test).
+Also see the examples in the [examples folder](https://github.com/MikeHughesKent/PyHoloscope/tree/main/examples).
 
-Development is mainly by [Mike Hughes](https://research.kent.ac.uk/applied-optics/hughes/)' lab in the 
-[Applied Optics Group](https://research.kent.ac.uk/applied-optics), School of Physics & Astronomy, University of Kent. I'm happy to collaborate with academic users to help your use case, and if you would like help using PyHoloscope for commercial purposes, 
-consultancy is available, please contact [Mike Hughes](mailto:m.r.hughes@kent.ac.uk). 
+Contributions to the package (new features, tests or documentation) as very welcome, please see the roadmap below and post in the discussion if you are working on something, or [get in touch](mailto:m.r.hughes@kent.ac.uk).
 
-Help testing and developing the package is welcome, please [get in touch](mailto:m.r.hughes@kent.ac.uk).
+Development is co-ordinated by [Mike Hughes](https://research.kent.ac.uk/applied-optics/hughes/)' lab in the 
+[Applied Optics Group](https://research.kent.ac.uk/applied-optics), Physics & Astronomy, University of Kent. 
 
-[Join the mailing list](https://groups.google.com/g/pyholoscope) to hear about releases, updates and bug fixes.
-
-
+If you are interested in academic applications we are happy to help, post in the dicussion. If you would like help using PyHoloscope for commercial purposes, consultancy is available, please contact [Mike Hughes](mailto:m.r.hughes@kent.ac.uk) in the first instance.
 
 ## Features
 
@@ -52,22 +53,16 @@ Help testing and developing the package is welcome, please [get in touch](mailto
 * Generate phase contrast image
 * Generate synthetic DIC image
 
-## Planned Developments (help welcome!)
+## Roadmap of Planned Developments (help welcome!)
 
-### Short-term (Before release 1.0.0)
-* Support holograms with odd side lengths
-* Better auto-focusing
-* FFTW integration for faster CPU-only refocusing
-
-### Long-term
-* Improved optimisation for speed
-* Support phase-shifting holography
-* Support coded aperture/multi-depth phase recovery
-* Support forward scattering and inference (or intergrate with HoloPy)
-* Port tracking code from Matlab (or integrate with TrackPy)
-* Phase recovery for inline holography
-* Deep learning for focusing
-* Targeted support for edge computing (e.g. Raspberry Pi)
+- [] Phase recovery for inline holography
+- [] Improved optimisation for speed/multiple back-ends
+- [] Support phase-shifting holography
+- [] Support coded aperture/multi-depth phase recovery
+- [] Support forward scattering and inference 
+- [] Support particle tracking 
+- [] Deep learning for focusing
+- [] Targeted support for edge computing (e.g. Raspberry Pi)
 
 ## Requirements
 * Numpy

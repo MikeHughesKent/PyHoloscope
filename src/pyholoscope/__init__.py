@@ -1,7 +1,11 @@
+"""
+PyHoloscope - Fast Holographic Microscopy for Python
+"""
+
 INLINE = 1
 OFF_AXIS = 2
 
-INLINE_MODE = 1   # deprecated, kept for backwards compatibility
+INLINE_MODE = 1  # deprecated, kept for backwards compatibility
 OFFAXIS_MODE = 2  # deprecated, kept for backwards compatibility
 
 from pyholoscope.general import *
@@ -13,9 +17,11 @@ from pyholoscope.roi import *
 from pyholoscope.holo_class import *
 from pyholoscope.focusing import *
 from pyholoscope.phase_proc import *
+from pyholoscope.windows import *
+
+
 try:
     from pyholoscope.focusing_numba import *
 except:
     pass
 from pyholoscope.focus_shift import *
-

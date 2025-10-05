@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 """
-PyHoloscope - Python package for holographic microscopy
+PyHoloscope - Fast Holographic Microscopy for Python
 
-This file contains general functions, mostly for handling and displaying phase
+This file contains functions for handling and displaying phase
 maps.
 
 """
+
 import warnings
 import time
 import math
@@ -14,7 +15,7 @@ import numpy as np
 import scipy.optimize
 
 from skimage.restoration import unwrap_phase
-    
+
 from PIL import Image
 
 import cv2 as cv
@@ -23,14 +24,14 @@ from pyholoscope.roi import Roi
 from pyholoscope.focus_stack import FocusStack
 from pyholoscope.prop_lut import PropLUT
 from pyholoscope.utils import extract_central, phase
- 
+
 
 def relative_phase(img, background):
-    """ Removes global phase from image using reference (background) field.
-    
-    The function works on both fields (complex arrays) and phase maps (real 
+    """Removes global phase from image using reference (background) field.
+
+    The function works on both fields (complex arrays) and phase maps (real
     arrays), and returns a corrected field/phase map of the same type.
-    
+
     Parameters:
           img        :  numpy.ndarray
                         2D numpy array, real or complex. If real
@@ -38,92 +39,99 @@ def relative_phase(img, background):
                         it is the field.
           background :  numpy.ndarray
                         2D numpy array, real or complex. Backround phase/field
-                        to subtract. Must be same type and size as img. 
-                        
+                        to subtract. Must be same type and size as img.
+
     Returns:
-          numpy.ndarray : float or complex                        
-    """    
-    
-    assert np.iscomplexobj(img) == np.iscomplexobj(background), "img and background must both be real or both be complex"
-    assert np.shape(img) == np.shape(background), "img and background must be the same size."
-    
-    # If both inputs are phases, simply subtract        
+          numpy.ndarray : float or complex
+    """
+
+    assert np.iscomplexobj(img) == np.iscomplexobj(background), (
+        "img and background must both be real or both be complex"
+    )
+    assert np.shape(img) == np.shape(background), (
+        "img and background must be the same size."
+    )
+
+    # If both inputs are phases, simply subtract
     if not np.iscomplexobj(img) and not np.iscomplexobj(background):
         return img - background
-    
+
     # If both input are fields, divide
     if np.iscomplexobj(img) and np.iscomplexobj(background):
         return img / background * np.abs(background)
-    
- 
 
-def relative_phase_self(img, roi = None):    
-    """ Makes the phase in an image relative to the mean phase in either the 
+
+def relative_phase_self(img, roi=None):
+    """Makes the phase in an image relative to the mean phase in either the
     whole image or a specified ROI of the image.
-    
-    The function works on either fields (complex arrays) and phase maps (float 
+
+    The function works on either fields (complex arrays) and phase maps (float
     arrays), and returns a corrected field/phase map of the same type.
-    
+
     Parameters:
           img        :  numpy.ndarray
                         2D array, real or complex. If real
                         it is taken to be phase map, otherwise if complex
                         it taken to be the complex field.
-    
+
     Keyword Arguments:
           roi        :  pyholoscope.Roi
                         region of interest to make phase relative to. In the output image
-                        the mean phase in this region will be zero. 
+                        the mean phase in this region will be zero.
                         (default = None)
-                        
+
     Returns:
-          numpy.ndarray : float or complex                  
+          numpy.ndarray : float or complex
     """
 
     if roi is None:
-        avPhase = mean_phase(img)
-    else:    
-        avPhase = mean_phase(roi.crop(img))
-        
-    if np.iscomplexobj(img):
-        outImage = img * np.exp(1j * -1 * avPhase)
+        av_phase = mean_phase(img)
     else:
-        outImage = img - avPhase 
-        
-    return outImage     
-    
-    
+        av_phase = mean_phase(roi.crop(img))
+
+    if np.iscomplexobj(img):
+        out_image = img * np.exp(1j * -1 * av_phase)
+    else:
+        out_image = img - av_phase
+
+    return out_image
+
+
 def obtain_tilt(img):
-    """ Estimates the global tilt in the 2D unwrapped phase.
-    
-    This can be used to correcte tilts in the phase due to, for example, a 
-    tilt in the coverglass. Returns a phase map approximating the tilt as 
+    """Estimates the global tilt in the 2D unwrapped phase.
+
+    This can be used to correcte tilts in the phase due to, for example, a
+    tilt in the coverglass. Returns a phase map approximating the tilt as
     a 2D real numpy array.
-    
+
     Parameters:
           img        :  ndarray
                         2D numpy array, real. Unwrapped phase.
 
     Returns:
-          numpy.ndarray : 2D real array, map of tilt.         
+          numpy.ndarray : 2D real array, map of tilt.
 
     """
-    
+
     # If there is a tilt then there will be a phase gradient across the image
-    tiltX, tiltY = np.gradient(img)
-    tiltX = np.mean(tiltX)
-    tiltY = np.mean(tiltY)
-    
+    tilt_x, tilt_y = np.gradient(img)
+    tilt_x = np.mean(tilt_x)
+    tilt_y = np.mean(tilt_y)
+
     mx, my = np.indices(np.shape(img))
+
+    tilt = mx * tilt_x + my * tilt_y
     
-    tilt = mx * tiltX + my * tiltY
-   
+    residual = np.median(img - tilt)
+    
+    tilt = tilt + residual
+
     return tilt
- 
-    
+
+
 def phase_unwrap(img):
-    """ Returns unwrapped version of 2D phase map. 
-    
+    """Returns unwrapped version of 2D phase map.
+
     Parameters:
           img        :  ndarray
                         2D numpy array. Either complex (the complex field) or
@@ -132,77 +140,78 @@ def phase_unwrap(img):
           numpy.ndarray : 2D array of floats, unwrapped phase.
 
     """
-    
+
     if np.iscomplexobj(img):
         img = phase(img)
-    
+
     img = unwrap_phase(img)
 
     return img
 
 
+def synthetic_DIC(img, shear_angle=math.pi):
+    """Generates a simple, non-rigorous DIC-style image for display.
 
-def synthetic_DIC(img, shearAngle = math.pi):
-    """ Generates a simple, non-rigorous DIC-style image for display. 
-    
-    The ouput should appear similar to a relief map, with dark and light 
+    The ouput should appear similar to a relief map, with dark and light
     regions correspnding to positive and negative phase gradients along the
     shear angle direction (default is horizontal = 0 rad). The input must
     be the complex field, not a phase map.
-    
+
     Parameters:
           img        :  ndarray
                         2D numpy array, complex, the field.
-    
+
     Keyword Arguments:
-          shearAngle :  float
-                        angle in radians of the shear direction. 
+          shear_angle :  float
+                        angle in radians of the shear direction.
                         (default = pi)
-                        
+
     Returns:
-          numpy.ndarray : 2D arrays of floats, the DIC image.                    
+          numpy.ndarray : 2D arrays of floats, the DIC image.
     """
-    
+
     # Calculate gradient on original image and image phase shifted by pi. Using
     # the smallest phase gradient avoids effects due to phase wrapping
+    if not np.iscomplexobj(img):
+        img = np.exp(1j * img)  # Convert phase map to field
     sobelC1 = phase_gradient_dir(img)
     sobelC2 = phase_gradient_dir(img * np.exp(1j * math.pi))
-    
+
     use1 = np.abs(sobelC1) < np.abs(sobelC2)
-      
+
     sobelC1[np.invert(use1)] = 0
     sobelC2[use1] = 0
     sobelC = sobelC1 + sobelC2
-        
+
     # Rotate the gradient to shear angle
-    sobelC = sobelC * np.exp(1j * shearAngle)
-    
+    sobelC = sobelC * np.exp(1j * shear_angle)
+
     # DIC is product of phase gradient along one direction and image intensity
-    DIC = np.real(sobelC) * (np.max(np.abs(img)) - np.abs(img)) 
-    
+    DIC = np.real(sobelC) * (np.max(np.abs(img)) - np.abs(img))
+
     return DIC
 
 
 def phase_gradient_dir(img):
-    """ Returns the directional phase gradient of an image.
-    
+    """Returns the directional phase gradient of an image.
+
     The output is a complex 2D numpy array, with the horizontal and vertical
     gradients encoded in the real and imaginary parts.
-    
+
     Parameters:
           img        :  ndarray
                         2D numpy array, real or complex, the field or phase map
     Returns:
-          numpy.ndarray : 2D complex array, phase gradient image.    
+          numpy.ndarray : 2D complex array, phase gradient image.
     """
-    
+
     if np.iscomplexobj(img):
         img = np.angle(img)
-    
+
     # Phase gradient in x and y directions
-    sobelx = cv.Sobel(img,cv.CV_64F,1,0)     
-    sobely = cv.Sobel(img,cv.CV_64F,0,1)
-    
+    sobelx = cv.Sobel(img, cv.CV_64F, 1, 0)
+    sobely = cv.Sobel(img, cv.CV_64F, 0, 1)
+
     # Encode in complex array
     sobelC = sobelx + 1j * sobely
 
@@ -210,74 +219,72 @@ def phase_gradient_dir(img):
 
 
 def phase_gradient_amp(img):
-    """ Returns the amplitude of the phase gradient of an image.
-    
+    """Returns the amplitude of the phase gradient of an image.
+
     This isn't very useful by itself if applied to wrapped phase as it
-    find an edge whenever the phase is wrapped, phase_gradient avoids this 
+    find an edge whenever the phase is wrapped, phase_gradient avoids this
     problem.
-    
+
     Parameters:
           img        :  ndarray
                         2D numpy array, real or complex, the field or phase map
     Returns:
           numpy.ndarray : 2D arrays of floats, maps of amplitudes of phase gradient.
     """
-    
+
     # If we are given the field, calculate the phase map
     if np.iscomplexobj(img):
         img = np.angle(img)
-        
+
     # Phase gradient in x and y directions
-    sobelx = cv.Sobel(img,cv.CV_64F,1,0)                  # Find x and y gradients
-    sobely = cv.Sobel(img,cv.CV_64F,0,1)
+    sobelx = cv.Sobel(img, cv.CV_64F, 1, 0)  # Find x and y gradients
+    sobely = cv.Sobel(img, cv.CV_64F, 0, 1)
 
     # Return amplitude
     return np.sqrt(sobelx**2 + sobely**2)
-    
 
 
 def phase_gradient(img):
-    """ Returns the amplitude of the phase gradient of an image.
+    """Returns the amplitude of the phase gradient of an image.
 
     This function is able to handle wrapped phase without finding an edge
     at the wrap points. Returns a 2D numpy array, real containing the amplitude
     of the gradient at each point.
-    
+
     Parameters:
           img        :  ndarray
                         2D numpy array, real or complex, the field or phase map
-     
+
     Returns:
-          numpy.ndarray : 2D array of floats, maps of amplitudes of phase gradient.    
+          numpy.ndarray : 2D array of floats, maps of amplitudes of phase gradient.
     """
-    
+
     # We calculate the phase gradient twice, once adding a pi phase shift. If
     # the phase has wrapped at a point, this will produce a much bigger phase
     # gradient which we remove by taking the minimum of the two gradients.
-        
-    phaseGrad1 = phase_gradient_amp(img)
-    
+
+    phase_grad1 = phase_gradient_amp(img)
+
     if np.iscomplexobj(img):
-        phaseGrad2 = phase_gradient_amp(img * np.exp(1j * math.pi))
+        phase_grad2 = phase_gradient_amp(img * np.exp(1j * math.pi))
     else:
-        phaseGrad2 = phase_gradient_amp(np.exp(1j * img))
-    
-    return np.minimum(phaseGrad1, phaseGrad2)
-    
+        phase_grad2 = phase_gradient_amp(np.exp(1j * img))
+
+    return np.minimum(phase_grad1, phase_grad2)
 
 
 def mean_phase(img):
-    """ Returns the mean phase of a field or phase map.
-    
+    """Returns the mean phase of a field or phase map.
+
     Parameters:
           img        :  ndarray
-                        2D array, real or complex, the field or phase map  
-                        
+                        2D array, real or complex, the field or phase map
+
     Returns:
-          float      : mean phase of the image.               
+          float      : mean phase of the image.
     """
-    
+
     if np.iscomplexobj(img):
-        return np.angle(np.sum(img))    # The way to average the phase in a field
+        return np.angle(np.sum(img))  # The way to average the phase in a field
     else:
         return np.mean(img)

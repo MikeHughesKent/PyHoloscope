@@ -2,7 +2,6 @@
 """
 PyHoloscope Speed Tests
 
-@author: Mike Hughes, Applied Optics Group, University of Kent
 """
 
 from matplotlib import pyplot as plt
@@ -15,14 +14,14 @@ import timeit
 import pyholoscope as pyh
 
 # Propagator parameters
-gridSizes = [256, 512, 1024, 2048]
+grid_sizes = [256, 512, 1024, 2048]
 wavelength = 0.5e-9
-pixelSize = 0.5e-6
+pixel_size = 0.5e-6
 depth = 0.001
 
 # Look up table
-depthRange = (0.5 * depth, 2 * depth)
-nDepths = 10
+depth_range = (0.5 * depth, 2 * depth)
+num_depths = 10
 
 print("------------------")
 print("Timings (ms):")
@@ -31,119 +30,140 @@ print("------------------")
 print("-------------------------------")
 print("Propagator Generation No Numba:")
 print("-------------------------------")
-for gridSize in gridSizes:      
-    testcode = "pyh.propagator(gridSize, wavelength, pixelSize, depth, precision = 'single')"
-    t =  timeit.timeit(stmt=testcode,number=10,globals=globals())
-    print(f"Size {gridSize} x {gridSize} : {round(t * 100,2)}")
+for grid_size in grid_sizes:
+    testcode = "pyh.propagator(grid_size, wavelength, pixel_size, depth, precision = 'single', use_numba = False)"
+    t = timeit.timeit(stmt=testcode, number=10, globals=globals())
+    print(f"Size {grid_size} x {grid_size} : {round(t * 100, 2)}")
 
 
 print("----------------------------------")
 print("Propagator Generation Using Numba:")
 print("----------------------------------")
-for gridSize in gridSizes: 
-    pyh.propagator_numba((gridSize, gridSize), wavelength, pixelSize, depth)
-    testcode = "pyh.propagator_numba((gridSize, gridSize), wavelength, pixelSize, depth)"
-    t =  timeit.timeit(stmt=testcode,number=10,globals=globals())
-    print(f"Size {gridSize} x {gridSize} : {round(t * 100,2)}")
+for grid_size in grid_sizes:
+    pyh.propagator_numba((grid_size, grid_size), wavelength, pixel_size, depth)
+    testcode = "pyh.propagator((grid_size, grid_size), wavelength, pixel_size, depth)"    
+    t = timeit.timeit(stmt=testcode, number=10, globals=globals())
+    print(f"Size {grid_size} x {grid_size} : {round(t * 100, 2)}")
 
 
 print("--------------------------------")
 print("Propagator Table Build No Numba:")
 print("--------------------------------")
-for gridSize in gridSizes: 
-    testcode = "pyh.PropLUT(gridSize, wavelength, pixelSize, depthRange, nDepths)"
-    t =  timeit.timeit(stmt=testcode,number=10,globals=globals())
-    print(f"Size {gridSize} x {gridSize} : {round(t * 100,2)}")
-    
+for grid_size in grid_sizes:
+    testcode = "pyh.PropLUT(grid_size, wavelength, pixel_size, depth_range, num_depths, use_numba = False)"
+    t = timeit.timeit(stmt=testcode, number=10, globals=globals())
+    print(f"Size {grid_size} x {grid_size} : {round(t * 100, 2)}")
+
 
 print("----------------------------------")
 print("Propagator Table Build With Numba:")
 print("----------------------------------")
-for gridSize in gridSizes: 
-    testcode = "pyh.PropLUT(gridSize, wavelength, pixelSize, depthRange, nDepths, numba = True)"
-    t =  timeit.timeit(stmt=testcode,number=10,globals=globals())
-    print(f"Size {gridSize} x {gridSize} : {round(t * 100,2)}")    
+for grid_size in grid_sizes:
+    testcode = "pyh.PropLUT(grid_size, wavelength, pixel_size, depth_range, num_depths, use_numba = True)"
+    t = timeit.timeit(stmt=testcode, number=10, globals=globals())
+    print(f"Size {grid_size} x {grid_size} : {round(t * 100, 2)}")
 
 
 print("----------------------------")
 print("Refocus by Angular Spectrum:")
 print("----------------------------")
-for gridSize in gridSizes: 
-    prop = pyh.propagator_numba((gridSize, gridSize), wavelength, pixelSize, depth)
-    img = np.random.random((gridSize, gridSize))
+for grid_size in grid_sizes:
+    prop = pyh.propagator((grid_size, grid_size), wavelength, pixel_size, depth)
+    img = np.random.random((grid_size, grid_size))
     testcode = "pyh.refocus(img, prop)"
-    t =  timeit.timeit(stmt=testcode,number=10,globals=globals())
-    print(f"Size {gridSize} x {gridSize} : {round(t * 100,2)}")  
-    
+    t = timeit.timeit(stmt=testcode, number=10, globals=globals())
+    print(f"Size {grid_size} x {grid_size} : {round(t * 100, 2)}")
+
 
 print("------------------------------------")
 print("Complex Refocus by Angular Spectrum:")
 print("------------------------------------")
-for gridSize in gridSizes: 
-    prop = pyh.propagator_numba((gridSize, gridSize), wavelength, pixelSize, depth)
-    img = np.random.random((gridSize, gridSize)) + 1j * np.random.random((gridSize, gridSize))
+for grid_size in grid_sizes:
+    prop = pyh.propagator((grid_size, grid_size), wavelength, pixel_size, depth)
+    img = np.random.random((grid_size, grid_size)) + 1j * np.random.random(
+        (grid_size, grid_size)
+    )
     testcode = "pyh.refocus(img, prop)"
-    t =  timeit.timeit(stmt=testcode,number=10,globals=globals())
-    print(f"Size {gridSize} x {gridSize} : {round(t * 100,2)}")   
+    t = timeit.timeit(stmt=testcode, number=10, globals=globals())
+    print(f"Size {grid_size} x {grid_size} : {round(t * 100, 2)}")
 
 
 print("----------------------")
 print("Off-Axis Demodulation:")
 print("----------------------")
-for gridSize in gridSizes: 
-    img = np.random.random((gridSize, gridSize)) 
-    testcode = "pyh.off_axis_demod(img, (gridSize / 4, gridSize / 4), (gridSize / 8, gridSize / 8))"
-    t =  timeit.timeit(stmt=testcode,number=10,globals=globals())
-    print(f"Size {gridSize} x {gridSize} : {round(t * 100,2)}")       
+for grid_size in grid_sizes:
+    img = np.random.random((grid_size, grid_size))
+    testcode = "pyh.off_axis_demod(img, (grid_size / 4, grid_size / 4), (grid_size / 8, grid_size / 8))"
+    t = timeit.timeit(stmt=testcode, number=10, globals=globals())
+    print(f"Size {grid_size} x {grid_size} : {round(t * 100, 2)}")
 
 
 print("----------------------------------")
 print("Numerical refocusing (Holo Class):")
 print("----------------------------------")
-for gridSize in gridSizes: 
-    holo = pyh.Holo(mode = pyh.INLINE, wavelength = wavelength, pixelSize = pixelSize, depth = depth)
-    img = np.random.random((gridSize, gridSize)) 
-    out = holo.process(img)    
+for grid_size in grid_sizes:
+    holo = pyh.Holo(
+        mode=pyh.INLINE, wavelength=wavelength, pixel_size=pixel_size, depth=depth
+    )
+    img = np.random.random((grid_size, grid_size))
+    out = holo.process(img)
     testcode = "holo.process(img)"
-    t =  timeit.timeit(stmt=testcode,number=10,globals=globals())
-    print(f"Size {gridSize} x {gridSize} : {round(t * 100,2)}")    
+    t = timeit.timeit(stmt=testcode, number=10, globals=globals())
+    print(f"Size {grid_size} x {grid_size} : {round(t * 100, 2)}")
 
 
 print("--------------------------------------------------")
 print("Numerical refocusing with Background (Holo Class):")
 print("--------------------------------------------------")
-for gridSize in gridSizes: 
-    back = np.random.random((gridSize, gridSize)) 
-    holo = pyh.Holo(mode = pyh.INLINE, background = back, wavelength = wavelength, pixelSize = pixelSize, depth = depth)
-    img = np.random.random((gridSize, gridSize)) 
-    out = holo.process(img)    
+for grid_size in grid_sizes:
+    back = np.random.random((grid_size, grid_size))
+    holo = pyh.Holo(
+        mode=pyh.INLINE,
+        background=back,
+        wavelength=wavelength,
+        pixel_size=pixel_size,
+        depth=depth,
+    )
+    img = np.random.random((grid_size, grid_size))
+    out = holo.process(img)
     testcode = "holo.process(img)"
-    t =  timeit.timeit(stmt=testcode,number=10,globals=globals())
-    print(f"Size {gridSize} x {gridSize} : {round(t * 100,2)}")    
-
+    t = timeit.timeit(stmt=testcode, number=10, globals=globals())
+    print(f"Size {grid_size} x {grid_size} : {round(t * 100, 2)}")
 
 
 print("-----------------------------------------------------")
 print("Numerical refocusing with Normalisation (Holo Class):")
 print("-----------------------------------------------------")
-for gridSize in gridSizes: 
-    back = np.random.random((gridSize, gridSize)) 
-    holo = pyh.Holo(mode = pyh.INLINE, normalise = back, wavelength = wavelength, pixelSize = pixelSize, depth = depth)
-    img = np.random.random((gridSize, gridSize)) 
-    out = holo.process(img)    
+for grid_size in grid_sizes:
+    back = np.random.random((grid_size, grid_size))
+    holo = pyh.Holo(
+        mode=pyh.INLINE,
+        normalise=back,
+        wavelength=wavelength,
+        pixel_size=pixel_size,
+        depth=depth,
+    )
+    img = np.random.random((grid_size, grid_size))
+    out = holo.process(img)
     testcode = "holo.process(img)"
-    t =  timeit.timeit(stmt=testcode,number=10,globals=globals())
-    print(f"Size {gridSize} x {gridSize} : {round(t * 100,2)}")    
-    
+    t = timeit.timeit(stmt=testcode, number=10, globals=globals())
+    print(f"Size {grid_size} x {grid_size} : {round(t * 100, 2)}")
+
 
 print("----------------------------------------------")
 print("Numerical refocusing with Window (Holo Class):")
 print("----------------------------------------------")
-for gridSize in gridSizes: 
-    back = np.random.random((gridSize, gridSize)) 
-    holo = pyh.Holo(mode = pyh.INLINE, autoWindow = True, wavelength = wavelength, pixelSize = pixelSize, depth = depth)
-    img = np.random.random((gridSize, gridSize)) 
-    out = holo.process(img)    
+for grid_size in grid_sizes:
+    back = np.random.random((grid_size, grid_size))
+    holo = pyh.Holo(
+        mode=pyh.INLINE,
+        autoWindow=True,
+        wavelength=wavelength,
+        pixel_size=pixel_size,
+        depth=depth,
+    )
+    img = np.random.random((grid_size, grid_size))
+    out = holo.process(img)
     testcode = "holo.process(img)"
-    t =  timeit.timeit(stmt=testcode,number=10,globals=globals())
-    print(f"Size {gridSize} x {gridSize} : {round(t * 100,2)}")        
+    t = timeit.timeit(stmt=testcode, number=10, globals=globals())
+    print(f"Size {grid_size} x {grid_size} : {round(t * 100, 2)}")

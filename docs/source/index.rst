@@ -20,18 +20,34 @@ Contents
 
 .. toctree::
    :maxdepth: 2
-   
+   :caption: About PyHoloscope
+
    installation
+   contributing
+
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Getting Started
+
    inline
+   inline_low_level
    off_axis
+   off_axis_low_level
    phase
    autofocus
    sim
+
+   
+.. toctree::
+   :maxdepth: 2
+   :caption: API Reference
+
+   functions
    holo
+   propagator
    focus_stack
    propLUT   
    roi
-   functions
-   contributing
 
 * :ref:`genindex`

@@ -1,0 +1,32 @@
+# pyproject.toml
+
+[build-system]
+requires      = ["setuptools>=61.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "PyHoloscope"
+version = "1.0.0"
+description = "Python package for holographic microscopy."
+readme = "README.md"
+authors = [{ name = "Michael Hughes", email = "m.r.hughes@kent.ac.uk" }]
+license = { file = "LICENSE" }
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+]
+keywords = ["holographic", "microscopy", "microscopy", "holography", "inline holography", "off-axis holography"]
+dependencies = [
+    "matplotlib>=3.3.4",
+    "numba>=0.55.1",
+    "numpy >= 1.22",
+    "opencv_python>=4.5",
+    "Pillow>=9",
+    "scipy>=1.7"   
+]
+requires-python = ">=3.8"
+
+[project.urls]
+Homepage = "https://github.com/MikeHughesKent/PyHoloscope/"
+

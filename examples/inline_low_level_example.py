@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-Minimal example of how to use inline holography functionality of PyHoloscope.
+Minimal example of how to use low level inline holography functionality of
+PyHoloscope.
 
 This example loads an inline hologram and a background image (i.e. with the
 sample removed).
@@ -9,16 +10,6 @@ The images are loaded using the PyHoloscope 'load_image' function.
 
 Alternatively you can load these in using any method that results in them
 being stored in a 2D numpy array.
-
-We instantiate a 'Holo' object and pass in the system parameters and some
-options.
-
-We call the 'process' method of 'Holo' to refocus the hologram. If you have
-a GPU and CuPy is installed the GPU will be used, otherwise it will revert to
-CPU.
-
-Finally we use the 'amplitude' function to extract the amplitude of the
-refocused image for display.
 
 """
 
@@ -38,20 +29,28 @@ hologram = pyh.load_image(holoFile)
 background = pyh.load_image(backFile)
 
 
-# Create an instance of the Holo class
-holo = pyh.Holo(
-    mode=pyh.INLINE,  # For inline holography
-    wavelength=630e-9,  # Light wavelength, m
-    pixel_size=1e-6,  # Hologram physical pixel size, m
-    background=background,  # To subtract the background
-    depth=0.0130,
-)  # Distance to refocus, m
+# Create the angular spectrum propagator to refocus to required depth
+prop = pyh.propagator(
+    wavelength=630e-9, pixel_size=1e-6, depth=0.0130, grid_size=hologram
+)
 
 # Refocus
-recon = holo.process(hologram)
+recon = pyh.refocus(hologram, prop)
+
+
+# Generate a spatial window
+window = pyh.square_cosine_window(hologram, skin_thickness=10)
+
+# Refocus with background subtraction, normalisation and windowing
+recon_adv = pyh.refocus(
+    hologram, prop, background=background, normalise=background, window=window
+)
+
 
 # Extract amplitude
-amp = pyh.amplitude(recon)
+amp = pyh.amp(recon)
+amp_adv = pyh.amp(recon_adv)
+
 
 # Display results
 plt.figure(dpi=150)
@@ -60,6 +59,10 @@ plt.imshow(hologram, cmap="gray")
 
 plt.figure(dpi=150)
 plt.title("Refocused Hologram (amp)")
+plt.imshow(amp, cmap="gray")
+
+plt.figure(dpi=150)
+plt.title("Refocused Hologram with back, norm and window (amp)")
 plt.imshow(amp, cmap="gray")
 
 plt.figure(dpi=150)
