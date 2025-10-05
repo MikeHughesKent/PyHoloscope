@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Runs all tests of PyHoloscope.
+Runs all integration tests of PyHoloscope.
 
 """
 
@@ -30,5 +30,3 @@ import test_relative_phase
 
 print("# Numba")
 import test_numba
-
-

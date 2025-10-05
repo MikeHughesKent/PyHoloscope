@@ -34,6 +34,7 @@ holo = pyh.Holo(
     auto_window=False,
     relative_phase=True,
     refocus=True,
+    geometry='point',
     depth=depth,
 )
 

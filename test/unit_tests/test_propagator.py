@@ -32,10 +32,10 @@ class TestPropagator(unittest.TestCase):
         assert prop.wavelength == self.wavelength
         assert prop.pixel_size == self.pixel_size
         assert prop.depth == self.depth
-        
+
         assert np.shape(prop.propagator) == (self.grid_size1, self.grid_size1)
         assert prop.shape == (self.grid_size1, self.grid_size1)
-        
+
         assert prop.propagator.dtype == "complex64"
 
         prop = pyh.propagator(
@@ -81,6 +81,7 @@ class TestPropagator(unittest.TestCase):
             self.depth,
             geometry="point",
             precision="double",
+            use_numba=False,
         )
         assert np.max(np.isnan(prop.propagator) == 0)
         assert prop.shape == (self.grid_size1, self.grid_size2)
@@ -95,7 +96,7 @@ class TestPropagator(unittest.TestCase):
             self.depth,
             geometry="point",
             precision="double",
-            use_numba=True
+            use_numba=True,
         )
         prop = pyh.propagator(
             (self.grid_size1, self.grid_size2),
@@ -115,7 +116,7 @@ class TestPropagator(unittest.TestCase):
             self.depth,
             geometry="point",
             precision="single",
-            use_numba=True,    
+            use_numba=True,
         )
         prop = pyh.propagator(
             (self.grid_size1, self.grid_size2),

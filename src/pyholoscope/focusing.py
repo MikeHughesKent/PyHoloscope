@@ -18,6 +18,7 @@ except:
 
 try:
     from pyholoscope.focusing_numba import propagator_numba
+
     numba_available = True
 except:
     numba_available = False
@@ -40,7 +41,7 @@ def propagator(
     wavelength,
     pixel_size,
     depth,
-    geometry="point",
+    geometry="plane",
     precision="single",
     use_numba=True,
 ):
@@ -84,14 +85,18 @@ def propagator(
     else:
         raise Exception(f"Invalid precision {precision}, must be 'single' or 'double'.")
 
-    grid_width, grid_height = dimensions(grid_size)
-
+    grid_height, grid_width = dimensions(grid_size)
     if numba_available and use_numba:
         prop = propagator_numba(
-            (grid_height, grid_width), wavelength, pixel_size, depth, geometry, precision
+            (grid_height, grid_width),
+            wavelength,
+            pixel_size,
+            depth,
+            geometry,
+            precision,
         )
         return Propagator(
-            propagator = prop,
+            propagator=prop,
             wavelength=wavelength,
             pixel_size=pixel_size,
             depth=depth,
@@ -113,7 +118,7 @@ def propagator(
     # Bins size of FFT (i.e. pixel size of FFT in inverse distance)
     delta0x = 1 / width
     delta0y = 1 / height
-
+   
     # Generate one quadrant of the propagator
     if geometry == "point":
         u = delta0x * xM
@@ -124,7 +129,7 @@ def propagator(
         alpha = wavelength * xM / width
         beta = wavelength * yM / height
         prop_corner = np.exp(
-            (1j * 2 * math.pi * depth * np.sqrt(1 - alpha**2 - beta**2) / wavelength)
+            (-1j * 2 * math.pi * depth * np.sqrt(1 - alpha**2 - beta**2) / wavelength)
         )
         prop_corner[alpha**2 + beta**2 > 1] = 0
 
@@ -154,6 +159,9 @@ def propagator(
     return prop_obj
 
 
+
+
+
 def refocus(img, propagator, **kwargs):
     """Refocuses a hologram using the angular spectrum method.
     Takes a hologram 'hologram' wich may be a real or
@@ -175,8 +183,8 @@ def refocus(img, propagator, **kwargs):
                         normalisation image to divide by prior to refocus, same shape as img (default is None)
         window        : numpy.ndarray or None
                         spatial window to apply to image prior to refocus, same shape as img (default is None)
-        downsample    : int or None 
-                        downsample factor, if not None, the image will be downsampled by this factor prior to refocus (default is None)                    
+        downsample    : int or None
+                        downsample factor, if not None, the image will be downsampled by this factor prior to refocus (default is None)
         fourier_domain : boolean
                         if True then img is assumed to be already the
                         FFT of the hologram, useful for speed when performing
@@ -194,14 +202,13 @@ def refocus(img, propagator, **kwargs):
     img_is_fourier = kwargs.pop("fourier_domain", False)
     cuda = kwargs.pop("cuda", True)
 
-    
     # If we were sent the propagator on the CPU, push to GPU now
     if (
         cuda is True
         and cuda_available is True
         and type(propagator.propagator) is np.ndarray
     ):
-        prop = cp.array(propagator)
+        prop = cp.array(propagator.propagator)
     else:
         prop = propagator.propagator
 
@@ -217,7 +224,9 @@ def refocus(img, propagator, **kwargs):
 
     else:  # If we are sent the spatial domain image
         c_hologram = pyholoscope.pre_process(img, **kwargs)
-        assert np.shape(c_hologram) == propagator.shape, f"Propagator is the wrong size {propagator.shape} compared with hologram {np.shape(c_hologram)}."
+        assert np.shape(c_hologram) == propagator.shape, (
+            f"Propagator is the wrong size {propagator.shape} compared with hologram {np.shape(c_hologram)}."
+        )
 
         if cuda is True and cuda_available is True:
             if type(c_hologram) is np.ndarray:
@@ -225,6 +234,43 @@ def refocus(img, propagator, **kwargs):
             return cp.asnumpy(cp.fft.ifft2(cp.fft.fft2(c_hologram) * prop))
         else:
             return scipy.fft.ifft2(scipy.fft.fft2(c_hologram) * prop)
+
+
+def correct_curvature(img, wavelength, pixel_size, source_distance):
+    """Corrects for spherical wavefront curvature in hologram, assuming a point source.
+
+    Arguments:
+        img             : ndarray
+                          2D numpy array, raw hologram.
+        wavelength     : float
+                          wavelength of light source
+        pixel_size      : float
+                          real pixel size of hologram
+        source_distance: float
+                          distance from point source to camera plane
+
+    Returns:
+        numpy.ndarray : 2D complex array, corrected hologram
+
+    """
+
+    (h, w) = np.shape(img)
+    (xM, yM) = np.meshgrid(range(w), range(h))
+
+    centre_x = int(w // 2)
+    centre_y = int(h // 2)
+
+    # Real space coordinates of each pixel relative to centre of image
+    x = pixel_size * (xM - centre_x)
+    y = pixel_size * (yM - centre_y)
+
+    # Distance from point source to each pixel
+    #r = np.sqrt(x**2 + y**2 + source_distance ** 2)
+    phase = (x**2 + y**2) / (2 * source_distance)
+
+    correction = np.exp(-1j * 2 * math.pi * phase / wavelength)
+    
+    return img * correction
 
 
 def focus_score(img, method):
@@ -340,22 +386,14 @@ def refocus_and_score(
 
     # Whether we are using a look up table of propagators or calculating it each time
     if prop_lut is None:
-        if use_numba:
-            prop = propagator_numba(
-                np.shape(img_fft.transpose()),
-                wavelength,
-                pixel_size,
-                depth,
-                precision=precision,
-            ).propagator
-        else:
             prop = propagator(
-                np.shape(img_fft.transpose()),
+                img_fft,
                 wavelength,
                 pixel_size,
                 depth,
                 precision=precision,
-            ).propagator
+                use_numba = use_numba,
+            )
 
     else:
         prop = prop_lut.propagator(depth)
@@ -506,7 +544,14 @@ def find_focus(img, wavelength, pixel_size, depth_range, method, **kwargs):
 
 
 def coarse_focus_search(
-    img_fft, depth_range, num_intervals, pixel_size, wavelength, method, score_roi, prop_lut
+    img_fft,
+    depth_range,
+    num_intervals,
+    pixel_size,
+    wavelength,
+    method,
+    score_roi,
+    prop_lut,
 ):
     """An initial check for approximate location of good focus depths prior to a finer search.
     Used by findFocus, see this function for arguments.
@@ -649,7 +694,7 @@ def refocus_stack(
     use_numba = kwargs.get("use_numba", True)
     background = kwargs.get("background", None)
     precision = kwargs.get("precision", "single")
-    geometry = kwargs.pop("geometry", "point")
+    geometry = kwargs.pop("geometry", "plane")
 
     depths = np.linspace(depth_range[0], depth_range[1], num_depths)
 
@@ -667,11 +712,17 @@ def refocus_stack(
 
     for idx, depth in enumerate(depths):
         prop = propagator(
-               np.shape(img), wavelength, pixel_size, depth, precision=precision, use_numba = use_numba, geometry = geometry
-            )
+            np.shape(img),
+            wavelength,
+            pixel_size,
+            depth,
+            precision=precision,
+            use_numba=use_numba,
+            geometry=geometry,
+        )
 
         imgStack.add_idx(
-            refocus(c_hologram_fft, prop, **refocus_kwargs),            
+            refocus(c_hologram_fft, prop, **refocus_kwargs),
             idx,
         )
 

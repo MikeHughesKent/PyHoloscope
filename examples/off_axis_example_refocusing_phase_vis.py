@@ -58,8 +58,8 @@ holo = pyh.Holo(
     normalise=background,
     refocus=True,  # We will numerically refocus
     depth=refocus_depth,
-    off_axis_real_fft = True,
-) 
+    off_axis_real_fft=True,
+)
 
 holo.calib_off_axis()  # Finds modulation frequency and
 # pre-computes background phase

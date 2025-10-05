@@ -21,7 +21,7 @@ def get8bit(img):
     """Returns 8 bit representation of amplitude and phase of field.
 
     Returns a tuple of amplitude and phase, both real 2D numpy arrays of type
-    uint8. Amplitude is scaled between 0 and 255, phase is wrapped and mapped 
+    uint8. Amplitude is scaled between 0 and 255, phase is wrapped and mapped
     to between 0 and 255, with 0 = 0 radians and 255 = 2pi radians.
 
     Parameters:
@@ -139,6 +139,7 @@ def amp(img):
          numpy.ndarray : amplitude image
     """
     return np.abs(img)
+
 
 def phase(img):
     """Returns phase of complex image, between 0 and 2pi.
@@ -310,18 +311,15 @@ def dimensions(inp):
         inp        : int or (int, int) or ndarray
 
     Returns:
-        tuple of (int, int), width and height
+        tuple of (int, int), height and width
     """
 
     if type(inp) is np.ndarray:
         h, w = np.shape(inp)[0:2]
     elif type(inp) is tuple:
-        w, h = inp
+        h, w = inp
     else:
         w = inp
         h = inp
 
-    return int(w), int(h)
-
-
-
+    return int(h), int(w)

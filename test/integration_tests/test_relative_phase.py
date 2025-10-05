@@ -38,9 +38,10 @@ holo.calib_off_axis(background)
 # Remove modulation
 recon_field = holo.process(hologram)
 
-recon_field_corrected = pyh.relative_phase_self(recon_field, roi=pyh.Roi(40, 40, 10, 10))
+recon_field_corrected = pyh.relative_phase_self(
+    recon_field, roi=pyh.Roi(40, 40, 10, 10)
+)
 
-print(pyh.mean_phase(recon_field_corrected))
 
 plt.figure(dpi=150)
 plt.imshow(np.angle(recon_field), cmap="twilight")

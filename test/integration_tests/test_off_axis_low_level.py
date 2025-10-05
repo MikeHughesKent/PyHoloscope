@@ -29,7 +29,9 @@ crop_radius = pyh.off_axis_find_crop_radius(background)
 
 # Remove modulation
 recon_field = pyh.off_axis_demod(hologram.astype(float), crop_centre, crop_radius)
-background_field = pyh.off_axis_demod(background.astype(float), crop_centre, crop_radius)
+background_field = pyh.off_axis_demod(
+    background.astype(float), crop_centre, crop_radius
+)
 
 # Apply background correction and phase offset correction
 corrected_field = pyh.relative_phase(recon_field, background_field)
@@ -51,7 +53,9 @@ mask = pyh.circ_window((crop_radius[0] * 2, crop_radius[1] * 2), crop_radius)
 recon_field = pyh.off_axis_demod(
     hologram.astype(float), crop_centre, crop_radius, mask=mask
 )
-background_field = pyh.off_axis_demod(background.astype(float), crop_centre, crop_radius)
+background_field = pyh.off_axis_demod(
+    background.astype(float), crop_centre, crop_radius
+)
 
 # Apply background correction and phase offset correction
 corrected_field = pyh.relative_phase(recon_field, background_field)
@@ -75,7 +79,9 @@ mask = pyh.circ_cosine_window((crop_radius[0] * 2, crop_radius[1] * 2), crop_rad
 recon_field = pyh.off_axis_demod(
     hologram.astype(float), crop_centre, crop_radius, mask=mask
 )
-background_field = pyh.off_axis_demod(background.astype(float), crop_centre, crop_radius)
+background_field = pyh.off_axis_demod(
+    background.astype(float), crop_centre, crop_radius
+)
 
 # Apply background correction and phase offset correction
 corrected_field = pyh.relative_phase(recon_field, background_field)

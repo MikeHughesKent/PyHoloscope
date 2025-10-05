@@ -67,7 +67,7 @@ def circ_cosine_window(img_size, circle_radius, skin_thickness, data_type="float
 
 
     """
-    w, h = dimensions(img_size)
+    h, w = dimensions(img_size)
 
     circle_radius = dimensions(circle_radius)
     skin_thickness = dimensions(skin_thickness)
@@ -109,7 +109,7 @@ def circ_cosine_window(img_size, circle_radius, skin_thickness, data_type="float
     return mask.astype(data_type)
 
 
-def square_cosine_window(img_size, radius = None, skin_thickness = 0, data_type="float32"):
+def square_cosine_window(img_size, radius=None, skin_thickness=0, data_type="float32"):
     """Produces a square/rectangular cosine window mask on grid of img_size * img_size.
     Mask is 0 for pixels > radius and 1 for pixels < (radius -
     skin_thickness).  The intermediate region is a smooth squared cosine function.
@@ -119,7 +119,7 @@ def square_cosine_window(img_size, radius = None, skin_thickness = 0, data_type=
                         size of output array. Provide a single int to generate a square
                        array of that size, otherwise provide (w,h) to produce a rectangular
                        array, or 2D numpy array in which case the size of the array
-                       will be used.       
+                       will be used.
 
     Keyword Arguments:
         radius        :  float or (float, float) or None
@@ -137,7 +137,7 @@ def square_cosine_window(img_size, radius = None, skin_thickness = 0, data_type=
 
     """
 
-    w, h = dimensions(img_size)
+    h, w = dimensions(img_size)
 
     if radius is None:
         radiusX = w / 2
@@ -147,7 +147,6 @@ def square_cosine_window(img_size, radius = None, skin_thickness = 0, data_type=
     else:
         radiusX = radius
         radiusY = radius
-
 
     innerRadX = radiusX - skin_thickness
     innerRadY = radiusY - skin_thickness

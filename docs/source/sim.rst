@@ -23,7 +23,7 @@ pixels and 500 nm wavelength::
   
     hologram = pyholoscope.sim.off_axis(object_field, 
                                         wavelength = 500e-9, 
-                                        pixel_size = 3e-6, 
+                                        pixel_size = 3.0e-6, 
                                         tilt_angle = 0.087)
 
 A limitation of the simulation is that it does not model the effect of integrating the interference patterns over the area
@@ -34,10 +34,10 @@ We can check the off-axis modulation is as expected using::
 
     predicted_tilt = pyh.off_axis_predict_tilt(hologram, 
                                               wavelength = 500e-9,
-                                              pixel_size = 3e-6)
+                                              pixel_size = 3.0e-6)
 
 which returns (approximately) the tilt angle specified when creating the
-simulated hologram. We can also then go on to reconstruct the object field using the
+simulated hologram. We can also then go on to sreconstruct the object field using the
 off axis functionality of PyHoloscope.
 
 A further optional argument allows the ``OPD`` to be specified, this is an

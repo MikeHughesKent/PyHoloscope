@@ -47,15 +47,15 @@ class TestOffAxis(unittest.TestCase):
         peak position.
         """
 
-        grid_size2 = 512
-        grid_size1 = 1024
+        grid_size1 = 512
+        grid_size2 = 1024
 
         angle = math.radians(3)
         rotation = 0.22 * math.pi
         pixel_size = 2e-6
         wavelength = 500e-9
 
-        object_field = np.ones((grid_size2, grid_size1))
+        object_field = np.ones((grid_size1, grid_size2))
         test_hologram = pyh.sim.off_axis(
             object_field, wavelength, pixel_size, angle, rotation=rotation
         )
@@ -232,6 +232,7 @@ class TestOffAxis(unittest.TestCase):
         recon = pyh.off_axis_demod(
             test_hologram, crop_centre, crop_radius, return_full=True
         )
+        
         # compare mean value in the square to mean value somewhere elese (that should be zero)
         assert np.mean(pyh.amplitude(recon[y : y + h, x : x + w])) > 100 * np.mean(
             pyh.amplitude(recon[4 * y : 4 * y + h, x : x + w])
@@ -244,6 +245,7 @@ class TestOffAxis(unittest.TestCase):
         recon = pyh.off_axis_demod(
             test_hologram, crop_centre, crop_radius, mask=window, return_full=True
         )
+        
         # compare mean value in the square to mean value somewhere elese (that should be zero)
         assert np.mean(pyh.amplitude(recon[y : y + h, x : x + w])) > 100 * np.mean(
             pyh.amplitude(recon[4 * y : 4 * y + h, x : x + w])

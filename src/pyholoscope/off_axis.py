@@ -43,17 +43,17 @@ def off_axis_demod(
           hologram   : numpy.ndarray
                        2D numpy array, real, raw hologram
           crop_centre : tuple of (int, int).
-                       pixel location in FFT of modulation frequency
+                       pixel location in FFT of modulation frequency (y, x)
           crop_radius : int or (int, int)
                        semi-diameter of sqaure or rectangle to extract
                        around modulation frequency. Provide a single int
-                       for a sqaure area or a tuple of (w,h) for a rectangle.
+                       for a sqaure area or a tuple of (h,w) for a rectangle.
 
     Keyword Arguments:
           real_fft    : boolean
-                        if True, the real FFT will be used for speed up (default is False). 
+                        if True, the real FFT will be used for speed up (default is False).
                         This only works
-                        if the reference is tilted so that the modulation is at an angle of     
+                        if the reference is tilted so that the modulation is at an angle of
                         approximately 45 degrees to the x and y axes, so that the shifted
                         (modulated) signal is in one quadrant of the FFT.
           return_full : boolean
@@ -99,13 +99,15 @@ def off_axis_demod(
 
     # Shift the ROI to the centre
     shifted_fft = camera_fft[
-        round(crop_centre[1] - crop_radius[1]) : round(crop_centre[1] + crop_radius[1]),
         round(crop_centre[0] - crop_radius[0]) : round(crop_centre[0] + crop_radius[0]),
+        round(crop_centre[1] - crop_radius[1]) : round(crop_centre[1] + crop_radius[1]),
     ]
 
     # Apply the mask
     if mask is not None:
-        assert np.shape(mask) == np.shape(shifted_fft), f"Incorrect mask size, mask is {np.shape(mask)}, fft region is {np.shape(shifted_fft)}."
+        assert np.shape(mask) == np.shape(shifted_fft), (
+            f"Incorrect mask size, mask is {np.shape(mask)}, fft region is {np.shape(shifted_fft)}."
+        )
         masked_fft = shifted_fft * mask
     else:
         masked_fft = shifted_fft
@@ -151,8 +153,8 @@ def off_axis_find_mod(hologram, mask_fraction=0.1, real_fft=False):
                          between 0 and 1, fraction of image around d.c. to
                          mask to avoid the d.c. peak being detected
                          (default = 0.1).
-          real_fft    : bool    
-                          if True, then the real FFT will be used (default is False). This only 
+          real_fft    : bool
+                          if True, then the real FFT will be used (default is False). This only
                           works if the reference is tilted so that the modulation is at
                           an angle of appoximately 45 degrees to the x and y axes, so that
                           the shifted (modulated) signal is in one quadrant of the FFT.
@@ -172,21 +174,24 @@ def off_axis_find_mod(hologram, mask_fraction=0.1, real_fft=False):
         camera_fft[:maskSize, :maskSize] = 0
         camera_fft[-maskSize:, :maskSize] = 0
 
-       
     else:
         camera_fft = np.abs(scipy.fft.fftshift(scipy.fft.fft2(hologram)))
-       
+
         # Need to crop out DC otherwise we will find that. Set the areas around
-        # dc to zero. The size of the masked area is       
+        # dc to zero. The size of the masked area is
         # mask_fraction * the size of the image (smallest dimension)
-        maskSize = int(np.min(np.shape(hologram)) * mask_fraction)  
-        cy,cx = np.shape(camera_fft)[:2] 
-        camera_fft[cy//2-maskSize:cy//2+maskSize, cx//2-maskSize:cx//2+maskSize] = 0
-        camera_fft[:, :cx//2] = 0
-        
+        maskSize = int(np.min(np.shape(hologram)) * mask_fraction)
+        cy, cx = np.shape(camera_fft)[:2]
+        camera_fft[
+            cy // 2 - maskSize : cy // 2 + maskSize,
+            cx // 2 - maskSize : cx // 2 + maskSize,
+        ] = 0
+        camera_fft[:, : cx // 2] = 0
+
+
     peak_location = np.unravel_index(camera_fft.argmax(), camera_fft.shape)
 
-    return peak_location[1], peak_location[0]
+    return peak_location[0], peak_location[1]
 
 
 def off_axis_find_crop_radius(hologram, mask_fraction=0.1, real_fft=False):
@@ -216,40 +221,41 @@ def off_axis_find_crop_radius(hologram, mask_fraction=0.1, real_fft=False):
     h = np.shape(hologram)[0]
     w = np.shape(hologram)[1]
 
-    peak_x, peak_y = off_axis_find_mod(hologram, mask_fraction=mask_fraction, real_fft=real_fft)
+    peak_y, peak_x = off_axis_find_mod(
+        hologram, mask_fraction=mask_fraction, real_fft=real_fft
+    )
 
     # The crop radii will have the same ratio as the width and height of the hologram
     aspect_ratio = h / w
 
-    if real_fft:    
+    if real_fft:
         peak_y_adj = min(peak_y, np.abs(h - peak_y))
-        peak_x_adj = min(peak_x, np.abs(w - peak_x))  
+        peak_x_adj = min(peak_x, np.abs(w - peak_x))
     else:
-        peak_y_adj = np.abs(h//2 - peak_y)
-        peak_x_adj = np.abs(w//2 - peak_x)  
+        peak_y_adj = np.abs(h // 2 - peak_y)
+        peak_x_adj = np.abs(w // 2 - peak_x)
 
     peak_y_adj = peak_y_adj / aspect_ratio
 
-
     mod_freq = np.sqrt(peak_x_adj**2 + peak_y_adj**2)
     crop_radius = mod_freq / 3
-   
+
     # If the crop radius will result in a ROI larger than the image, adjust it
     crop_radius = min(
-            crop_radius,                            
-            (h - peak_y) / aspect_ratio,                # check bottom
-            peak_x,                                     # left
-            w - peak_x,                              # right
-            peak_y / aspect_ratio,                      # top
+        crop_radius,
+        (h - peak_y) / aspect_ratio,  # check bottom
+        peak_x,  # left
+        w - peak_x,  # right
+        peak_y / aspect_ratio,  # top
     )
 
     crop_radius_x = int(round(crop_radius))
-    crop_radius_y = int(round(crop_radius * aspect_ratio))    
+    crop_radius_y = int(round(crop_radius * aspect_ratio))
 
-    return crop_radius_x, crop_radius_y
+    return crop_radius_y, crop_radius_x
 
 
-def off_axis_predict_mod(wavelength, pixel_size, num_pixels, tilt_angle, rotation=0):
+def off_axis_predict_mod(wavelength, pixel_size, num_pixels, tilt_angle, rotation=0, real_fft=False):
     """Predicts the location of the modulation peak in the FFT.
 
     Arguments:
@@ -258,13 +264,16 @@ def off_axis_predict_mod(wavelength, pixel_size, num_pixels, tilt_angle, rotatio
           pixel_size    : float
                          hologram physical pixel size in metres
           num_pixels    : int or (int, int)
-                         hologram size in pixels,
+                         hologram size in pixels. If rectangular, provide a tuple of (h,w) or a 2D numpy array
+                         the same shape as the hologram.
           tilt_angle    : float
                          angle of reference beam on camera in radians
 
     Keyword Arguments:
           rotation     : float
                          rotation of tilt with respect to x axis, in radians (default is 0)
+            real_fft    : bool
+                         if True, then the position will be correct for a real FFT.
 
     Returns:
           tuple of (int, int), location of modulation (x pixel, y pixel)
@@ -277,26 +286,40 @@ def off_axis_predict_mod(wavelength, pixel_size, num_pixels, tilt_angle, rotatio
     # Spatial frequency at edge of FFT
     max_spatial_freq = 1 / (pixel_size * 2)
 
-    im_size_x, im_size_y = dimensions(num_pixels)
+    im_size_y, im_size_x = dimensions(num_pixels)
 
     # Pixel corresponding to frequency in Fourier Domain
     if rotation % math.pi < math.pi / 2:
-        mod_freq_px_x = round(ref_freq / max_spatial_freq * np.abs(np.cos(rotation)) * im_size_x / 2)
-        mod_freq_px_y = round(ref_freq / max_spatial_freq * np.abs(np.sin(rotation)) * im_size_y / 2)
+        mod_freq_px_x = round(
+            ref_freq / max_spatial_freq * np.abs(np.cos(rotation)) * im_size_x / 2
+        )
+        mod_freq_px_y = round(
+            ref_freq / max_spatial_freq * np.abs(np.sin(rotation)) * im_size_y / 2
+        )
     else:
         mod_freq_px_x = round(
-            ref_freq / max_spatial_freq * np.abs(np.cos(math.pi - rotation)) * im_size_x / 2
+            ref_freq
+            / max_spatial_freq
+            * np.abs(np.cos(math.pi - rotation))
+            * im_size_x
+            / 2
         )
         mod_freq_px_y = im_size_y - round(
             ref_freq / max_spatial_freq * np.abs(np.sin(rotation)) * im_size_y / 2
         )
+
+
 
     if mod_freq_px_x < 0:
         mod_freq_px_x = mod_freq_px_x + im_size_x
     if mod_freq_px_y < 0:
         mod_freq_px_y = mod_freq_px_y + im_size_y
 
-    return mod_freq_px_x, mod_freq_px_y
+    # We want the position in the fftshifted FFT, so we need to adjust the coordinates
+    mod_freq_px_x = (mod_freq_px_x + im_size_x // 2) % im_size_x
+    mod_freq_px_y = (mod_freq_px_y + im_size_y // 2) % im_size_y      
+
+    return mod_freq_px_y, mod_freq_px_x
 
 
 def off_axis_predict_mod_distance(
@@ -323,7 +346,9 @@ def off_axis_predict_mod_distance(
 
     """
 
-    x, y = off_axis_predict_mod(wavelength, pixel_size, num_pixels, tilt_angle, rotation)
+    x, y = off_axis_predict_mod(
+        wavelength, pixel_size, num_pixels, tilt_angle, rotation
+    )
 
     return math.sqrt(x**2 + y**2)
 
@@ -356,7 +381,7 @@ def off_axis_predict_tilt_angle(hologram, wavelength, pixel_size, mask_fraction=
     h, w = np.shape(hologram)[:2]
 
     # Find the location of the peak
-    peak_location = off_axis_find_mod(hologram, mask_fraction=mask_fraction)
+    peak_location = off_axis_find_mod(hologram, mask_fraction=mask_fraction, real_fft=True)
 
     # Pixel sizes in FFT (the spatial frequency)
     v_pixel_spatial_freq = 1 / (pixel_size * np.shape(hologram)[0])
@@ -364,9 +389,13 @@ def off_axis_predict_tilt_angle(hologram, wavelength, pixel_size, mask_fraction=
 
     # Depending on quadrant could be relative to either top-left or
     # top-right corner, so check both and use the closest distance
-    peak_dist1 = np.sqrt((v_pixel_spatial_freq * peak_location[1]) ** 2 + (h_pixel_spatial_freq * peak_location[0]) ** 2)
+    peak_dist1 = np.sqrt(
+        (v_pixel_spatial_freq * peak_location[0]) ** 2
+        + (h_pixel_spatial_freq * peak_location[1]) ** 2
+    )
     peak_dist2 = np.sqrt(
-        (v_pixel_spatial_freq * peak_location[1]) ** 2 + (h_pixel_spatial_freq * (peak_location[0] - w)) ** 2
+        (v_pixel_spatial_freq * peak_location[0]) ** 2
+        + (h_pixel_spatial_freq * (peak_location[1] - w)) ** 2
     )
     spatial_freq = min(peak_dist1, peak_dist2)
 

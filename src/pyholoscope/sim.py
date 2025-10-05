@@ -43,7 +43,9 @@ def off_axis(
     num_points_y, num_points_x = np.shape(object_field)
 
     # Generate tilted reference field
-    ref_field = np.ones((num_points_y, num_points_x)) + 1j * np.ones((num_points_y, num_points_x))
+    ref_field = np.ones((num_points_y, num_points_x)) + 1j * np.ones(
+        (num_points_y, num_points_x)
+    )
     (xM, yM) = np.meshgrid(range(num_points_x), range(num_points_y))
 
     # Effect of tilt

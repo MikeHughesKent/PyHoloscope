@@ -10,7 +10,7 @@ low-level functions can be called directly.
 Getting Started Using Lower-Level Functions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
- Begin by importing the library::
+Begin by importing the library::
     
     import pyholoscope as pyh
     

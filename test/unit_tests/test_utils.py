@@ -106,7 +106,7 @@ class TestUtils(unittest.TestCase):
         w = 2
         h = 4
         a = np.zeros((h, w))
-        assert dimensions(np.zeros((h, w))) == (w, h)
+        assert dimensions(np.zeros((h, w))) == (h, w)
         assert dimensions((w, h)) == (w, h)
         assert dimensions((w)) == (w, w)
 

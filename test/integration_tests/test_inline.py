@@ -14,8 +14,8 @@ import pyholoscope as pyh
 
 # Experimental Parameters
 wavelength = 633e-9  # m
-pixel_size = 1e-6    # m
-depth = 0.0129       # m
+pixel_size = 1e-6  # m
+depth = 0.0129  # m
 
 # Load images
 hologram = pyh.load_image(Path("test data/inline_example_holo.tif"))

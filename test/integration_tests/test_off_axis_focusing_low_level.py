@@ -21,7 +21,7 @@ pixel_size = 1e-6
 grid_size = 1024
 depth = 0.00117
 
-# Load images. 
+# Load images.
 hologram = pyh.load_image(Path("test data/paramecium_oa_oof.tif"))
 background = pyh.load_image(Path("test data/paramecium_oa_oof_background.tif"))
 
@@ -39,7 +39,7 @@ corrected_field = pyh.relative_phase(recon_field, background_field)
 adjusted_pixel_size = pixel_size / (crop_radius[0] * 2) * np.shape(hologram)[1]
 
 prop = pyh.propagator(
-    (crop_radius[1] * 2, crop_radius[0] * 2), wavelength, adjusted_pixel_size, depth
+    (crop_radius[0] * 2, crop_radius[1] * 2), wavelength, adjusted_pixel_size, depth, geometry = 'point'
 )
 refocused_field = pyh.refocus(corrected_field, prop)
 

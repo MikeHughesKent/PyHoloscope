@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Minimal example of how to use low level inline holography functionality of 
+Minimal example of how to use low level inline holography functionality of
 PyHoloscope.
 
 This example loads an inline hologram and a background image (i.e. with the
@@ -30,19 +30,23 @@ background = pyh.load_image(backFile)
 
 
 # Create the angular spectrum propagator to refocus to required depth
-prop = pyh.propagator(wavelength = 630e-9, pixel_size=1e-6, depth = 0.0130, grid_size = hologram)
+prop = pyh.propagator(
+    wavelength=630e-9, pixel_size=1e-6, depth=0.0130, grid_size=hologram
+)
 
-# Refocus 
+# Refocus
 recon = pyh.refocus(hologram, prop)
 
 
 # Generate a spatial window
-window = pyh.square_cosine_window(hologram, skin_thickness = 10)
+window = pyh.square_cosine_window(hologram, skin_thickness=10)
 
 # Refocus with background subtraction, normalisation and windowing
-recon_adv = pyh.refocus(hologram, prop, background = background, normalise = background, window = window)
+recon_adv = pyh.refocus(
+    hologram, prop, background=background, normalise=background, window=window
+)
 
- 
+
 # Extract amplitude
 amp = pyh.amp(recon)
 amp_adv = pyh.amp(recon_adv)

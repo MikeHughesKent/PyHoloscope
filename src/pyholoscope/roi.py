@@ -43,7 +43,7 @@ class Roi:
             min_y    : int
                        minimum y coordinate
             max_x    : int
-                       maximum x coordinate 
+                       maximum x coordinate
             max_y    : int
                        maximum y coordinate
         """
