@@ -525,9 +525,10 @@ def find_focus(img, wavelength, pixel_size, depth_range, method, **kwargs):
     # Find the depth using optimiser
     depth = scipy.optimize.minimize_scalar(
         refocus_and_score,
-        method="golden",
+        method="bounded",
         bracket=depth_range,
-        options={"maxiter": 20},
+        bounds=depth_range,
+        options={"maxiter": 30},
         args=(
             img_fft,
             pixel_size,
@@ -613,7 +614,7 @@ def focus_score_curve(
     window = kwargs.get("window", None)
     score_roi = kwargs.get("roi", None)
     margin = kwargs.get("margin", None)
-    precision = kwargs.get("precision", None)
+    precision = kwargs.get("precision", 'single')
 
     c_hologram = pyholoscope.pre_process(
         img, background=background, normalise=normalise, window=window
