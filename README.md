@@ -1,4 +1,4 @@
-[![Documentation Status](https://app.readthedocs.org/projects/pyholoscope/badge/)
+![Documentation Status](https://app.readthedocs.org/projects/pyholoscope/badge/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
 ![PyHoloscope Logo](/res/pyholoscope_logo_.png)
