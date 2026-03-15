@@ -23,7 +23,8 @@ dependencies = [
     "numpy >= 1.22",
     "opencv_python>=4.5",
     "Pillow>=9",
-    "scipy>=1.7"   
+    "scipy>=1.7",
+    "scikit-image"
 ]
 requires-python = ">=3.8"
 
