@@ -44,7 +44,7 @@ t1 = time.perf_counter()
 prop = pyh.propagator(
     wavelength=wavelength, pixel_size=pixel_size, depth=depth, grid_size=hologram
 )
-print(f"Time to generate a propagator: {round(time.perf_counter() - t1, 5)}")
+print(f"Time to generate a propagator: {round(time.perf_counter() - t1, 5)} ms")
 
 
 # Refocus with background subtraction and normalisation
@@ -69,7 +69,7 @@ prop_lut = pyh.PropLUT(hologram,
 # Pull out propagator from LUT
 t1 = time.perf_counter()
 prop = prop_lut.propagator(depth)
-print(f"Time to extract propagator from LUT: {round(time.perf_counter() - t1, 5)}")
+print(f"Time to extract propagator from LUT: {round(time.perf_counter() - t1, 5)} ms")
 
 
 # Refocus with background subtraction and normalisation

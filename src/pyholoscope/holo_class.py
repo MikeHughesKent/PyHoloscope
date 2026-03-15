@@ -830,9 +830,11 @@ class Holo:
         """
 
         if self.mode == self.INLINE_MODE:
+            assert self.pixel_size is not None, ("Pixel size must be specified before propagator is created.")
             self.propagator_pixel_size = self.pixel_size * self.downsample
             downsample = self.downsample
         else:
+            assert self.oa_pixel_size is not None, ("Pixel size must be specified before propagator is created.")
             self.propagator_pixel_size = self.oa_pixel_size
             downsample = 1  # The way oa_pixel_size is calculated, we already take account of the downsample factor
 
