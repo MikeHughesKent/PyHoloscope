@@ -81,7 +81,7 @@ def propagator_numba(
                 propCorner.imag[y, x] = math.sin(phase)
 
     elif geometry == "plane":
-        fac = 2 * math.pi * depth / wavelength
+        fac = -2 * math.pi * depth / wavelength
         for x in range(centreX + 1):
             alphaSq = (float(wavelength) * x * delta0x) ** 2
 

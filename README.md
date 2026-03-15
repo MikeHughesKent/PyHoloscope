@@ -22,7 +22,7 @@ Contributions to the package (new features, tests or documentation) as very welc
 Development is co-ordinated by [Mike Hughes](https://research.kent.ac.uk/applied-optics/hughes/)' lab in the 
 [Applied Optics Group](https://research.kent.ac.uk/applied-optics), Physics & Astronomy, University of Kent. 
 
-If you are interested in academic applications we are happy to help, post in the dicussion. If you would like help using PyHoloscope for commercial purposes, consultancy is available, please contact [Mike Hughes](mailto:m.r.hughes@kent.ac.uk) in the first instance.
+If you are interested in academic applications we are happy to help, post in the discussion. If you would like help using PyHoloscope for commercial purposes, consultancy is available, please contact [Mike Hughes](mailto:m.r.hughes@kent.ac.uk) in the first instance.
 
 ## Features
 
@@ -55,14 +55,14 @@ If you are interested in academic applications we are happy to help, post in the
 
 ## Roadmap of Planned Developments (help welcome!)
 
-- [] Phase recovery for inline holography
-- [] Improved optimisation for speed/multiple back-ends
-- [] Support phase-shifting holography
-- [] Support coded aperture/multi-depth phase recovery
-- [] Support forward scattering and inference 
-- [] Support particle tracking 
-- [] Deep learning for focusing
-- [] Targeted support for edge computing (e.g. Raspberry Pi)
+- [ ] Phase recovery for inline holography
+- [ ] Improved optimisation for speed/multiple back-ends
+- [ ] Support phase-shifting holography
+- [ ] Support coded aperture/multi-depth phase recovery
+- [ ] Support forward scattering and inference 
+- [ ] Support particle tracking 
+- [ ] Deep learning for focusing
+- [ ] Targeted support for edge computing (e.g. Raspberry Pi)
 
 ## Requirements
 * Numpy
