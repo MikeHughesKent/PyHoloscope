@@ -14,6 +14,13 @@ PyHoloscope is designed to be:
 
 Full documentation is on [Read the docs](https://pyholoscope.readthedocs.io/en/latest/index.html). 
 
+## Installation
+
+```
+pip install pyholoscope
+```
+
+
 ## Minimal Example
 To numerically refocus at inline hologram:
 ```
