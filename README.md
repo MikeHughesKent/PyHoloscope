@@ -1,5 +1,5 @@
-﻿[![Tests](https://github.com/MikeHughesKent/PyHoloscope/actions/workflows/tests.yml/badge.svg)](https://github.com/MikeHughesKent/PyHoloscope/actions/workflows/tests.yml)
- ![Documentation Status](https://app.readthedocs.org/projects/pyholoscope/badge/)
+[![Tests](https://github.com/MikeHughesKent/PyHoloscope/actions/workflows/tests.yml/badge.svg)](https://github.com/MikeHughesKent/PyHoloscope/actions/workflows/tests.yml)
+![Documentation Status](https://app.readthedocs.org/projects/pyholoscope/badge/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
 ![PyHoloscope Logo](/res/pyholoscope_logo_.png)
