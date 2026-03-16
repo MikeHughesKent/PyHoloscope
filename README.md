@@ -1,12 +1,11 @@
-﻿![Documentation Status](https://app.readthedocs.org/projects/pyholoscope/badge/)
+﻿[![Tests](https://github.com/MikeHughesKent/PyHoloscope/actions/workflows/tests.yml/badge.svg)](https://github.com/MikeHughesKent/PyHoloscope/actions/workflows/tests.yml)
+ ![Documentation Status](https://app.readthedocs.org/projects/pyholoscope/badge/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
 ![PyHoloscope Logo](/res/pyholoscope_logo_.png)
 # PyHoloscope: Fast Holographic Microscopy for Python
 
 PyHoloscope is a Python package for holographic microscopy, providing performant reconstruction of inline and off-axis holograms.
-
-Current release: 1.0.0.
 
 PyHoloscope is designed to be:
 * Fast (for Python) - optimised for CPU using Numpy, Scipy and Numba, with GPU support via CuPy
@@ -15,8 +14,30 @@ PyHoloscope is designed to be:
 
 Full documentation is on [Read the docs](https://pyholoscope.readthedocs.io/en/latest/index.html). 
 
-Also see the examples in the [examples folder](https://github.com/MikeHughesKent/PyHoloscope/tree/main/examples).
+## Installation
 
+```
+pip install pyholoscope
+```
+
+
+## Minimal Example
+To numerically refocus at inline hologram:
+```
+import pyholoscope as pyh
+hologram = pyh.load_image(holoFile)
+holo = pyh.Holo(
+    mode=pyh.INLINE,  # For inline holography
+    wavelength=630e-9,  # Light wavelength, m
+    pixel_size=1e-6,  # Hologram physical pixel size, m
+    depth=0.0130,  # Distance to refocus, m
+)
+recon = holo.process(hologram)
+```
+
+There is a broad range of examples in the [examples folder](https://github.com/MikeHughesKent/PyHoloscope/tree/main/examples).
+
+## Contributions
 Contributions to the package (new features, tests or documentation) are very welcome, please see the roadmap below and post in the discussion if you are working on something, or [get in touch](mailto:m.r.hughes@kent.ac.uk).
 
 Development is co-ordinated by [Mike Hughes](https://research.kent.ac.uk/applied-optics/hughes/)' lab in the 
