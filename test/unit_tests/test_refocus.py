@@ -12,7 +12,6 @@ import context
 import pyholoscope as pyh
 
 
-
 class TestRefocus(unittest.TestCase):
     grid_size1 = 512
     grid_size2 = 1024
@@ -146,7 +145,7 @@ class TestRefocus(unittest.TestCase):
 
         # Check pre-processing is applied
 
-        window = None # pyh.square_cosine_window(self.img, 100, 20)
+        window = None  # pyh.square_cosine_window(self.img, 100, 20)
 
         stack = pyh.refocus_stack(
             self.img,
@@ -176,7 +175,6 @@ class TestRefocus(unittest.TestCase):
         )
 
         assert (single_refocus == stack.stack[-1, :, :]).all()
-              
 
 
 if __name__ == "__main__":

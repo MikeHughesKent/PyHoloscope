@@ -50,8 +50,8 @@ holo = pyh.Holo(
     mode=pyh.INLINE,  # For inline holography
     wavelength=630e-9,  # Light wavelength, m
     pixel_size=1e-6,  # Hologram physical pixel size, m
-    depth=0.013,     # Distance to refocus, m
-) 
+    depth=0.013,  # Distance to refocus, m
+)
 
 
 # We call this here, but this is optional, otherwise

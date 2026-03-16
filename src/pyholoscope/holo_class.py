@@ -20,7 +20,13 @@ from pyholoscope.off_axis import (
     off_axis_find_crop_radius,
     off_axis_demod,
 )
-from pyholoscope.focusing import propagator, refocus, find_focus, refocus_stack, correct_curvature
+from pyholoscope.focusing import (
+    propagator,
+    refocus,
+    find_focus,
+    refocus_stack,
+    correct_curvature,
+)
 from pyholoscope.general import pre_process
 from pyholoscope.phase_proc import relative_phase
 from pyholoscope.prop_lut import PropLUT
@@ -107,13 +113,13 @@ class Holo:
                         if performing curvature correction. (default = None).
             correct_curvature: bool
                         Flag to enable curvature correction (default = False). If True, the hologram will be corrected
-                        for spherical wavefront curvature before refocusing. Requires source_distance to be set.            
+                        for spherical wavefront curvature before refocusing. Requires source_distance to be set.
             geometry: str
                         Geometry of the angular spectum propagator used for refocusing, 'plane' or 'point' (default = 'plane').
                         Only needed if refocusing is required.
             use_prop_lut : boolean
                            If True, use propagator LUT to refocus.
-                           
+
         Auto Focus Parameters:
             find_focus_depth_range: tuple
                         Depth range to use for finding the focus, (min_depth, max_depth) in same units as pixel_size and wavelength.
@@ -229,7 +235,6 @@ class Holo:
         self.use_prop_lut = kwargs.get("use_prop_lut", False)
         self.source_distance = kwargs.get("source_distance", None)
         self.correct_curvature = kwargs.get("correct_curvature", False)
-        
 
         # Widowing
         self.auto_window = kwargs.get("auto_window", False)
@@ -275,7 +280,6 @@ class Holo:
 
         # Image data type
         self.set_precision(kwargs.get("precision", "single"))
-        
 
     def __process_inline(self, img):
         """Process an inline hologram image, img, using the currently selected
@@ -311,31 +315,30 @@ class Holo:
             )
 
         if self.use_prop_lut:
-            
             if self.propagator_lut is not None:
-                
                 propagator = self.propagator_lut.propagator(self.depth)
-                
+
                 if propagator is None:
                     raise "Requested refocus depth is outside of propagator LUT range."
             else:
                 raise "Propagator LUT has not been generated."
-                
-            
+
         else:
             # If the propagator is not the correct one for the current parameters, regenerate it
             if (
                 self.propagator is None
                 or self.propagator.has_attributes(
-                    wavelength=self.wavelength, pixel_size=self.pixel_size, depth=self.depth
+                    wavelength=self.wavelength,
+                    pixel_size=self.pixel_size,
+                    depth=self.depth,
                 )
                 is False
             ):
                 self.update_propagator(img)
-    
+
             if np.shape(self.propagator.propagator) != np.shape(img_preprocessed):
                 self.update_propagator(img_preprocessed)
-                
+
             propagator = self.propagator
 
         # Numerical refocusing
@@ -830,11 +833,15 @@ class Holo:
         """
 
         if self.mode == self.INLINE_MODE:
-            assert self.pixel_size is not None, ("Pixel size must be specified before propagator is created.")
+            assert self.pixel_size is not None, (
+                "Pixel size must be specified before propagator is created."
+            )
             self.propagator_pixel_size = self.pixel_size * self.downsample
             downsample = self.downsample
         else:
-            assert self.oa_pixel_size is not None, ("Pixel size must be specified before propagator is created.")
+            assert self.oa_pixel_size is not None, (
+                "Pixel size must be specified before propagator is created."
+            )
             self.propagator_pixel_size = self.oa_pixel_size
             downsample = 1  # The way oa_pixel_size is calculated, we already take account of the downsample factor
 
@@ -930,10 +937,6 @@ class Holo:
             precision=self.precision,
             **args,
         )
-
-
-    
-
 
     def auto_focus_custom(self, img, **kwargs):
         """Finds the best focus, allowing all relevant paramters to be specified as keyword arguments.

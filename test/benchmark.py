@@ -41,7 +41,7 @@ print("Propagator Generation Using Numba:")
 print("----------------------------------")
 for grid_size in grid_sizes:
     pyh.propagator_numba((grid_size, grid_size), wavelength, pixel_size, depth)
-    testcode = "pyh.propagator((grid_size, grid_size), wavelength, pixel_size, depth)"    
+    testcode = "pyh.propagator((grid_size, grid_size), wavelength, pixel_size, depth)"
     t = timeit.timeit(stmt=testcode, number=10, globals=globals())
     print(f"Size {grid_size} x {grid_size} : {round(t * 100, 2)}")
 

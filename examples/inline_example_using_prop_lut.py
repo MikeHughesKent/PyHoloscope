@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Example of how to use propagator Look up Table (LUT) duing 
+Example of how to use propagator Look up Table (LUT) duing
 inline holography with PyHoloscope.
 
 This example loads an inline hologram and a background image (i.e. with the
@@ -25,6 +25,7 @@ Finally we use the 'amplitude' function to extract the amplitude of the
 refocused image for display.
 
 """
+
 import time
 
 from matplotlib import pyplot as plt
@@ -45,22 +46,24 @@ background = pyh.load_image(backFile)
 
 # Create an instance of the Holo class
 holo = pyh.Holo(
-    mode=pyh.INLINE,        # For inline holography
-    wavelength=630e-9,      # Light wavelength, m
-    pixel_size=1e-6,        # Hologram physical pixel size, m
+    mode=pyh.INLINE,  # For inline holography
+    wavelength=630e-9,  # Light wavelength, m
+    pixel_size=1e-6,  # Hologram physical pixel size, m
     background=background,  # To subtract the background
-    depth=0.0130,           # Distance to refocus, m
-    use_prop_lut = True,
-) 
+    depth=0.0130,  # Distance to refocus, m
+    use_prop_lut=True,
+)
 
 
 # Create a propagator LUT
-depth_range = (0,0.2)
+depth_range = (0, 0.2)
 num_depths = 200
 holo.make_propagator_LUT(hologram, depth_range, num_depths)
 
 print(f"Target depth: {holo.depth}")
-print(f"Closest depth in LUT: {round(holo.propagator_lut.depths[holo.propagator_lut.closest_index(holo.depth)],4)}")
+print(
+    f"Closest depth in LUT: {round(holo.propagator_lut.depths[holo.propagator_lut.closest_index(holo.depth)], 4)}"
+)
 
 # Refocus and extract amplitude
 t1 = time.perf_counter()
@@ -83,4 +86,3 @@ plt.imshow(amp, cmap="gray")
 plt.figure(dpi=150)
 plt.title("Recon using LUT")
 plt.imshow(amp_lut, cmap="gray")
-

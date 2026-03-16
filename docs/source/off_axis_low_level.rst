@@ -1,4 +1,4 @@
-
+﻿
 -----------------------------------------------
 Off-Axis Holography Using Lower-Level Functions
 -----------------------------------------------
@@ -26,7 +26,7 @@ We can then demodulate using::
     
 To remove the background, recover the background field using::
 
-    background_field = pyh.off_axis_demod(background, crop_centre, crop_radius)  
+    background_field = pyh.off_axis_demod(background_img, crop_centre, crop_radius)  
     
 Remove the background phase (for example due to aberrations in the imaging system) using::
 
@@ -52,7 +52,7 @@ Pixel size, wavelength and depth must be in the same units.
  
 We can then refocus using::
 
-    refocused_img = pyh.refocus(corrected_field, propagator)
+    refocused_field = pyh.refocus(corrected_field, prop)
 
 The numpy array ``refocused_field`` is a 2D complex numpy array, to obtain the amplitude and phase as 2D numpy arrays, use::
 

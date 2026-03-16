@@ -6,6 +6,8 @@ Tests general internal functions of PyHoloscope.
 
 import unittest
 
+import context
+
 import numpy as np
 import scipy as sp
 

@@ -1,4 +1,4 @@
-----------------------------------
+﻿----------------------------------
 Automatic Focusing
 ----------------------------------
 
@@ -49,7 +49,7 @@ and pass this as an optional argument::
 
     focusDepth = pyh.find_focus(hologram, wavelength, pixelSize, depthRange, method, roi = focusRoi )
     
-The entire hologram will still be refocused, but only the focus metric will only be applied to the ROI, so there is no speed-up from doing this.
+The entire hologram will still be refocused, but only the focus metric will be applied to the ROI, so there is no speed-up from doing this.
 
 A speed-up can be obtained by refocusing only the ROI plus a small margin around it. This is activated by specifying the margin in pixels::
 
@@ -96,10 +96,10 @@ the range will increase the precision of the autofocusing.::
     
 The lut is then passed to the ``find_focus`` function::
 
-    focusDepth = pyh.find_focus(hologram, wavelength, pixelSize, depthRange, method, propagatorLUT = lut)      
+    focusDepth = pyh.find_focus(hologram, wavelength, pixelSize, depthRange, method, propagator_lut = lut)      
 
 If also attempting to speed-up by refocusing only a ROI (i.e. the margin is specified) then it is necessary to create a propagator LUT of the correct size for 
-this ROI + margin. This must currently be done manually by adjusing the ``gridSize`` input to be the ROI.
+this ROI + margin. This must currently be done manually by adjusting the ``img_size`` input to be the ROI.
     
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Performing a prior coarse search
@@ -110,5 +110,6 @@ an initial exhaustive coarse search can be made to identify the most likely dept
 this region. We specify the number of regularly spaced points within the depth range to check the focus for, a fine search using golden section is then performed
 in an interval around the point with the best focus score, for example::
 
-    focusDepth = pyh.find_focus(hologram, wavelength, pixelSize, depthRange, method, coarseSearchInterval = 10)      
+    focusDepth = pyh.find_focus(hologram, wavelength, pixelSize, depthRange, method, coarse_search_interval = 10)      
+
 

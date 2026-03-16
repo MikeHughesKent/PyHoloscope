@@ -121,9 +121,9 @@ def obtain_tilt(img):
     mx, my = np.indices(np.shape(img))
 
     tilt = mx * tilt_x + my * tilt_y
-    
+
     residual = np.median(img - tilt)
-    
+
     tilt = tilt + residual
 
     return tilt

@@ -40,12 +40,12 @@ background = pyh.load_image(backFile)
 
 # Create an instance of the Holo class
 holo = pyh.Holo(
-    mode=pyh.INLINE,        # For inline holography
-    wavelength=630e-9,      # Light wavelength, m
-    pixel_size=1e-6,        # Hologram physical pixel size, m
+    mode=pyh.INLINE,  # For inline holography
+    wavelength=630e-9,  # Light wavelength, m
+    pixel_size=1e-6,  # Hologram physical pixel size, m
     background=background,  # To subtract the background
-    depth=0.0130,           # Distance to refocus, m
-) 
+    depth=0.0130,  # Distance to refocus, m
+)
 
 # Refocus
 recon = holo.process(hologram)

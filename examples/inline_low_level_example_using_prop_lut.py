@@ -11,10 +11,11 @@ The images are loaded using the PyHoloscope 'load_image' function.
 Alternatively you can load these in using any method that results in them
 being stored in a 2D numpy array.
 
-A propagator LUT is generated and the results of refocusing using a 
+A propagator LUT is generated and the results of refocusing using a
 propagator from the LUT is compared with a standard reconstruction.
 
 """
+
 import time
 
 from matplotlib import pyplot as plt
@@ -38,7 +39,6 @@ hologram = pyh.load_image(holoFile)
 background = pyh.load_image(backFile)
 
 
-
 # Create the angular spectrum propagator to refocus to required depth
 t1 = time.perf_counter()
 prop = pyh.propagator(
@@ -49,7 +49,10 @@ print(f"Time to generate a propagator: {round(time.perf_counter() - t1, 5)} ms")
 
 # Refocus with background subtraction and normalisation
 recon = pyh.refocus(
-    hologram, prop, background=background, normalise=background,
+    hologram,
+    prop,
+    background=background,
+    normalise=background,
 )
 amp = pyh.amp(recon)
 
@@ -59,12 +62,13 @@ amp = pyh.amp(recon)
 depth_range = (0, 0.02)
 num_depths = 200
 
-prop_lut = pyh.PropLUT(hologram,
-     wavelength,
-     pixel_size,
-     depth_range,
-     num_depths,
-     )
+prop_lut = pyh.PropLUT(
+    hologram,
+    wavelength,
+    pixel_size,
+    depth_range,
+    num_depths,
+)
 
 # Pull out propagator from LUT
 t1 = time.perf_counter()
@@ -74,7 +78,10 @@ print(f"Time to extract propagator from LUT: {round(time.perf_counter() - t1, 5)
 
 # Refocus with background subtraction and normalisation
 recon_lut = pyh.refocus(
-    hologram, prop, background=background, normalise=background,
+    hologram,
+    prop,
+    background=background,
+    normalise=background,
 )
 amp_lut = pyh.amp(recon_lut)
 

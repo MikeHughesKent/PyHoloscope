@@ -1,4 +1,4 @@
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+﻿^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Inline Holography Using Lower-Level Functions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -22,7 +22,7 @@ hologram size, wavelength, pixel size and the depth we wish to refocus to, e.g.:
 
 Assuming we have an inline hologram as a 2D numpy array ``hologram`` we can then refocus using :func:`pyholoscope.refocus`::
 
-    refocused_img = pyh.refocus(hologram, propagator, background = background_img)
+    refocused_img = pyh.refocus(hologram, prop, background = background_img)
 
 Here we have also provided an optional background hologram, ``background_img``, again a 2D numpy array. 
 The returned image is a 2D complex numpy array, to obtain the amplitude image as 2D numpy array use::
@@ -30,17 +30,17 @@ The returned image is a 2D complex numpy array, to obtain the amplitude image as
     refocused_amp = pyh.amplitude(refocused_img)
     
 Flat-fielding (normalisation) and windowing can also be applied by passing 2D numpy arrays using ``normalise=`` and ``window=`` respectively.
-Windows can be generated manually or by using the :func:`pyholoscope.circ_window`, :func:`pyholoscope.circ_cosine_window`` or :func:`pyholoscope.square_cosine_window` functions. For example, to 
+Windows can be generated manually or by using the :func:`pyholoscope.circ_window`, :func:`pyholoscope.circ_cosine_window` or :func:`pyholoscope.square_cosine_window` functions. For example, to 
 create a square cosine window which drops to 0 at the edges of the image, with a skin thickness of 10 pixels we could do the following::
 
     imgSize = np.shape(hologram)
-    radius = np.shape(hologram) / 2
+    radius = (np.shape(hologram)[1] / 2, np.shape(hologram)[0] / 2)
     skin_thickness = 10
     window = pyh.square_cosine_window(imgSize, radius, skin_thickness)
  
 and then call::
 
-    refocused_img = pyh.refocus(hologram, propagator, background = background_img, window = window, normalise = background_img)
+    refocused_img = pyh.refocus(hologram, prop, background = background_img, window = window, normalise = background_img)
 
 
     

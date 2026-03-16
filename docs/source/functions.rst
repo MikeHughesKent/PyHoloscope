@@ -1,4 +1,4 @@
-----------------------------------
+﻿----------------------------------
 Function Reference
 ----------------------------------
 
@@ -6,26 +6,26 @@ Function Reference
 Classes
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-:func:`pyholoscope.Holo`
+:class:`pyholoscope.Holo`
 
 Provides object-oriented access to core functionality of PyHoloscope. See `Holo class <holo.html>`_ for details.
 
-:func:`pyholoscope.Propagator`
+:class:`pyholoscope.Propagator`
 
 Stores a propagator used for numerical refocusing. See `Propagator class <propagator.html>`_ for details.
 
-:func:`pyholoscope.FocusStack`
+:class:`pyholoscope.FocusStack`
 
-Stores a refocus stack, allowing convenient acccess to each image and ability to write stack to a file. See `FocusStack class <focus_stack.html>`_ for details.
+Stores a refocus stack, allowing convenient access to each image and ability to write stack to a file. See `FocusStack class <focus_stack.html>`_ for details.
 
-:func:`pyholoscope.PropLUT`
+:class:`pyholoscope.PropLUT`
 
-Stores a propagator look up table for faster refocusing across multple depths. See `PropLUT class <propLUT.html>`_ for details.
+Stores a propagator look up table for faster refocusing across multiple depths. See `PropLUT class <propLUT.html>`_ for details.
 
-:func:`pyholoscope.Roi`
+:class:`pyholoscope.Roi`
 
-Region of interest, a rectangle with top left co-ordinates (``x``, ``y``) with width ``width`` and height ``height``. ``crop`` method is used to extract the ROI
-from an image and ``constrain`` method is used to limit co-ordinates to adjust the ROI to fit within an image. See `Roi class <roi.html>`_ for details.
+Region of interest, a rectangle with top left coordinates (``x``, ``y``) with width ``width`` and height ``height``. ``crop`` method is used to extract the ROI
+from an image and ``constrain`` method is used to limit coordinates to adjust the ROI to fit within an image. See `Roi class <roi.html>`_ for details.
 
 
 
@@ -155,6 +155,7 @@ Simulation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. autofunction:: pyholoscope.sim.off_axis
+
 
 
 

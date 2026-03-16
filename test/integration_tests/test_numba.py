@@ -71,5 +71,8 @@ print("Table Lookup: ", round((time.perf_counter() - t1) * 1000, 2), "ms")
 print("------------------")
 print("Numerical Errors:")
 print("------------------")
-print("Numba Method Error: ", np.mean(np.angle(prop4.propagator) - np.angle(prop2.propagator)))
+print(
+    "Numba Method Error: ",
+    np.mean(np.angle(prop4.propagator) - np.angle(prop2.propagator)),
+)
 print("Lookup Error: ", np.mean(np.angle(prop5.propagator - prop2.propagator)))

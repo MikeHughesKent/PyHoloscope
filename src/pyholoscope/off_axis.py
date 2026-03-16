@@ -188,7 +188,6 @@ def off_axis_find_mod(hologram, mask_fraction=0.1, real_fft=False):
         ] = 0
         camera_fft[:, : cx // 2] = 0
 
-
     peak_location = np.unravel_index(camera_fft.argmax(), camera_fft.shape)
 
     return peak_location[0], peak_location[1]
@@ -255,7 +254,9 @@ def off_axis_find_crop_radius(hologram, mask_fraction=0.1, real_fft=False):
     return crop_radius_y, crop_radius_x
 
 
-def off_axis_predict_mod(wavelength, pixel_size, num_pixels, tilt_angle, rotation=0, real_fft=False):
+def off_axis_predict_mod(
+    wavelength, pixel_size, num_pixels, tilt_angle, rotation=0, real_fft=False
+):
     """Predicts the location of the modulation peak in the FFT.
 
     Arguments:
@@ -308,8 +309,6 @@ def off_axis_predict_mod(wavelength, pixel_size, num_pixels, tilt_angle, rotatio
             ref_freq / max_spatial_freq * np.abs(np.sin(rotation)) * im_size_y / 2
         )
 
-
-
     if mod_freq_px_x < 0:
         mod_freq_px_x = mod_freq_px_x + im_size_x
     if mod_freq_px_y < 0:
@@ -317,7 +316,7 @@ def off_axis_predict_mod(wavelength, pixel_size, num_pixels, tilt_angle, rotatio
 
     # We want the position in the fftshifted FFT, so we need to adjust the coordinates
     mod_freq_px_x = (mod_freq_px_x + im_size_x // 2) % im_size_x
-    mod_freq_px_y = (mod_freq_px_y + im_size_y // 2) % im_size_y      
+    mod_freq_px_y = (mod_freq_px_y + im_size_y // 2) % im_size_y
 
     return mod_freq_px_y, mod_freq_px_x
 
@@ -381,7 +380,9 @@ def off_axis_predict_tilt_angle(hologram, wavelength, pixel_size, mask_fraction=
     h, w = np.shape(hologram)[:2]
 
     # Find the location of the peak
-    peak_location = off_axis_find_mod(hologram, mask_fraction=mask_fraction, real_fft=True)
+    peak_location = off_axis_find_mod(
+        hologram, mask_fraction=mask_fraction, real_fft=True
+    )
 
     # Pixel sizes in FFT (the spatial frequency)
     v_pixel_spatial_freq = 1 / (pixel_size * np.shape(hologram)[0])

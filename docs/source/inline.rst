@@ -1,4 +1,4 @@
-----------------------------------
+﻿----------------------------------
 Inline Holography Using Holo Class
 ----------------------------------
 Inline Holography can be performed using the :doc:`holo` of PyHoloscope by setting ``mode = pyholoscope.INLINE``. This allows
@@ -73,7 +73,7 @@ The angular spectrum propagator and the window are both created the first time
 ``process`` is called for a particular set of parameters. If we prefer to pre-generate these, we can call::
 
     holo.update_propagator(img)
-    holo.update_auto_window()
+    holo.update_auto_window(img)
 
 where ``img`` is a 2D numpy array of the size of the hologram to be processed.
 
@@ -85,7 +85,7 @@ If the Numba package is installed, this will be employed for faster generation
 of propagators by default when using the ``Holo`` class. Use of Numba can be 
 explicitly enabled/disabled using:: 
         
-    holo.set_numba(True/False)
+    holo.set_use_numba(True/False)
     
    
 
@@ -95,8 +95,9 @@ GPU acceleration
 GPU acceleration is used by default when using the ``Holo`` class, it can be 
 explicitly enabled/disabled using::
 
-    holo.set_cuda(True/False)
+    holo.set_use_cuda(True/False)
 
 This requires the CuPy package and a compatible GPU, otherwise ``Holo`` will 
 revert to CPU processing.  
+
 

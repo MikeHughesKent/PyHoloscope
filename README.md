@@ -1,15 +1,15 @@
-![Documentation Status](https://app.readthedocs.org/projects/pyholoscope/badge/)
+﻿![Documentation Status](https://app.readthedocs.org/projects/pyholoscope/badge/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
 ![PyHoloscope Logo](/res/pyholoscope_logo_.png)
-# PyHololoscope: Fast Holographic Microscopy for Python
+# PyHoloscope: Fast Holographic Microscopy for Python
 
-PyHoloscope is a Python package for holographic microscopy, providing perfomant reconstruction of inline and off-axis holograms.
+PyHoloscope is a Python package for holographic microscopy, providing performant reconstruction of inline and off-axis holograms.
 
-It is currently pre-release, aiming for release 1.0.0 before end of 2025.
+Current release: 1.0.0.
 
 PyHoloscope is designed to be:
-* Fast (for Python) - optmised for CPU using Numpy, Scipy and Numba, with GPU support via CuPy
+* Fast (for Python) - optimised for CPU using Numpy, Scipy and Numba, with GPU support via CuPy
 * Easy to Use - a simple object-oriented API gives high performance without low-level tweaks
 * Suitable for Live Imaging - can be used as the back-end of holographic microscopy GUIs as well as for offline processing
 
@@ -17,7 +17,7 @@ Full documentation is on [Read the docs](https://pyholoscope.readthedocs.io/en/l
 
 Also see the examples in the [examples folder](https://github.com/MikeHughesKent/PyHoloscope/tree/main/examples).
 
-Contributions to the package (new features, tests or documentation) as very welcome, please see the roadmap below and post in the discussion if you are working on something, or [get in touch](mailto:m.r.hughes@kent.ac.uk).
+Contributions to the package (new features, tests or documentation) are very welcome, please see the roadmap below and post in the discussion if you are working on something, or [get in touch](mailto:m.r.hughes@kent.ac.uk).
 
 Development is co-ordinated by [Mike Hughes](https://research.kent.ac.uk/applied-optics/hughes/)' lab in the 
 [Applied Optics Group](https://research.kent.ac.uk/applied-optics), Physics & Astronomy, University of Kent. 
@@ -34,11 +34,11 @@ If you are interested in academic applications we are happy to help, post in the
 * Supports non-square holograms
 
 ### Off Axis Holography
-* Quantitatave phase and amplitude recovery from off-axis hologram
+* Quantitative phase and amplitude recovery from off-axis hologram
 * Auto detect off-axis modulation frequency
 * Predict tilt angle from modulation frequency
 
-### Numerical Refocusing (Inline and Off-axis Holgoraphy)
+### Numerical Refocusing (Inline and Off-axis Holography)
 * Refocus holograms or complex fields using the angular spectrum method 
 * Choice of cosine windows to reduce edge effects 
 * Generate stack of images at different refocus depths
@@ -46,7 +46,7 @@ If you are interested in academic applications we are happy to help, post in the
 * Auto focus whole image or ROI by optimising focus metric, through fast bounded search and (optionally) initial coarse search to narrow search range.
 * Generate LUT of propagators for faster auto-focus or repeated generation of focus stacks.
 
-### Phase Visualation
+### Phase Visualisation
 * Remove background phase 
 * Remove phase tilt
 * Show phase relative to region of interest 
@@ -73,3 +73,4 @@ If you are interested in academic applications we are happy to help, post in the
 * Matplotlib
 * Numba (optional, for JIT acceleration)
 * CuPy (optional, for GPU)
+

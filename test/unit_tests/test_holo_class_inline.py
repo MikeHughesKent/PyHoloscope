@@ -29,7 +29,7 @@ class TestHoloClassInline(unittest.TestCase):
             self.wavelength,
             self.pixel_size,
             self.depth,
-            geometry = 'point',
+            geometry="point",
         )
         img_refocus = pyh.refocus(self.img, prop)
 
@@ -38,7 +38,7 @@ class TestHoloClassInline(unittest.TestCase):
             wavelength=self.wavelength,
             pixel_size=self.pixel_size,
             depth=self.depth,
-            geometry = 'point',
+            geometry="point",
         )
         img_refocus_oop = holo.process(self.img)
 
@@ -152,7 +152,7 @@ class TestHoloClassInline(unittest.TestCase):
             geometry="point",
             precision="single",
         )
-        window = pyh.square_cosine_window(self.img, radius = 100, skin_thickness = 10)
+        window = pyh.square_cosine_window(self.img, radius=100, skin_thickness=10)
 
         img_refocus = pyh.refocus(self.img, prop, window=window)
 

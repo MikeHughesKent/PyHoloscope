@@ -232,7 +232,7 @@ class TestOffAxis(unittest.TestCase):
         recon = pyh.off_axis_demod(
             test_hologram, crop_centre, crop_radius, return_full=True
         )
-        
+
         # compare mean value in the square to mean value somewhere elese (that should be zero)
         assert np.mean(pyh.amplitude(recon[y : y + h, x : x + w])) > 100 * np.mean(
             pyh.amplitude(recon[4 * y : 4 * y + h, x : x + w])
@@ -245,7 +245,7 @@ class TestOffAxis(unittest.TestCase):
         recon = pyh.off_axis_demod(
             test_hologram, crop_centre, crop_radius, mask=window, return_full=True
         )
-        
+
         # compare mean value in the square to mean value somewhere elese (that should be zero)
         assert np.mean(pyh.amplitude(recon[y : y + h, x : x + w])) > 100 * np.mean(
             pyh.amplitude(recon[4 * y : 4 * y + h, x : x + w])

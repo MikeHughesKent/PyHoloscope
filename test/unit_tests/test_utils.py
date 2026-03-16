@@ -6,6 +6,8 @@ Tests utilities functions of PyHoloscope.
 
 import unittest
 
+import context  # Paths
+
 import numpy as np
 
 

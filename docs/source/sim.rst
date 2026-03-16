@@ -1,14 +1,14 @@
-----------------------------------
+﻿----------------------------------
 Simulation
 ----------------------------------
-PyHoloscope includes a function, :func:`pyholoscope.sim_off_axis`, for simulating off-axis holograms. The simulation
+PyHoloscope includes a function, :func:`pyholoscope.sim.off_axis`, for simulating off-axis holograms. The simulation
 module must be imported explicitly::
 
     import pyholoscope.sim 
     
 To simulate the hologram, we provide a complex 2D numpy array to represent the
 complex field from the object, as well as the wavelength and camera pixel size.
-We also specifiy the angle of the reference beam with respect to the object
+We also specify the angle of the reference beam with respect to the object
 beam. Optionally, we can also specify the orientation of this angle with 
 respect to the x-axis in radians, by default this is pi/4 (45 degrees) which is
 commonly used in off-axis holography to maximise the field of view by placing
@@ -28,16 +28,16 @@ pixels and 500 nm wavelength::
 
 A limitation of the simulation is that it does not model the effect of integrating the interference patterns over the area
 of each pixel, so the simulated hologram will not have the same modulation depth as a real hologram. This is particularly noticeable
-for large tilt angles which results in aliased modulation which would be supressed in a real hologram.
+for large tilt angles which results in aliased modulation which would be suppressed in a real hologram.
 
 We can check the off-axis modulation is as expected using::
 
-    predicted_tilt = pyh.off_axis_predict_tilt(hologram, 
+    predicted_tilt = pyh.off_axis_predict_tilt_angle(hologram, 
                                               wavelength = 500e-9,
                                               pixel_size = 3.0e-6)
 
 which returns (approximately) the tilt angle specified when creating the
-simulated hologram. We can also then go on to sreconstruct the object field using the
+simulated hologram. We can also then go on to reconstruct the object field using the
 off axis functionality of PyHoloscope.
 
 A further optional argument allows the ``OPD`` to be specified, this is an

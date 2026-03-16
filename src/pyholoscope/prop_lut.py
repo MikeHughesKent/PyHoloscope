@@ -14,7 +14,6 @@ from pyholoscope.utils import dimensions
 from pyholoscope.propagator import Propagator
 
 
-
 class PropLUT:
     """Stores a propagator look up table (LUT).
 
@@ -29,7 +28,7 @@ class PropLUT:
         pixel_size,
         depth_range,
         num_depths,
-        geometry = 'plane',
+        geometry="plane",
         use_numba=True,
         precision="single",
     ):
@@ -71,7 +70,12 @@ class PropLUT:
         self.prop_table = np.zeros((num_depths, h, w), dtype=dataType)
         for idx, depth in enumerate(self.depths):
             self.prop_table[idx, :, :] = propagator(
-                (h, w), wavelength, pixel_size, depth, geometry = geometry, use_numba=use_numba
+                (h, w),
+                wavelength,
+                pixel_size,
+                depth,
+                geometry=geometry,
+                use_numba=use_numba,
             ).propagator
 
     def propagator(self, depth):
@@ -86,11 +90,17 @@ class PropLUT:
         # Find nearest propagator
         idx = self.closest_index(depth)
         if idx is not None:
-            prop = Propagator(self.prop_table[idx, :, :], wavelength=self.wavelength, pixel_size=self.pixel_size, depth=self.depths[idx], geometry=self.geometry)
+            prop = Propagator(
+                self.prop_table[idx, :, :],
+                wavelength=self.wavelength,
+                pixel_size=self.pixel_size,
+                depth=self.depths[idx],
+                geometry=self.geometry,
+            )
             return prop
         else:
             return None
-    
+
     """Returns the index of the propagator that is closest to requested
     depth. If depth is outside the range of the propagators, function returns None.
 
@@ -98,25 +108,22 @@ class PropLUT:
         depth     : float
                     refocus depth for requested propagator
     """
+
     def closest_index(self, depth):
-        
         if depth < self.depths[0] or depth > self.depths[-1]:
             return None
-            
+
         elif self.num_depths == 1:  # Otherwise the algorithm to get the index will fail
             idx = 0
-        
+
         else:
             idx = round(
                 (depth - self.depths[0])
                 / (self.depths[-1] - self.depths[0])
                 * (self.num_depths - 1)
-            ) 
-            
-        return idx
+            )
 
-        
-        
+        return idx
 
     def __str__(self):
         return (

@@ -1,16 +1,16 @@
----------------
+﻿---------------
 Contributions
 ---------------
 
 Contributions to PyHoloscope are very welcome via pull requests.
 
-You may wish to start a thread in the discussoin forum to discuss your ideas before
+You may wish to start a thread in the discussion forum to discuss your ideas before
 submitting a pull request, or to ask for help with a particular issue.
 
 New functionality should first be introduced as functions. Once tested and working, the functionality can then be added as an option to
 the Holo class. New functionality should generally not change the default behaviour of the Holo class, or any existing functions, in order
 to maintain backwards compatibility, but should be made available via additional keyword arguments or new functions. The exception to this is a bug fix correcting
-an output that is unambigously incorrect. Changes to default behaviour should also not result in slower processing speed; PyHoloscope is the basis
+an output that is unambiguously incorrect. Changes to default behaviour should also not result in slower processing speed; PyHoloscope is the basis
 of several GUIs for real-time imaging, and updates must not break this functionality.
 
 All additions must be fully documented, both in the code and in the Sphinx documentation. Additional documentation of existing functions is also welcomed.
@@ -21,7 +21,7 @@ Testing
 ^^^^^^^^^^^^
 
 There are two sets of tests in the test folder, integration tests and unit tests. Both sets of tests can be run
-using the run_all_tests.py script each folder. Tests in the unit_tests folder use the unittest pacakge and rely on asserts, 
+using the run_all_tests.py script in each folder. Tests in the unit_tests folder use the unittest package and rely on asserts, 
 while tests in the integration_tests folder are to test correctness of output and rely on manual
 inspection of the output images.
 

@@ -1,9 +1,9 @@
 """
 PyHoloscope - Fast Holographic Microscopy for Python
 
-The Propagator class is a container to hold a propagator for wavefront 
-propagation in holography along with metadata. It does not generate the 
-propagator. 
+The Propagator class is a container to hold a propagator for wavefront
+propagation in holography along with metadata. It does not generate the
+propagator.
 """
 
 import numpy as np

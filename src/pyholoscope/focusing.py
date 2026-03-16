@@ -118,7 +118,7 @@ def propagator(
     # Bins size of FFT (i.e. pixel size of FFT in inverse distance)
     delta0x = 1 / width
     delta0y = 1 / height
-   
+
     # Generate one quadrant of the propagator
     if geometry == "point":
         u = delta0x * xM
@@ -157,9 +157,6 @@ def propagator(
         geometry=geometry,
     )
     return prop_obj
-
-
-
 
 
 def refocus(img, propagator, **kwargs):
@@ -265,11 +262,11 @@ def correct_curvature(img, wavelength, pixel_size, source_distance):
     y = pixel_size * (yM - centre_y)
 
     # Distance from point source to each pixel
-    #r = np.sqrt(x**2 + y**2 + source_distance ** 2)
+    # r = np.sqrt(x**2 + y**2 + source_distance ** 2)
     phase = (x**2 + y**2) / (2 * source_distance)
 
     correction = np.exp(-1j * 2 * math.pi * phase / wavelength)
-    
+
     return img * correction
 
 
@@ -386,14 +383,14 @@ def refocus_and_score(
 
     # Whether we are using a look up table of propagators or calculating it each time
     if prop_lut is None:
-            prop = propagator(
-                img_fft,
-                wavelength,
-                pixel_size,
-                depth,
-                precision=precision,
-                use_numba = use_numba,
-            )
+        prop = propagator(
+            img_fft,
+            wavelength,
+            pixel_size,
+            depth,
+            precision=precision,
+            use_numba=use_numba,
+        )
 
     else:
         prop = prop_lut.propagator(depth)
@@ -614,7 +611,7 @@ def focus_score_curve(
     window = kwargs.get("window", None)
     score_roi = kwargs.get("roi", None)
     margin = kwargs.get("margin", None)
-    precision = kwargs.get("precision", 'single')
+    precision = kwargs.get("precision", "single")
 
     c_hologram = pyholoscope.pre_process(
         img, background=background, normalise=normalise, window=window
