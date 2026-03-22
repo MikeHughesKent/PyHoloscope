@@ -51,12 +51,12 @@ Off-axis Holography
 
 .. autofunction:: pyholoscope.off_axis_predict_tilt_angle
 
+.. autofunction:: pyholoscope.off_axis_demod_pixel_size
+
 
 ^^^^^^^^^^^^^^^^^^^^
 Numerical Refocusing
 ^^^^^^^^^^^^^^^^^^^^
-
-.. autofunction:: pyholoscope.coarse_focus_search
 
 .. autofunction:: pyholoscope.focus_score
 
@@ -64,9 +64,13 @@ Numerical Refocusing
 
 .. autofunction:: pyholoscope.focus_score_curve
 
+.. autofunction:: pyholoscope.get_focus_score_methods
+
 .. autofunction:: pyholoscope.propagator
 
 .. autofunction:: pyholoscope.propagator_numba
+
+.. autofunction:: pyholoscope.propagator_size_for_roi
 
 .. autofunction:: pyholoscope.refocus
 
@@ -74,6 +78,28 @@ Numerical Refocusing
 
 .. autofunction:: pyholoscope.refocus_stack
 
+
+^^^^^^^^^^^^^^^^^^^^
+Focus Scoring
+^^^^^^^^^^^^^^^^^^^^
+
+.. autofunction:: pyholoscope.brenner
+
+.. autofunction:: pyholoscope.dark_focus
+
+.. autofunction:: pyholoscope.get_focus_score_methods
+
+.. autofunction:: pyholoscope.norm_var
+
+.. autofunction:: pyholoscope.peak
+
+.. autofunction:: pyholoscope.sobel
+
+.. autofunction:: pyholoscope.sobel_variance
+
+.. autofunction:: pyholoscope.sum_focus
+
+.. autofunction:: pyholoscope.variance
 
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 Phase Functions
@@ -155,7 +181,6 @@ Simulation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. autofunction:: pyholoscope.sim.off_axis
-
 
 
 

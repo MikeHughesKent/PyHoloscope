@@ -25,9 +25,9 @@ except:
 
 
 from PIL import Image
-import cv2 as cv
 import scipy
 
+from pyholoscope.focus_scores import *
 from pyholoscope.focus_stack import FocusStack
 from pyholoscope.focusing_numba import propagator_numba
 from pyholoscope.roi import Roi
@@ -270,66 +270,34 @@ def correct_curvature(img, wavelength, pixel_size, source_distance):
     return img * correction
 
 
-def focus_score(img, method):
-    """Returns score of how 'in focus' an amplitude image is.
-    Score is returned as a float, the lower the better the focus.
+def propagator_size_for_roi(img_shape, roi=None, margin=None):
+    """Returns required propagator size for ROI + margin refocusing.
 
     Arguments:
-        img          : numpy.ndarray
-                       image to score, 2D real array
-        method       : str
-                       scoring method, options are: 'Brenner', 'Sobel',
-                       'SobelVariance', 'Var', 'DarkFcous' or 'Peak'
+        img_shape : tuple or ndarray
+                    shape of full image, or image itself
+        roi       : Roi or None
+                    region of interest used for scoring
+        margin    : int or None
+                    margin around the ROI used for refocusing
+
     Returns:
-        float        : focus score
+        tuple (int, int) : (height, width) of propagator needed
     """
 
-    focus_score = 0
+    h, w = dimensions(img_shape)
 
-    if method == "Brenner":
-        (h, w) = np.shape(img)
-        BrennX = np.zeros((h, w))
-        BrennY = np.zeros((h, w))
-        BrennX[0:-2, :] = img[2:, :] - img[0:-2,]
-        BrennY[:, 0:-2] = img[:, 2:] - img[:, 0:-2]
-        scoreMap = np.maximum(BrennY**2, BrennX**2)
-        focus_score = -np.mean(scoreMap)
+    if margin is None or roi is None:
+        return (h, w)
 
-    elif method == "Peak":
-        focus_score = -np.max(img)
-
-    elif method == "Sobel":
-        filtX = np.array([[1, 0, -1], [2, 0, -2], [1, 0, -1]])
-        filtY = np.array([[1, 2, 1], [0, 0, 0], [-1, -2, -1]])
-        xSobel = scipy.signal.convolve2d(img, filtX)
-        ySobel = scipy.signal.convolve2d(img, filtY)
-        sobel = xSobel**2 + ySobel**2
-        focus_score = -np.mean(sobel)
-
-    elif method == "SobelVariance":
-        filtX = np.array([[1, 0, -1], [2, 0, -2], [1, 0, -1]])
-        filtY = np.array([[1, 2, 1], [0, 0, 0], [-1, -2, -1]])
-        xSobel = scipy.signal.convolve2d(img, filtX)
-        ySobel = scipy.signal.convolve2d(img, filtY)
-        sobel = xSobel**2 + ySobel**2
-        focus_score = -(np.std(sobel) ** 2)
-
-    elif method == "Var":
-        focus_score = -np.std(img)
-
-    # https://doi.org/10.1016/j.optlaseng.2020.106195
-    elif method == "DarkFocus":
-        kernelX = np.array([[-1, 0, 1]])
-        kernelY = kernelX.transpose()
-        gradX = cv.filter2D(img, -1, kernelX)
-        gradY = cv.filter2D(img, -1, kernelY)
-        mean, stDev = cv.meanStdDev(gradX**2 + gradY**2)
-        focus_score = -(stDev[0, 0] ** 2)
-
-    else:
-        raise Exception("Invalid scoring method.")
-
-    return focus_score
+    refocus_roi = Roi(
+        roi.x - margin,
+        roi.y - margin,
+        roi.width + margin * 2,
+        roi.height + margin * 2,
+    )
+    refocus_roi.constrain(0, 0, w, h)
+    return (refocus_roi.height, refocus_roi.width)
 
 
 def refocus_and_score(
@@ -356,11 +324,11 @@ def refocus_and_score(
                     real pixel size of hologram
         wavelength: float
                     wavelength of light source
-        method    : list of str or str,
+        method    : list of (str or callable) or str/callable,
                     scoring method (see focus_score for list). If a list is
                     provided, a list of scores will be returned, one for each
                     method, otherwise if a single method is provided as
-                    a string, then a single score will be returned.
+                    a string or callable, then a single score will be returned.
 
     Keyword Arguments:
         score_roi  : ROI or None
@@ -411,7 +379,7 @@ def refocus_and_score(
     else:
         score = focus_score(refocImg, method)
 
-    # print(depth, score)
+    #print(depth, score)
 
     return score
 
@@ -437,7 +405,7 @@ def find_focus(img, wavelength, pixel_size, depth_range, method, **kwargs):
                       wavelength of light source
         depth_range : tuple of (float, float)
                       min and max depths to search between
-        method      : str
+        method      : str or callable
                       scoring method (see focus_score for list)
 
     Keyword Arguments:
@@ -468,10 +436,11 @@ def find_focus(img, wavelength, pixel_size, depth_range, method, **kwargs):
     window = kwargs.get("window", None)
     score_roi = kwargs.get("roi", None)
     margin = kwargs.get("margin", None)
-    prop_lut = kwargs.get("propagatorLUT", None)
+    prop_lut = kwargs.get("prop_lut", None)
     coarse_search_interval = kwargs.get("coarse_search_interval", None)
     use_numba = kwargs.get("numba", False)
     use_cuda = kwargs.get("cuda", False)
+    max_iter = kwargs.get("max_iter", 10)
 
     c_hologram = pyholoscope.pre_process(
         img, background=background, normalise=normalise, window=window
@@ -525,7 +494,7 @@ def find_focus(img, wavelength, pixel_size, depth_range, method, **kwargs):
         method="bounded",
         bracket=depth_range,
         bounds=depth_range,
-        options={"maxiter": 30},
+        options={"maxiter": max_iter},
         args=(
             img_fft,
             pixel_size,
@@ -584,8 +553,8 @@ def focus_score_curve(
                      min and max depths to search between
         nPoints    : int
                      number of points to search between depth_range
-        method     : str
-                     scoring method (see focus_score for list)
+        method     : func
+                     scoring method (see focus_scores for list)
 
     Keyword Arguments:
         background : ndarray or None

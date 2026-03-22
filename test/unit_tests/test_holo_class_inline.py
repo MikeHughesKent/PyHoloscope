@@ -203,6 +203,39 @@ class TestHoloClassInline(unittest.TestCase):
         img_refocus_oop = holo.process(self.img)
         assert (img_refocus == img_refocus_oop).all()
 
+    def test_find_focus(self):
+        depth_range = (0.0005, 0.0015)
+        method = "sum"
+        roi = pyh.Roi(100, 100, 200, 200)
+        margin = 20
+
+        depth_low = pyh.find_focus(
+            self.img,
+            self.wavelength,
+            self.pixel_size,
+            depth_range,
+            method,
+            background=self.background,
+            roi=roi,
+            margin=margin,
+        )
+
+        holo = pyh.Holo(
+            mode=pyh.INLINE,
+            wavelength=self.wavelength,
+            pixel_size=self.pixel_size,
+            background=self.background,
+        )
+        holo.set_find_focus_parameters(
+            depth_range=depth_range,
+            method=method,
+            roi=roi,
+            margin=margin,
+        )
+        depth_holo = holo.find_focus(self.img)
+
+        assert np.isclose(depth_low, depth_holo)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -251,6 +251,26 @@ class TestOffAxis(unittest.TestCase):
             pyh.amplitude(recon[4 * y : 4 * y + h, x : x + w])
         )
 
+    def test_off_axis_demod_pixel_size(self):
+        grid_size = 512
+        pixel_size = 1e-6
+        wavelength = 550e-9
+        rotation = math.pi / 4
+        angle = math.radians(15)
+
+        object_field = np.ones((grid_size, grid_size))
+        hologram = pyh.sim.off_axis(
+            object_field, wavelength, pixel_size, angle, rotation=rotation
+        )
+
+        crop_radius = pyh.off_axis_find_crop_radius(hologram)
+
+        # Manual calculation (matches Holo class scaling)
+        manual = pixel_size / float(crop_radius[0] * 2) * float(hologram.shape[0])
+        helper = pyh.off_axis_demod_pixel_size(hologram, pixel_size, crop_radius)
+
+        self.assertAlmostEqual(manual, helper, places=12)
+
 
 if __name__ == "__main__":
     unittest.main()

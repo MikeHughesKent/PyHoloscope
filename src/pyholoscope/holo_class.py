@@ -26,6 +26,7 @@ from pyholoscope.focusing import (
     find_focus,
     refocus_stack,
     correct_curvature,
+    propagator_size_for_roi,
 )
 from pyholoscope.general import pre_process
 from pyholoscope.phase_proc import relative_phase
@@ -89,6 +90,7 @@ class Holo:
 
     propagator = None
     propagator_lut = None
+    auto_focus_propagator_lut = None
 
     def __init__(self, mode=None, wavelength=None, pixel_size=None, **kwargs):
         """Initialises an instance of the Holo class.
@@ -895,19 +897,23 @@ class Holo:
             coarse_search_interval  : Number of points to check explicitly before
                                     optimising. Default is None, in which case
                                     this is not performed.
-
-
+            use_prop_lut : bool
+                                Whether or not to use the auto focus propagator LUT for 
+                                finding focus. Default is False. If True, the LUT
+                                must have been generated with make_auto_focus_propagator_LUT() 
+                                and must cover the depth range specified by depth_range.
         """
         self.find_focus_depth_range = kwargs.get("depth_range", (0, 0.1))
         self.find_focus_roi = kwargs.get("roi", None)
-        self.find_focus_method = kwargs.get("method", "Brenner")
+        self.find_focus_method = kwargs.get("method", "sum")
         self.find_focus_margin = kwargs.get("margin", None)
         self.coarse_search_interval = kwargs.get("coarse_search_interval", None)
+        self.use_auto_focus_propagator_lut = kwargs.get("use_prop_lut", False)
 
     def find_focus(self, img):
         """Automatically finds the best focus position for hologram 'img'
         using parameters previously defined (such as wavelength) as well
-        as by set_find_focus_parameters().
+        as parameters set by set_find_focus_parameters().
 
         Arguments:
             img         : ndarray
@@ -917,6 +923,19 @@ class Holo:
             float       : optimal refocus depth
         """
 
+        if self.use_auto_focus_propagator_lut:
+            if self.auto_focus_propagator_lut is not None:
+                if (
+                    self.auto_focus_propagator_lut.wavelength != self.wavelength
+                    or self.auto_focus_propagator_lut.pixel_size != self.pixel_size
+                ):
+                    raise "Auto focus propagator LUT was generated with different wavelength or pixel size to current settings."
+            else:
+                raise "Auto focus propagator LUT has not been generated, but use_propagator_LUT is set to True."
+            prop_lut = self.auto_focus_propagator_lut
+        else:
+            prop_lut = None
+
         args = {
             "background": self.background,
             "window": self.window,
@@ -924,7 +943,7 @@ class Holo:
             "margin": self.find_focus_margin,
             "numba": numba_available and self.use_numba,
             "cuda": cuda_available and self.cuda,
-            "propagator_lut": self.propagator_lut,
+            "prop_lut": prop_lut,
             "coarse_search_interval": self.find_focus_coarse_search_interval,
         }
 
@@ -938,65 +957,28 @@ class Holo:
             **args,
         )
 
-    def auto_focus_custom(self, img, **kwargs):
-        """Finds the best focus, allowing all relevant paramters to be specified as keyword arguments.
-
+    def auto_focus(self, img):
+        """Finds the best focus for hologram 'img' using parameters previously
+        defined (such as wavelength) as well as by set_find_focus_parameters(),
+        and then refocuses to this depth and returns the refocused image. Note that
+        this is sets the depth of the Holo class to the found focus depth, so 
+        subsequent calls to process() will be at this depth unless depth is 
+        changed again.
+        
         Arguments:
             img         : ndarray
                           2D array containing hologram
-        Keyword Arguments:
-            depth_range  : tuple
-                          depths to search within in m, default is (0,1).
-            method      : str
-                          focus metric to use, default is 'Brenner'.
-            background  : ndarray
-                          background hologram, default is None.
-            window      : ndarray
-                          window to apply to image, default is None.
-            numba       : bool
-                          whether to use numba JIT, default is True.
-            cuda        : bool
-                          whether to use GPU if available, default is True.        `
-            roi         : instance of Roi
-                          area to assess focus within, default is None in which
-                          case all of image is used.
-            margin      : int or None
-                          if specified only the Roi and a margin will be
-                          refocused. If None (default) the whole image will be
-                          refocused regardless. Has no effect if roi not specified.
-            propLUT     : instance of PropLUT or None
-                          propagator LUT to use, default is None in which case
-                          no LUT is used.
-            coarse_search_interval : int or None
-                                   Number of points to check explicitly before
-                                   optimising. Default is None, in which case
-                                   this is not performed.
-            precision   : str
-                          precision to use, 'single' or 'double', default is 'single'.
-
         Returns:
-            float       : determined optimal refocus depth in m.
+            ndarray      : refocused image at optimal focus depth.
         """
-        focusDepth = find_focus(
-            img,
-            self.wavelength,
-            self.pixel_size,
-            kwargs.get("depth_range", (0, 1)),
-            kwargs.get("method", "Brenner"),
-            background=self.background,
-            window=self.window,
-            numba=self.use_numba and numba_available,
-            cuda=self.cuda and cuda_available,
-            roi=kwargs.get("roi", None),
-            margin=kwargs.get("margin", None),
-            prop_LUT=kwargs.get("propagator_LUT", None),
-            coarse_search_interval=kwargs.get("coarse_search_interval", None),
-            precision=self.precision,
-        )
-        return focusDepth
+        focus_depth = self.find_focus(img)
+        self.set_depth(focus_depth)
+        return self.__process_inline(img)    
+
+    
 
     def make_propagator_LUT(self, dimension, depth_range, num_depths):
-        """Creates and stores a LUT of propagators for faster finding of focus.
+        """Creates and stores a LUT of propagators for faster refocus.
 
         Arguments:
             dimension   : int or (int, int) or ndarray
@@ -1016,9 +998,45 @@ class Holo:
             precision=self.precision,
         )
 
+    def make_auto_focus_propagator_LUT(self, dimension, depth_range, num_depths, roi = None, margin = None):
+        """Creates and stores a LUT of propagators for faster finding of focus.
+
+        Arguments:
+            dimension   : int or (int, int) or ndarray
+                          dimension of hologram to determine size of propagators in LUT.
+            depth_range : tuple
+                          depths range to create propagators for: (min depth, max depth)
+            num_depths  : int
+                          number of depths to create propagators for, evenly spaced within depth_range.
+            roi         : instance of Roi
+                          area that focus will be assessed within, default is None. This only
+                          matters for the propagator if a margin is specified, in which
+                          case only the roi and a margin around it will be refocused to assess focus, 
+                          so the propagators only need to be the size of this.
+            margin      : int
+                          if specified only the roi and a margin will be refocused to assess focus, 
+                          default is None in which case the whole image will be refocused to assess focus. 
+                          If margin is specified, the propagators in the LUT will only be the size of the 
+                          roi plus the margin, to speed up refocusing for finding focus.
+        """
+        dimensions = propagator_size_for_roi(dimension, margin = margin, roi = roi)
+        self.auto_focus_propagator_lut = PropLUT(
+            dimensions,
+            self.wavelength,
+            self.pixel_size,
+            depth_range,
+            num_depths,
+            use_numba=(numba_available and self.use_numba),
+            precision=self.precision,
+        )
+
     def clear_propagator_LUT(self):
         """Deletes the LUT of propagators."""
         self.propagator_lut = None
+
+    def clear_auto_focus_propagator_LUT(self):
+        """Deletes the LUT of propagators."""
+        self.auto_focus_propagator_lut = None
 
     ################### DEPTH STACK ##############################################
 

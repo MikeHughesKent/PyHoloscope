@@ -21,6 +21,36 @@ except:
 from pyholoscope.utils import extract_central, dimensions
 
 
+def off_axis_demod_pixel_size(hologram, pixel_size, crop_radius):
+    """Return effective pixel size after off-axis demodulation.
+
+    The off-axis demodulated field is smaller than the hologram by a factor
+    determined by the crop radius. Where a non-square crop area is used,
+    the vertical dimensions are used - in practice this should not matter
+    as the aspect ratio of the crop area and the full hologram are normally
+    the same.
+
+    Arguments:
+        hologram       : tuple or ndarray
+                        shape of the raw hologram (or the hologram itself)
+        pixel_size     : float
+                        pixel size of the raw hologram
+        crop_radius    : int or (int, int)
+                        crop radius used for off-axis demodulation
+     
+    Returns:
+        float : pixel size in the demodulated field
+    """
+
+    h, _ = dimensions(hologram)
+    crop_radius = dimensions(crop_radius)[0]
+    if crop_radius == 0:
+        raise ValueError("crop_radius must be non-zero")
+    demod_height = int(crop_radius) * 2
+    return pixel_size / float(demod_height) * float(h)
+
+
+
 def off_axis_demod(
     hologram,
     crop_centre,
