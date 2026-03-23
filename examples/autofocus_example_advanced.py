@@ -97,8 +97,8 @@ print(
 )
 
 # 4. Find focus using whole image and propagator LUT
-holo.make_propagator_LUT(hologram, depth_range, num_depths)
-holo.set_find_focus_parameters(depth_range=depth_range, method=method)
+holo.make_auto_focus_propagator_LUT(hologram, depth_range, num_depths)
+holo.set_find_focus_parameters(depth_range=depth_range, method=method, use_prop_lut = True)
 
 t1 = time.perf_counter()
 refocused4 = holo.auto_focus(hologram)

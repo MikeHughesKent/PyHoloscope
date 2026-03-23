@@ -47,7 +47,7 @@ background = pyh.load_image(backFile)
 holo = pyh.Holo(
     mode=pyh.OFF_AXIS,
     background=background,  # For correcting background phase
-    relativePhase=True,
+    relative_phase=True,
 )  # We will remove the background phase
 
 holo.calib_off_axis()  # Finds modulation frequency and
