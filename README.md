@@ -5,7 +5,7 @@
 ![PyHoloscope Logo](/res/pyholoscope_logo_.png)
 # PyHoloscope: Fast Holographic Microscopy for Python
 
-PyHoloscope is a Python package for holographic microscopy, providing performant reconstruction of inline and off-axis holograms.
+PyHoloscope is a Python package for holographic microscopy, providing performant reconstruction of inline and off-axis holograms, as well as autofocus and phase visualisation.
 
 PyHoloscope is designed to be:
 * Fast (for Python) - optimised for CPU using Numpy, Scipy and Numba, with GPU support via CuPy
@@ -22,7 +22,7 @@ pip install pyholoscope
 
 
 ## Minimal Example
-To numerically refocus at inline hologram:
+To numerically refocus an inline hologram:
 ```
 import pyholoscope as pyh
 hologram = pyh.load_image(holoFile)
