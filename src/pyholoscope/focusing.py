@@ -93,7 +93,6 @@ def propagator(
             pixel_size,
             depth,
             geometry,
-            precision,
         )
         return Propagator(
             propagator=prop,
@@ -441,10 +440,23 @@ def find_focus(img, wavelength, pixel_size, depth_range, method, **kwargs):
     use_numba = kwargs.get("numba", False)
     use_cuda = kwargs.get("cuda", False)
     max_iter = kwargs.get("max_iter", 10)
+    downsample = kwargs.get("downsample", 1)
+    correct_curvature_bool = kwargs.get("correct_curvature", False)
+    source_distance = kwargs.get("source_distance", None)
+    
 
     c_hologram = pyholoscope.pre_process(
-        img, background=background, normalise=normalise, window=window
+        img, background=background, normalise=normalise, window=window,
     )
+    
+    if correct_curvature_bool and source_distance is not None:
+        c_hologram  = correct_curvature(
+            c_hologram ,
+            wavelength,
+            pixel_size * downsample,
+            source_distance,
+        )
+
 
     # If a margin is specified, this means we only refocus the ROI plus a
     # margin around it for speed. Define the ROI here.

@@ -112,5 +112,5 @@ def focus_score(img, method):
     elif not callable(method):
         raise ValueError("Method must be a string or a callable function.")   
 
-    return  sum_focus(img)
+    return method(img)
 

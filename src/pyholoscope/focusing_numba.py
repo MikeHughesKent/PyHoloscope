@@ -19,7 +19,7 @@ from pyholoscope.propagator import Propagator
 
 @jit(nopython=True)
 def propagator_numba(
-    gridSize, wavelength, pixelSize, depth, geometry="plane", precision="single"
+    grid_size, wavelength, pixel_size, depth, geometry="plane", precision="single"
 ):
     """Numba optimised version of propagator().
     Creates Fourier domain propagator for angular spectrum method.
@@ -45,23 +45,19 @@ def propagator_numba(
          precision  : str
                       numerical precision of ouptut, 'single' (defualt)
                       or 'double' [NOT IMPLEMENTED]
-         cascade    : int
-                      for use with cascade method, depth will be dividing by
-                      by this number
+    """    
 
-    """
+    grid_width = int(grid_size[1])
+    grid_height = int(grid_size[0])
 
-    gridWidth = int(gridSize[1])
-    gridHeight = int(gridSize[0])
+    width = float(grid_width) * float(pixel_size)
+    height = float(grid_height) * float(pixel_size)
 
-    width = float(gridWidth) * float(pixelSize)
-    height = float(gridHeight) * float(pixelSize)
+    centre_x = int(grid_width // 2)
+    centre_y = int(grid_height // 2)
 
-    centreX = int(gridWidth // 2)
-    centreY = int(gridHeight // 2)
-
-    propCorner = np.zeros((centreY + 1, centreX + 1), dtype=numba.complex64)
-    prop = np.zeros((gridHeight, gridWidth), dtype=numba.complex64)
+    prop_corner = np.zeros((centre_y + 1, centre_x + 1), dtype=numba.complex64)
+    prop = np.zeros((grid_height, grid_width), dtype=numba.complex64)
 
     delta0x = 1 / width
     delta0y = 1 / height
@@ -69,37 +65,36 @@ def propagator_numba(
     if geometry == "point":
         fac = math.pi * wavelength * depth
 
-        for x in range(centreX + 1):
+        for x in range(centre_x + 1):
             uSq = (delta0x * x) ** 2
 
-            for y in range(centreY + 1):
+            for y in range(centre_y + 1):
                 vSq = (delta0y * y) ** 2
                 phase = fac * (uSq + vSq)
 
                 # This is about as twice as fast as using np.exp(1j * phase)
-                propCorner.real[y, x] = math.cos(phase)
-                propCorner.imag[y, x] = math.sin(phase)
+                prop_corner.real[y, x] = math.cos(phase)
+                prop_corner.imag[y, x] = math.sin(phase)
 
     elif geometry == "plane":
         fac = -2 * math.pi * depth / wavelength
-        for x in range(centreX + 1):
+        for x in range(centre_x + 1):
             alphaSq = (float(wavelength) * x * delta0x) ** 2
 
-            for y in range(centreY + 1):
+            for y in range(centre_y + 1):
                 betaSq = (float(wavelength) * y * delta0y) ** 2
                 if alphaSq + betaSq < 1:
                     phase = fac * np.sqrt(1 - alphaSq - betaSq)
 
                     # This is about as twice as fast as using np.exp(1j * phase)
-                    propCorner.real[y, x] = math.cos(phase)
-                    propCorner.imag[y, x] = math.sin(phase)
+                    prop_corner.real[y, x] = math.cos(phase)
+                    prop_corner.imag[y, x] = math.sin(phase)
     else:
         raise Exception("Invalid geometry.")
 
     # Duplicate the top left quadrant into the other three quadrants as
     # this is quicker then explicitly calculating the values
-    prop[: centreY + 1, : centreX + 1] = propCorner  # top left
-    prop[: centreY + 1, centreX:] = np.fliplr(propCorner[:, 1:])  # top right
-    prop[centreY:, :] = np.flipud(prop[1 : centreY + 1, :])  # bottom left
-
+    prop[: centre_y + 1, : centre_x + 1] = prop_corner  # top left
+    prop[: centre_y + 1, (centre_x + grid_width % 2):] = prop_corner[:, 1:][:, ::-1]
+    prop[centre_y + grid_height % 2 :, :] = prop[1 : centre_y + 1, :][::-1, :]
     return prop

@@ -305,7 +305,7 @@ class Holo:
             window=self.window,
             background=self.background,
             normalise=self.normalise,
-            precision=self.precision,
+            precision=self.precision,            
         )
 
         if self.correct_curvature and self.source_distance is not None:
@@ -945,6 +945,8 @@ class Holo:
             "cuda": cuda_available and self.cuda,
             "prop_lut": prop_lut,
             "coarse_search_interval": self.find_focus_coarse_search_interval,
+            "correct_curvature": self.correct_curvature,
+            "source_distance": self.source_distance,
         }
 
         return find_focus(
