@@ -35,7 +35,18 @@ holo = pyh.Holo(
 recon = holo.process(hologram)
 ```
 
-There is a broad range of examples in the [examples folder](https://github.com/MikeHughesKent/PyHoloscope/tree/main/examples).
+## Live Demos and Examples
+You can try PyHoloscope in your browser with these tutorials hosted on Binder:
+
+* Tutorial 01: Inline Holography [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/MikeHughesKent/PyHoloscope/HEAD?urlpath=%2Fdoc%2Ftree%2Fnotebooks%2Fnotebook01_inline_holography.ipynb)
+      
+* Tutorial 02: Off-Axis Holography [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/MikeHughesKent/PyHoloscope/HEAD?urlpath=%2Fdoc%2Ftree%2Fnotebooks%2Fnotebook02_off_axis_holography.ipynb)
+
+* Tutorial 03: Off-Axis Holography with Refocusing [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/MikeHughesKent/PyHoloscope/HEAD?urlpath=%2Fdoc%2Ftree%2Fnotebooks%2Fnotebook03_off_axis_holography_refocus.ipynb)
+
+* Tutorial 04: Auto-focusing [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/MikeHughesKent/PyHoloscope/HEAD?urlpath=%2Fdoc%2Ftree%2Fnotebooks%2Fnotebook04_auto_focus.ipynb)
+
+There are more example scripts in the [examples folder](https://github.com/MikeHughesKent/PyHoloscope/tree/main/examples).
 
 ## Contributions
 Contributions to the package (new features, tests or documentation) are very welcome, please see the roadmap below and post in the discussion if you are working on something, or [get in touch](mailto:m.r.hughes@kent.ac.uk).
