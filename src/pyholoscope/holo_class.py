@@ -447,7 +447,7 @@ class Holo:
             demod,
             downsample=self.downsample,
             window=self.window,
-            background=background,
+            background=self.background_abs,
             normalise=self.normalise_abs,
             precision=self.precision,
         )
