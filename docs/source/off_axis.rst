@@ -31,14 +31,15 @@ where we have provided a background hologram to use for this purpose. It is poss
 to use the image hologram as well for this purpose, but this may be unreliable if there
 is another strong spatial frequency.  If a background image has first been set using::
 
-    holo.set_background(background_img)
+    holo.background = background_img
     
 or by passing ``background = background_img`` when creating the ``Holo`` object, then
 this will be used for the calibration if ``calib_off_axis`` is called with no argument.
 
 Alternatively the demodulation parameters can be specified manually using::
 
-    holo.set_off_axis_mod(crop_centre, crop_radius)
+    holo.crop_centre = crop_centre
+    holo.crop_radius = crop_radius
    
 where ``crop_centre`` is a tuple of (x,y), giving the pixel location of the centre of the modulation peak in the FFT of the hologram, 
 and ``crop_radius`` is half the size of the box around the modulation centre which is demodulated.  ``crop_radius`` can also
@@ -65,8 +66,8 @@ Both the demodulation and the refocusing will take place in a single step.
     
 We can change the refocus depth and whether or not to refocus without recreating the ``Holo`` object using::
 
-    holo.set_depth(depth)
-    holo.set_refocus(True)    
+    holo.depth = depth
+    holo.refocus = True
 
 Note that the first time a hologram is refocused to a particular depth the process will be slower 
 due to the need to create a propagator for that depth. This is particularly noticeable when using
@@ -81,7 +82,7 @@ in advance.
 
 To correct for a background phase (i.e the phase map of the background hologram), set::
 
-    holo.set_relative_phase(True)
+    holo.relative_phase = True
     
 or pass ``relative_phase = True`` when creating the ``Holo`` object. You should then call::
 

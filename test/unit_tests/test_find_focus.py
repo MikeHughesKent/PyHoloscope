@@ -41,17 +41,6 @@ class TestFindFocus(unittest.TestCase):
         assert np.isfinite(depth)
         assert self.depth_range[0] <= depth <= self.depth_range[1]
 
-    def test_find_focus_with_coarse_search(self):
-        depth = pyh.find_focus(
-            self.img,
-            self.wavelength,
-            self.pixel_size,
-            self.depth_range,
-            method="Sum",
-            coarse_search_interval=3,
-        )
-        assert np.isfinite(depth)
-        assert self.depth_range[0] <= depth <= self.depth_range[1]
 
     def test_find_focus_with_roi_and_margin(self):
         roi = Roi(3, 3, 4, 4)

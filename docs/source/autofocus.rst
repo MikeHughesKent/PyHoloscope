@@ -68,7 +68,7 @@ we would like to pre-calculate, and then calling::
 where we must provide the correct ``roi`` and ``margin`` if a margin is to be used, to ensure the
 propagator LUT has propagators of the correct size. We then indicate we would like to use the LUT::
     
-    holo.set_find_focus_parameters(depth_range=depth_range, method=method, roi=roi, margin=margin, use_prop_lut = True)
+    holo.set_find_focus_parameters(depth_range = depth_range, roi = roi, method = method, margin = margin, use_prop_lut = True)
 
 Now, we call ``auto_focus`` or ``find_focus`` as before. ``num_depths`` must be chosen to 
 give the required focus precision, which will depend on the imaging system and application.

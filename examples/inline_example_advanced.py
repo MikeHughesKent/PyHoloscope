@@ -66,7 +66,7 @@ recon = holo.process(hologram)
 # We now add normalisation, we could have done this when we created the
 # Holo object, by passing in normlise = backHologram, but we can also add this
 # in later as follows:
-holo.set_normalise(backHologram)
+holo.normalise = backHologram
 
 # Refocus
 reconNorm = holo.process(hologram)
@@ -76,7 +76,7 @@ reconNorm = holo.process(hologram)
 # We now add background subtraction, we could have done this is when we created
 # the Holo object, by passing in background = backHologram, but we can also add
 # this in later as follows:
-holo.set_background(backHologram)
+holo.background = backHologram
 
 # Refocus
 reconNormBack = holo.process(hologram)
@@ -86,12 +86,12 @@ reconNormBack = holo.process(hologram)
 # We now add a cosine window to reduce edge artefacts, we could have done this is when
 # we created the Holo object, by passing in autoWindow = True, but we can also add this
 # in later as follows:
-holo.set_auto_window(True)
+holo.auto_window = True
 
 # By defualt the skin thickness (distance over which the window smoothly
 # changes from transparent) to opaque) is 10 pixels, but we can set a different
 # value
-holo.set_window_thickness(20)
+holo.window_thickness = 20
 
 # We pre-compute the window, this is optional and would be done the next time we call
 # process. We have to pass in either the background or the hologram so that holo
@@ -104,7 +104,7 @@ reconNormBackWindow = holo.process(hologram)
 
 """ Refocusing to a different depth """
 # We now refocus the hologram to a different depth. We change the refocus depth using:
-holo.set_depth(0.01)
+holo.depth = 0.01
 
 # We could call update_propagator() here, but we don't have to as PyHoloscope will
 # realise the depth has changed and regenerate the propagator when we called process.

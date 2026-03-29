@@ -30,7 +30,7 @@ subtract a background image, acquired with no object in the field-of-view, formi
 what is known as a contrast hologram. Assuming the background image is stored in the 2D numpy array ``background_img``, 
 a background can be specified using::
 
-    holo.set_background(background_img)
+    holo.background = background_img
     
 or by passing ``background = background_img`` as an argument when creating the ``Holo`` object:: 
 
@@ -38,12 +38,12 @@ or by passing ``background = background_img`` as an argument when creating the `
 
 If we would like to divide through by a flat-field image stored as a 2D numpy array ``flat_img``, to correct for
 intensity variations, we can pass ``normalise = flat_img`` or call
-``set_normalise(flat_img)``.
+``holo.normalise = flat_img``.
 
 We can now numerically refocus a hologram ``hologram``, again a 2D numpy array, 
 using the angular spectrum method by first setting the depth to refocus to, for example::
  
-    holo.set_depth(0.005)
+    holo.depth = 0.005
 
 (or by passing ``depth = 0.005`` when instantiating ``Holo``) and then calling::
 
@@ -63,10 +63,10 @@ to be created (depth, pixel size, wavelength or grid size).
 If we would like to smooth the edges of the hologram, we can apply a window before
 refocusing by calling:: 
 
-    holo.set_auto_window(True)
+    holo.auto_window = True
    
 By default the window will be a rectangular cosine window. Options for the window size and shape
-are set using the ``set_window_shape``, ``set_window_radius`` and ``set_window_thickness`` methods
+are set using the ``window_shape``, ``window_radius`` and ``window_thickness`` attributes
 of :doc:`holo`.
     
 The angular spectrum propagator and the window are both created the first time
@@ -85,7 +85,7 @@ If the Numba package is installed, this will be employed for faster generation
 of propagators by default when using the ``Holo`` class. Use of Numba can be 
 explicitly enabled/disabled using:: 
         
-    holo.set_use_numba(True/False)
+    holo.use_numba = True/False
     
    
 
@@ -95,7 +95,7 @@ GPU acceleration
 GPU acceleration is used by default when using the ``Holo`` class, it can be 
 explicitly enabled/disabled using::
 
-    holo.set_use_cuda(True/False)
+    holo.cuda = True/False
 
 This requires the CuPy package and a compatible GPU, otherwise ``Holo`` will 
 revert to CPU processing.  

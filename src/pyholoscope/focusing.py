@@ -394,9 +394,6 @@ def find_focus(img, wavelength, pixel_size, depth_range, method, **kwargs):
     provided in prop_lut. Note that if margin is specified, the propagator LUT must be of the correct size,
     i.e. the same size as the area to be refocused.
 
-    To perform an initial coarse search to identify the region likely to have the best focus, provide the number of
-    search regions to split the search range into in coarse_search_interval.
-
     Parameters:
         pixel_size  : float
                       real pixel size of hologram
@@ -420,10 +417,6 @@ def find_focus(img, wavelength, pixel_size, depth_range, method, **kwargs):
                      will be refocused prior to scoring
         prop_lut   : prop_lut or None
                      propagator look up table (default is None)
-        coarse_search_interval : int or None
-                               number of intervals to divide depth range into
-                               for initial search. Default is None, i.e. no
-                               initial search.
         use_numba  : boolean
                      if True, uses Numba version of functions (default is False)
         use_cuda   : boolean
@@ -436,7 +429,6 @@ def find_focus(img, wavelength, pixel_size, depth_range, method, **kwargs):
     score_roi = kwargs.get("roi", None)
     margin = kwargs.get("margin", None)
     prop_lut = kwargs.get("prop_lut", None)
-    coarse_search_interval = kwargs.get("coarse_search_interval", None)
     use_numba = kwargs.get("numba", False)
     use_cuda = kwargs.get("cuda", False)
     max_iter = kwargs.get("max_iter", 10)
@@ -482,23 +474,6 @@ def find_focus(img, wavelength, pixel_size, depth_range, method, **kwargs):
     # Pre-compute the FFT of the hologram since we need this for every trial depth
     img_fft = scipy.fft.fft2(cropped_img)
 
-    if coarse_search_interval is not None:
-        startDepth = coarse_focus_search(
-            img_fft,
-            depth_range,
-            coarse_search_interval,
-            pixel_size,
-            wavelength,
-            method,
-            score_roi,
-            prop_lut,
-        )
-        interval_size = (depth_range[1] - depth_range[0]) / coarse_search_interval
-        min_bound = max(depth_range[0], startDepth - interval_size)
-        max_bound = min(depth_range[1], startDepth + interval_size)
-        depth_range = [min_bound, max_bound]
-    else:
-        startDepth = (max(depth_range) - min(depth_range)) / 2
 
     # Find the depth using optimiser
     depth = scipy.optimize.minimize_scalar(
@@ -520,32 +495,6 @@ def find_focus(img, wavelength, pixel_size, depth_range, method, **kwargs):
     )
 
     return depth.x
-
-
-def coarse_focus_search(
-    img_fft,
-    depth_range,
-    num_intervals,
-    pixel_size,
-    wavelength,
-    method,
-    score_roi,
-    prop_lut,
-):
-    """An initial check for approximate location of good focus depths prior to a finer search.
-    Used by findFocus, see this function for arguments.
-    """
-    search_depths = np.linspace(depth_range[0], depth_range[1], num_intervals)
-    focus_score = np.zeros_like(search_depths)
-    for idx, depth in enumerate(search_depths):
-        focus_score[idx] = refocus_and_score(
-            depth, img_fft, pixel_size, wavelength, method, score_roi, prop_lut
-        )
-
-    best_interval = np.argmin(focus_score)
-    best_depth = search_depths[best_interval]
-
-    return best_depth
 
 
 def focus_score_curve(

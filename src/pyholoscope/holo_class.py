@@ -133,10 +133,7 @@ class Holo:
                         Region of interest to use for finding the autofocus, (default = None). Only used for autofocus.
             find_focus_margin: int or None
                         Margin to use for autofocus, in pixels (default = None). Only used for autofocus.
-            find_focus_coarse_search_interval: int or None
-                        Interval to use for coarse search during autofocus, in m (default = None, in which case the coarse
-                        search is not used).
-
+         
 
         Backgound and Normalisation Parameters:
             background: numpy.ndarray  or None
@@ -250,10 +247,8 @@ class Holo:
         self.find_focus_method = kwargs.get("find_focus_method", "Brenner")
         self.find_focus_roi = kwargs.get("find_focus_roi", None)
         self.find_focus_margin = kwargs.get("find_focus_margin", None)
-        self.find_focus_coarse_search_interval = kwargs.get(
-            "find_focus_coarse_search_interval", None
-        )
         self.find_focus_depth_range = kwargs.get("find_focus_depth_range", (0, 1))
+        self.use_auto_focus_propagator_lut = kwargs.get("use_auto_focus_propagator_lut", False)
 
         # Off-axis demodulation
         self.crop_centre = kwargs.get("crop_centre", None)
@@ -521,60 +516,181 @@ class Holo:
         else:
             raise Exception("Invalid processing mode.")
 
-    def set_mode(self, mode):
-        self.mode = mode
 
-    def set_refocus(self, refocus):
-        self.refocus = refocus
 
-    ############### PHYSICAL PARAMETERS ##########################################
+    ############################# PROPERTIES ####################################
 
-    def set_wavelength(self, wavelength):
-        """Set the wavelength of the hologram"""
-        self.wavelength = wavelength
-
-    def set_pixel_size(self, pixel_size):
-        """Set the size of pixels in the raw hologram"""
-        self.pixel_size = pixel_size
-
-    ########### BACKGROUND AND FLAT-FIELDING #####################################
-
-    def set_background(self, background):
-        """Set the background hologram. Use None to remove background."""
-        self.clear_background()
-        if background is not None:
-            self.background = background.astype(self.image_type)
-        else:
-            self.background = None
-
-    def set_normalise(self, normalise):
-        """Set the normalisation hologram. Use None to remove normalisation."""
-        self.clear_normalise()
-        if normalise is not None:
-            self.normalise = normalise.astype(self.image_type)
-
-    def clear_background(self):
-        """Remove existing background hologram."""
-        self.background = None
+    def _clear_background_fields(self):
+        self._background = None
         self.background_field = None
         self.background_abs = None
         self.background_angle = None
 
-    def clear_normalise(self):
-        """Remove existing normalisation hologram."""
-        self.normalise = None
+    def _clear_normalise_fields(self):
+        self._normalise = None
         self.normalise_field = None
         self.normalise_abs = None
         self.normaliseAngle = None
 
-    def set_relative_amplitude(self, boolean):
-        """Sets whether or not to calculate relative amplitude in off-axis holography."""
+    def _clear_window_fields(self):
+        self._window = None
+
+    @property
+    def background(self):
+        return self._background
+
+    @background.setter
+    def background(self, background):
+        self._clear_background_fields()
+        if background is not None:
+            self._background = background.astype(self.image_type)
+
+    @property
+    def normalise(self):
+        return self._normalise
+
+    @normalise.setter
+    def normalise(self, normalise):
+        self._clear_normalise_fields()
+        if normalise is not None:
+            self._normalise = normalise.astype(self.image_type)
+
+    @property
+    def relative_amplitude(self):
+        return self._relative_amplitude
+
+    @relative_amplitude.setter
+    def relative_amplitude(self, boolean):
         assert boolean == True or boolean == False, (
             "Argument of set_relative_amplitude must be True or False"
         )
-        self.relative_amplitude = boolean
+        self._relative_amplitude = boolean
 
-    ############################# WINDOW #####################################
+    @property
+    def window(self):
+        return self._window
+
+    @window.setter
+    def window(self, window):
+        self._clear_window_fields()
+        if window is not None:
+            self._window = window.astype(self.image_type)
+
+    @property
+    def auto_window(self):
+        return self._auto_window
+
+    @auto_window.setter
+    def auto_window(self, auto_window):
+        assert auto_window == True or auto_window == False, (
+            "set_auto_window must be True or False"
+        )
+        self._auto_window = auto_window
+
+    @property
+    def post_window(self):
+        return self._post_window
+
+    @post_window.setter
+    def post_window(self, post_window):
+        assert post_window == True or post_window == False, (
+            "set_post_window must be True or False"
+        )
+        self._post_window = post_window
+
+    @property
+    def window_shape(self):
+        return self._window_shape
+
+    @window_shape.setter
+    def window_shape(self, window_shape):
+        if window_shape == "circle" or window_shape == "square":
+            self._window_shape = window_shape
+        else:
+            raise Exception("Invalid window shape.")
+
+    @property
+    def crop_centre(self):
+        return self._crop_centre
+
+    @crop_centre.setter
+    def crop_centre(self, centre):
+        self._crop_centre = dimensions(centre) if centre is not None else None
+
+    @property
+    def crop_radius(self):
+        return self._crop_radius
+
+    @crop_radius.setter
+    def crop_radius(self, radius):
+        self._crop_radius = dimensions(radius) if radius is not None else None
+
+    @property
+    def stable_roi(self):
+        return self._stable_roi
+
+    @stable_roi.setter
+    def stable_roi(self, roi):
+        assert isinstance(roi, Roi) or roi is None or roi is False, (
+            "Argument must be an instance of Roi."
+        )
+        self._stable_roi = roi
+
+    @property
+    def relative_phase(self):
+        return self._relative_phase
+
+    @relative_phase.setter
+    def relative_phase(self, relative_phase):
+        assert relative_phase == True or relative_phase == False, (
+            "Argument of set_relative_phase must be True or False"
+        )
+        self._relative_phase = relative_phase
+
+    @property
+    def depth(self):
+        return self._depth
+
+    @depth.setter
+    def depth(self, depth):
+        assert isinstance(depth, (int, float)), (
+            "Argument of set_depth must be an int or float."
+        )
+        self._depth = depth
+
+    @property
+    def downsample(self):
+        return self._downsample
+
+    @downsample.setter
+    def downsample(self, downsample):
+        current = getattr(self, "_downsample", None)
+        if downsample != current:
+            self.propagator = None  # Force to be recreated when needed
+        self._downsample = downsample
+
+    @property
+    def precision(self):
+        return self._precision
+
+    @precision.setter
+    def precision(self, precision):
+        assert precision == "single" or precision == "double", (
+            "Precision must be 'single' or 'double'."
+        )
+        self._precision = precision
+        if self._precision == "double":
+            self.imType = "float64"
+        else:
+            self.imType = "float32"
+
+    def clear_background(self):
+        """Remove existing background hologram."""
+        self._clear_background_fields()
+
+    def clear_normalise(self):
+        """Remove existing normalisation hologram."""
+        self._clear_normalise_fields()
 
     def __create_window(self, img_size, radius, skin_thickness, shape="square"):
         """Creates and stores the window used for pre or post processing.
@@ -604,29 +720,9 @@ class Holo:
                 img_size, radius, skin_thickness, data_type=self.image_type
             )
 
-    def set_window(self, window):
-        """Sets the window to a pre-generated 'window', a 2D numpy array."""
-        self.clear_window()
-        if window is not None:
-            self.window = window.astype(self.image_type)
-
     def clear_window(self):
         """Removes existing window, equivalent to set_window(None)"""
-        self.window = None
-
-    def set_auto_window(self, auto_window):
-        """Sets whether or not use auto create a window (boolean)."""
-        assert auto_window == True or auto_window == False, (
-            "set_auto_window must be True or False"
-        )
-        self.auto_window = auto_window
-
-    def set_post_window(self, post_window):
-        """Sets whether or not to apply the window after refocusing (boolean)."""
-        assert post_window == True or post_window == False, (
-            "set_post_window must be True or False"
-        )
-        self.post_window = post_window
+        self._clear_window_fields()
 
     def update_auto_window(self, img):
         """Create or re-create the automatic window using current parameters.
@@ -665,23 +761,6 @@ class Holo:
                     shape=self.window_shape,
                 )
 
-    def set_window_shape(self, window_shape):
-        """Sets the auto window shape, 'cicle' or 'square'."""
-        if window_shape == "circle" or window_shape == "square":
-            self.window_shape = window_shape
-        else:
-            raise Exception("Invalid window shape.")
-
-    def set_window_radius(self, window_radius):
-        """Sets the auto window radius."""
-        self.window_radius = window_radius
-
-    def set_window_thickness(self, window_thickness):
-        """Sets the auto window edge thickness."""
-        self.window_thickness = window_thickness
-
-    ################## OFF AXIS DEMODULTION ######################################
-
     def set_off_axis_mod(self, crop_centre, crop_radius):
         """Sets the location of the frequency domain position of the OA modulation.
 
@@ -691,22 +770,6 @@ class Holo:
         """
         self.crop_centre = crop_centre
         self.crop_radius = crop_radius
-
-    def set_crop_centre(self, centre):
-        """Set the location of the modulation frequency in frequency domain.
-        'centre' is a tuple of (x,y).
-        """
-        self.crop_centre = dimensions(centre)
-
-    def set_crop_radius(self, radius):
-        """Set the size of the region to extract in frequency domain to demodulate."""
-        self.crop_radius = dimensions(radius)
-
-    def set_return_FFT(self, return_fft):
-        """Sets whether the FFT, rather than the demodualted image, is returned in OAH.
-        Set True to obtain FFT, False to obtain image.
-        """
-        self.return_fft = return_fft
 
     def auto_find_off_axis_mod(self, maskFraction=0.1):
         """Detect the modulation location in frequency domain. maskFraction
@@ -747,6 +810,61 @@ class Holo:
             self.__off_axis_normalise_field()
 
         self.__create_off_axis_crop_window()
+
+
+
+    # Legacy accessors are retained for backwards compatibility. These are auto-generated
+    # to avoid repeating trivial pass-through methods.
+    _legacy_getters = {
+        # Example: "get_mode": "mode"
+    }
+    _legacy_setters = {
+        "set_mode": "mode",
+        "set_refocus": "refocus",
+        "set_wavelength": "wavelength",
+        "set_pixel_size": "pixel_size",
+        "set_background": "background",
+        "set_normalise": "normalise",
+        "set_relative_amplitude": "relative_amplitude",
+        "set_window": "window",
+        "set_auto_window": "auto_window",
+        "set_post_window": "post_window",
+        "set_window_shape": "window_shape",
+        "set_window_radius": "window_radius",
+        "set_window_thickness": "window_thickness",
+        "set_crop_centre": "crop_centre",
+        "set_crop_radius": "crop_radius",
+        "set_return_FFT": "return_fft",
+        "set_stable_ROI": "stable_roi",
+        "set_relative_phase": "relative_phase",
+        "set_depth": "depth",
+        "set_downsample": "downsample",
+        "set_use_cuda": "cuda",
+        "set_use_numba": "use_numba",
+        "set_precision": "precision",
+    }
+
+    @classmethod
+    def _install_legacy_accessors(cls):
+        def make_getter(attr):
+            def getter(self):
+                return getattr(self, attr)
+            getter.__name__ = f"get_{attr}"
+            return getter
+
+        def make_setter(attr):
+            def setter(self, value):
+                setattr(self, attr, value)
+            setter.__name__ = f"set_{attr}"
+            return setter
+
+        for name, attr in cls._legacy_getters.items():
+            if not hasattr(cls, name):
+                setattr(cls, name, make_getter(attr))
+        for name, attr in cls._legacy_setters.items():
+            if not hasattr(cls, name):
+                setattr(cls, name, make_setter(attr))
+
 
     def __create_off_axis_crop_window(self):
         """Create the crop window used for off-axis demodulation."""
@@ -796,39 +914,6 @@ class Holo:
         self.normalise_abs = np.abs(self.normalise_field)  # Store these now for speed
         self.normalisePhase = np.angle(self.normalise_field)
 
-    ##################### PHASE #############################################
-
-    def set_stable_ROI(self, roi):
-        """Set the location of the the ROI used for maintaining a constant
-        background phase, i.e. this should be a background region of the image.
-        The roi should be an instance of the Roi class.
-        """
-        assert isinstance(roi, Roi), "Argument must be an instance of Roi."
-        self.stable_roi = roi
-
-    def set_relative_phase(self, relative_phase):
-        """Sets whether or not to use relative phase, i.e. phase
-        is relative to the phase of the background hologram.
-        """
-
-        assert relative_phase == True or relative_phase == False, (
-            "Argument of set_relative_phase must be True or False"
-        )
-        self.relative_phase = relative_phase
-
-    ##################### REFOCUSING #########################################
-
-    def set_depth(self, depth):
-        """Set the depth for numerical refocusing.
-        Arguments:
-            depth       : int or float
-                        Depth to refocus at in the same units as pixel_size and wavelength.
-        """
-        assert isinstance(depth, (int, float)), (
-            "Argument of set_depth must be an int or float."
-        )
-        self.depth = depth
-
     def update_propagator(self, img):
         """Create or re-create the propagator using current parameters. img
         should be an 2D numpy array of the same size as the images to be processed.
@@ -864,21 +949,6 @@ class Holo:
         if self.cuda and cuda_available:
             self.propagator.propagator = cp.array(self.propagator.propagator)
 
-    def set_downsample(self, downsample):
-        """Set the downsample factor. This will cause the propagator to be
-        recreated when next needed, call update_propagator to force this immediately.
-        Arguments:
-            downsample   : int or float
-                           Factor to downsample the image by, must be > 0.
-                           If > 1, the image will be downsampled by this factor.
-        """
-        if downsample != self.downsample:
-            self.propagator = None  # Force to be recreated when needed
-
-        self.downsample = downsample
-
-    ############### AUTO FOCUS ###################################################
-
     def set_find_focus_parameters(self, **kwargs):
         """Sets the parameters used by the find_focus method.
 
@@ -894,9 +964,6 @@ class Holo:
                            if specified only the Roi and a margin will be
                            refocused. If None (default) the whole image will be
                            refocused regardless. Has no effect if roi not specified.
-            coarse_search_interval  : Number of points to check explicitly before
-                                    optimising. Default is None, in which case
-                                    this is not performed.
             use_prop_lut : bool
                                 Whether or not to use the auto focus propagator LUT for 
                                 finding focus. Default is False. If True, the LUT
@@ -907,7 +974,6 @@ class Holo:
         self.find_focus_roi = kwargs.get("roi", None)
         self.find_focus_method = kwargs.get("method", "sum")
         self.find_focus_margin = kwargs.get("margin", None)
-        self.coarse_search_interval = kwargs.get("coarse_search_interval", None)
         self.use_auto_focus_propagator_lut = kwargs.get("use_prop_lut", False)
 
     def find_focus(self, img):
@@ -944,7 +1010,6 @@ class Holo:
             "numba": numba_available and self.use_numba,
             "cuda": cuda_available and self.cuda,
             "prop_lut": prop_lut,
-            "coarse_search_interval": self.find_focus_coarse_search_interval,
             "correct_curvature": self.correct_curvature,
             "source_distance": self.source_distance,
         }
@@ -1041,7 +1106,6 @@ class Holo:
         self.auto_focus_propagator_lut = None
 
     ################### DEPTH STACK ##############################################
-
     def depth_stack(self, img, depth_range, num_depth):
         """Create a depth stack using current parameters, producing a set of
         'num_depth' refocused images equally spaced within depth_range.
@@ -1080,35 +1144,14 @@ class Holo:
             **args,
         )
 
-    ########################### GENERAL SETTINGS ################################
-
-    def set_use_cuda(self, use_cuda):
-        """Set whether to use GPU if available, use_cuda is True to use GPU or
-        False to not use GPU.
-        """
-        self.cuda = use_cuda
-
-    def set_use_numba(self, use_numba):
-        """Set whether to use Numba JIT if available, use_numba is True to use
-        Numba or False to not use Numba.
-        """
-        self.use_numba = use_numba
-
-    def set_precision(self, precision):
-        """Sets whether to use single or double precision."""
-        assert precision == "single" or precision == "double", (
-            "Precision must be 'single' or 'double'."
-        )
-        self.precision = precision
-        if self.precision == "double":
-            self.imType = "float64"
-        else:
-            self.imType = "float32"
-
     def __str__(self):
         return (
-            "PyHoloscope Holo Class. Wavelength: "
+            "PyHoloscope Holo Class. Mode:"
+            + str(self.mode)
+            + ", Wavelength: "
             + str(self.wavelength)
             + ", Pixel Size: "
             + str(self.pixel_size)
         )
+
+Holo._install_legacy_accessors()

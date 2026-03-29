@@ -10,9 +10,9 @@ and can be extracted using :func:`pyholoscope.amp` and :func:`pyholoscope.phase`
 PyHoloscope has several functions for further processing of the phase. A common
 requirement is to subtract a reference phase, for example acquired with nothing 
 in the field of view. This can be done automatically when using the :class:`Holo`
-class by providing a background hologram, using the ``set_background`` method and then
-``set_relative_phase(True)`` (or by setting the ``background`` and ``relative_phase``
-parameters at instantiation).
+class by providing a background hologram and setting ``background`` and ``relative_phase``
+(e.g. ``holo.background = background_img`` and ``holo.relative_phase = True``), or by setting
+these parameters at instantiation.
 
 Alternatively, this can be done manually using the :func:`pyholoscope.relative_phase`
 function. For example, assume we have off-axis demodulated a hologram, to obtain ``hologram_demod``,
