@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "PyHoloscope"
-version = "1.1.0"
+version = "1.1.1"
 description = "Python package for holographic microscopy."
 readme = "README.md"
 authors = [{ name = "Michael Hughes", email = "m.r.hughes@kent.ac.uk" }]
