@@ -28,10 +28,19 @@ class Propagator:
     depth = None
     propagator = None
     shape = None
-    geometry = None
+    propagation_method = None
+    correct_pixel_size = None
+    source_distance = None
 
     def __init__(
-        self, propagator, wavelength=None, pixel_size=None, depth=None, geometry=None
+        self,
+        propagator,
+        wavelength=None,
+        pixel_size=None,
+        depth=None,
+        propagation_method=None,
+        correct_pixel_size=None,
+        source_distance=None,
     ):
         """
         Initializes the Propagator instance by stoing the propagator and its attributes.
@@ -46,18 +55,32 @@ class Propagator:
                         The size of the pixels in the hologram (m).
             depth: float
                    Propagation distance (m).
-            geometry: str
-                      Geometry of the propagator ('plane' or 'point').
+            propagation_method: str
+                                Propagation model used to generate propagator
+                                ('angular_spectrum' or 'fresnel').
+            correct_pixel_size: bool
+                                True if effective-magnification pixel-size correction
+                                was applied when generating this propagator.
+            source_distance: float or None
+                             Source-to-camera distance used for pixel-size correction.
         """
         self.propagator = propagator
         self.wavelength = wavelength
         self.pixel_size = pixel_size
         self.depth = depth
-        self.geometry = geometry
+        self.propagation_method = propagation_method
+        self.correct_pixel_size = correct_pixel_size
+        self.source_distance = source_distance
         self.shape = np.shape(propagator)
 
     def has_attributes(
-        self, wavelength=None, pixel_size=None, depth=None, geometry=None
+        self,
+        wavelength=None,
+        pixel_size=None,
+        depth=None,
+        propagation_method=None,
+        correct_pixel_size=None,
+        source_distance=None,
     ):
         """Checks if the propagator has the specified attributes.
 
@@ -68,8 +91,6 @@ class Propagator:
                               The pixel size to check against (m).
             depth           : float
                               The depth to check against (m).
-            geometry        : str
-                              The geometry to check against ('plane' or 'point').
         Returns:
             bool            : True if the propagator has all the specified attributes,
                               False otherwise.
@@ -81,7 +102,17 @@ class Propagator:
             return False
         if depth is not None and self.depth != depth:
             return False
-        if geometry is not None and self.geometry != geometry:
+        if (
+            propagation_method is not None
+            and self.propagation_method != propagation_method
+        ):
+            return False
+        if (
+            correct_pixel_size is not None
+            and self.correct_pixel_size != correct_pixel_size
+        ):
+            return False
+        if source_distance is not None and self.source_distance != source_distance:
             return False
 
         return True

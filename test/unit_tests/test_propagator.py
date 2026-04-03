@@ -25,7 +25,6 @@ class TestPropagator(unittest.TestCase):
             self.wavelength,
             self.pixel_size,
             self.depth,
-            geometry="plane",
             precision="single",
         )
         assert np.max(np.isnan(prop.propagator) == 0)
@@ -43,7 +42,6 @@ class TestPropagator(unittest.TestCase):
             self.wavelength,
             self.pixel_size,
             -self.depth,
-            geometry="plane",
             precision="single",
         )
         assert np.max(np.isnan(prop.propagator) == 0)
@@ -55,7 +53,6 @@ class TestPropagator(unittest.TestCase):
             self.wavelength,
             self.pixel_size,
             self.depth,
-            geometry="plane",
             precision="single",
         )
         assert np.max(np.isnan(prop.propagator) == 0)
@@ -67,19 +64,6 @@ class TestPropagator(unittest.TestCase):
             self.wavelength,
             self.pixel_size,
             self.depth,
-            geometry="point",
-            precision="single",
-        )
-        assert np.max(np.isnan(prop.propagator) == 0)
-        assert prop.shape == (self.grid_size1, self.grid_size2)
-        assert prop.propagator.dtype == "complex64"
-
-        prop = pyh.propagator(
-            (self.grid_size1, self.grid_size2),
-            self.wavelength,
-            self.pixel_size,
-            self.depth,
-            geometry="point",
             precision="double",
             use_numba=False,
         )
@@ -88,13 +72,12 @@ class TestPropagator(unittest.TestCase):
         assert prop.propagator.dtype == "complex128"
 
     def test_propagator_numba(self):
-        # Numba and regular are the same, point and double precision
+        # Numba and regular are the same, double precision
         propNumba = pyh.propagator(
             (self.grid_size1, self.grid_size2),
             self.wavelength,
             self.pixel_size,
             self.depth,
-            geometry="point",
             precision="double",
             use_numba=True,
         )
@@ -103,18 +86,16 @@ class TestPropagator(unittest.TestCase):
             self.wavelength,
             self.pixel_size,
             self.depth,
-            geometry="point",
             precision="double",
         )
         assert prop.shape == (self.grid_size1, self.grid_size2)
 
-        # Numba and regular are the same, point and single precision
+        # Numba and regular are the same, single precision
         propNumba = pyh.propagator(
             (self.grid_size1, self.grid_size2),
             self.wavelength,
             self.pixel_size,
             self.depth,
-            geometry="point",
             precision="single",
             use_numba=True,
         )
@@ -123,30 +104,84 @@ class TestPropagator(unittest.TestCase):
             self.wavelength,
             self.pixel_size,
             self.depth,
-            geometry="point",
             precision="single",
         )
         assert prop.shape == (self.grid_size1, self.grid_size2)
 
-        # Numba and regular are the same, plane and single precision
-        propNumba = pyh.propagator(
-            (self.grid_size1, self.grid_size2),
-            self.wavelength,
-            self.pixel_size,
-            self.depth,
-            geometry="plane",
-            precision="single",
-            use_numba=True,
-        )
+    def test_fresnel_propagator(self):
         prop = pyh.propagator(
             (self.grid_size1, self.grid_size2),
             self.wavelength,
             self.pixel_size,
             self.depth,
-            geometry="plane",
+            propagation_method="fresnel",
             precision="single",
+            use_numba=False,
         )
+        assert np.max(np.isnan(prop.propagator) == 0)
         assert prop.shape == (self.grid_size1, self.grid_size2)
+        assert prop.propagation_method == "fresnel"
+
+    def test_fresnel_propagator_numba(self):
+        prop_numba = pyh.propagator(
+            (self.grid_size1, self.grid_size2),
+            self.wavelength,
+            self.pixel_size,
+            self.depth,
+            propagation_method="fresnel",
+            precision="single",
+            use_numba=True,
+        )
+        prop_numpy = pyh.propagator(
+            (self.grid_size1, self.grid_size2),
+            self.wavelength,
+            self.pixel_size,
+            self.depth,
+            propagation_method="fresnel",
+            precision="single",
+            use_numba=False,
+        )
+
+        assert np.allclose(prop_numba.propagator, prop_numpy.propagator)
+
+    def test_correct_pixel_size(self):
+        source_distance = 0.02
+        effective_magnification = (source_distance + self.depth) / source_distance
+        corrected_pixel_size = self.pixel_size / effective_magnification
+
+        prop_corrected = pyh.propagator(
+            (self.grid_size1, self.grid_size2),
+            self.wavelength,
+            self.pixel_size,
+            self.depth,
+            correct_pixel_size=True,
+            source_distance=source_distance,
+            use_numba=False,
+        )
+
+        prop_manual = pyh.propagator(
+            (self.grid_size1, self.grid_size2),
+            self.wavelength,
+            corrected_pixel_size,
+            self.depth,
+            use_numba=False,
+        )
+
+        assert np.allclose(prop_corrected.propagator, prop_manual.propagator)
+        assert np.isclose(prop_corrected.pixel_size, corrected_pixel_size)
+        assert prop_corrected.correct_pixel_size is True
+        assert np.isclose(prop_corrected.source_distance, source_distance)
+
+    def test_correct_pixel_size_requires_source_distance(self):
+        with self.assertRaises(Exception):
+            pyh.propagator(
+                (self.grid_size1, self.grid_size2),
+                self.wavelength,
+                self.pixel_size,
+                self.depth,
+                correct_pixel_size=True,
+                use_numba=False,
+            )
 
 
 if __name__ == "__main__":

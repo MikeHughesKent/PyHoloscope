@@ -28,7 +28,9 @@ class PropLUT:
         pixel_size,
         depth_range,
         num_depths,
-        geometry="plane",
+        propagation_method="angular_spectrum",
+        correct_pixel_size=False,
+        source_distance=None,
         use_numba=True,
         precision="single",
     ):
@@ -47,8 +49,15 @@ class PropLUT:
                         number of depths to generate propagators for
 
         Keyword Arguments:
-            geometry  : str
-                        'plane' (default) or 'point'
+            propagation_method : str
+                        wave propagation model, 'angular_spectrum' (default)
+                        or 'fresnel'
+            correct_pixel_size : bool
+                        if True, applies effective pixel-size correction
+                        based on source_distance during propagator generation
+            source_distance : float or None
+                        point-source to camera distance, required when
+                        correct_pixel_size is True
             numba     : bool
                         flag to use numba for speed up (default = False)
             precision : str
@@ -65,7 +74,10 @@ class PropLUT:
         self.num_depths = num_depths
         self.wavelength = wavelength
         self.pixel_size = pixel_size
-        self.geometry = geometry
+        self.propagation_method = propagation_method
+        self.correct_pixel_size = correct_pixel_size
+        self.source_distance = source_distance
+        self.depth_range = depth_range
         h, w = dimensions(img_size)
         self.prop_table = np.zeros((num_depths, h, w), dtype=dataType)
         for idx, depth in enumerate(self.depths):
@@ -74,7 +86,9 @@ class PropLUT:
                 wavelength,
                 pixel_size,
                 depth,
-                geometry=geometry,
+                propagation_method=propagation_method,
+                correct_pixel_size=correct_pixel_size,
+                source_distance=source_distance,
                 use_numba=use_numba,
             ).propagator
 
@@ -95,7 +109,9 @@ class PropLUT:
                 wavelength=self.wavelength,
                 pixel_size=self.pixel_size,
                 depth=self.depths[idx],
-                geometry=self.geometry,
+                propagation_method=self.propagation_method,
+                correct_pixel_size=self.correct_pixel_size,
+                source_distance=self.source_distance,
             )
             return prop
         else:

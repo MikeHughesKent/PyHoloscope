@@ -41,11 +41,13 @@ def propagator(
     wavelength,
     pixel_size,
     depth,
-    geometry="plane",
+    propagation_method="angular_spectrum",
     precision="single",
     use_numba=True,
+    correct_pixel_size=False,
+    source_distance=None,
 ):
-    """Creates Fourier domain propagator for angular spectrum method.
+    """Creates Fourier domain propagator for numerical refocusing.
     Returns the propagator as an instance of Propagator. Generation is sped up
     by only calculating top left quadrant and then duplicating
     (with flips) to create the other quadrants.
@@ -65,18 +67,38 @@ def propagator(
                      refocus distance
 
     Keyword Arguments:
-        geometry   : str
-                     'plane' (default) or 'point'
+        propagation_method : str
+                 wave propagation model, 'angular_spectrum' (default)
+                 or 'fresnel'
         precision  : str
                      numerical precision of output, 'single' (default)
                      or 'double'
         use_numba   : boolean
-                     if True, uses Numba version of functions (default is False)
+                     if True, uses Numba version of functions (default is True)
+        correct_pixel_size : bool
+                 if True, pixel_size is corrected for effective
+                 magnification from finite source distance
+        source_distance : float or None
+                 source-to-image-plane distance in same units as
+                 pixel_size and depth. Required if
+                 correct_pixel_size is True
 
     Returns:
         numpy.ndarray : 2D complex array, propagator
 
     """
+
+    if correct_pixel_size:
+        if source_distance is None:
+            raise Exception("source_distance must be provided when correct_pixel_size=True.")
+        if source_distance == 0:
+            raise Exception("source_distance must be non-zero when correct_pixel_size=True.")
+
+        effective_magnification = (source_distance + depth) / source_distance
+        if effective_magnification == 0:
+            raise Exception("Invalid effective magnification; source_distance + depth must be non-zero.")
+
+        pixel_size = pixel_size / effective_magnification
 
     if precision == "double":
         data_type = "complex128"
@@ -92,14 +114,16 @@ def propagator(
             wavelength,
             pixel_size,
             depth,
-            geometry,
+            propagation_method,
         )
         return Propagator(
             propagator=prop,
             wavelength=wavelength,
             pixel_size=pixel_size,
             depth=depth,
-            geometry=geometry,
+            propagation_method=propagation_method,
+            correct_pixel_size=correct_pixel_size,
+            source_distance=source_distance,
         )
 
     grid_height, grid_width = dimensions(grid_size)
@@ -119,12 +143,7 @@ def propagator(
     delta0y = 1 / height
 
     # Generate one quadrant of the propagator
-    if geometry == "point":
-        u = delta0x * xM
-        v = delta0y * yM
-        prop_corner = np.exp(1j * math.pi * wavelength * depth * (u**2 + v**2))
-
-    elif geometry == "plane":
+    if propagation_method == "angular_spectrum":
         alpha = wavelength * xM / width
         beta = wavelength * yM / height
         prop_corner = np.exp(
@@ -132,8 +151,20 @@ def propagator(
         )
         prop_corner[alpha**2 + beta**2 > 1] = 0
 
+    elif propagation_method == "fresnel":
+        u = delta0x * xM
+        v = delta0y * yM
+        phase = math.pi * wavelength * depth * (u**2 + v**2)
+
+        # Include global phase term for plane-wave illumination.
+        phase = phase - (2 * math.pi * depth / wavelength)
+
+        prop_corner = np.exp(1j * phase)
+
     else:
-        raise Exception("Invalid geometry.")
+        raise Exception(
+            f"Invalid propagation_method {propagation_method}, must be 'angular_spectrum' or 'fresnel'."
+        )
 
     # Array to hold full propagator
     prop = np.zeros((grid_height, grid_width), dtype=data_type)
@@ -153,7 +184,9 @@ def propagator(
         wavelength=wavelength,
         pixel_size=pixel_size,
         depth=depth,
-        geometry=geometry,
+        propagation_method=propagation_method,
+        correct_pixel_size=correct_pixel_size,
+        source_distance=source_distance,
     )
     return prop_obj
 
@@ -309,6 +342,7 @@ def refocus_and_score(
     prop_lut=None,
     use_numba=False,
     use_cuda=False,
+    propagation_method="angular_spectrum",
     precision="single",
 ):
     """Refocuses an image to specificed depth and returns focus score, used by
@@ -355,6 +389,7 @@ def refocus_and_score(
             wavelength,
             pixel_size,
             depth,
+            propagation_method=propagation_method,
             precision=precision,
             use_numba=use_numba,
         )
@@ -431,6 +466,7 @@ def find_focus(img, wavelength, pixel_size, depth_range, method, **kwargs):
     prop_lut = kwargs.get("prop_lut", None)
     use_numba = kwargs.get("numba", False)
     use_cuda = kwargs.get("cuda", False)
+    propagation_method = kwargs.get("propagation_method", "angular_spectrum")
     max_iter = kwargs.get("max_iter", 10)
     downsample = kwargs.get("downsample", 1)
     correct_curvature_bool = kwargs.get("correct_curvature", False)
@@ -491,6 +527,7 @@ def find_focus(img, wavelength, pixel_size, depth_range, method, **kwargs):
             prop_lut,
             use_numba,
             use_cuda,
+            propagation_method,
         ),
     )
 
@@ -541,6 +578,7 @@ def focus_score_curve(
     window = kwargs.get("window", None)
     score_roi = kwargs.get("roi", None)
     margin = kwargs.get("margin", None)
+    propagation_method = kwargs.get("propagation_method", "angular_spectrum")
     precision = kwargs.get("precision", "single")
 
     c_hologram = pyholoscope.pre_process(
@@ -574,6 +612,7 @@ def focus_score_curve(
                 method,
                 score_roi,
                 None,
+                propagation_method=propagation_method,
                 precision=precision,
             )
         )
@@ -622,7 +661,7 @@ def refocus_stack(
     use_numba = kwargs.get("use_numba", True)
     background = kwargs.get("background", None)
     precision = kwargs.get("precision", "single")
-    geometry = kwargs.pop("geometry", "plane")
+    propagation_method = kwargs.pop("propagation_method", "angular_spectrum")
 
     depths = np.linspace(depth_range[0], depth_range[1], num_depths)
 
@@ -646,7 +685,7 @@ def refocus_stack(
             depth,
             precision=precision,
             use_numba=use_numba,
-            geometry=geometry,
+            propagation_method=propagation_method,
         )
 
         imgStack.add_idx(

@@ -20,6 +20,16 @@ hologram size, wavelength, pixel size and the depth we wish to refocus to, e.g.:
     depth = 1.0e-3         # metres
     prop = pyh.propagator(grid_size, wavelength, pixel_size, depth)
 
+The propagation model can be changed by passing ``propagation_method = "fresnel"`` (default is ``"angular_spectrum"``)::
+
+    prop = pyh.propagator(grid_size, wavelength, pixel_size, depth, propagation_method = "fresnel")
+
+When using a point source, effective-magnification correction can be enabled by passing ``correct_pixel_size = True``
+and ``source_distance`` (source-to-camera distance, in the same units as ``pixel_size``)::
+
+    prop = pyh.propagator(grid_size, wavelength, pixel_size, depth,
+                          correct_pixel_size = True, source_distance = 0.01)
+
 Assuming we have an inline hologram as a 2D numpy array ``hologram`` we can then refocus using :func:`pyholoscope.refocus`::
 
     refocused_img = pyh.refocus(hologram, prop, background = background_img)

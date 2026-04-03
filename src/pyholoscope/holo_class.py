@@ -53,7 +53,6 @@ try:
         float(1.0),
         float(1.0),
         float(1.0),
-        geometry="plane",
         precision="single",
     )  # Run the JIT once for speed
     numba_available = True
@@ -110,15 +109,17 @@ class Holo:
                         Size of the pixels in the hologram (m). Only needed if refocusing is required.
             depth:  float
                         Refocus depth in same units as pixel_size and wavelength. Only needed if refocusing is required.
+            propagation_method: str
+                        Wave propagation model used for refocusing propagator generation, 'angular_spectrum' (default) or 'fresnel'.
+            correct_pixel_size: bool
+                        Flag to correct effective pixel size for point-source magnification in propagator generation
+                        (default = False). Requires source_distance to be set.
             source_distance: float or None
-                        Distance from point source to image plane in same units as pixel_size and wavelength. Only required
-                        if performing curvature correction. (default = None).
+                        Distance from point source to camera plane in same units as pixel_size and wavelength. Required
+                        if correct_pixel_size or correct_curvature is True. (default = None).
             correct_curvature: bool
                         Flag to enable curvature correction (default = False). If True, the hologram will be corrected
                         for spherical wavefront curvature before refocusing. Requires source_distance to be set.
-            geometry: str
-                        Geometry of the angular spectum propagator used for refocusing, 'plane' or 'point' (default = 'plane').
-                        Only needed if refocusing is required.
             use_prop_lut : boolean
                            If True, use propagator LUT to refocus.
 
@@ -127,13 +128,16 @@ class Holo:
                         Depth range to use for finding the focus, (min_depth, max_depth) in same units as pixel_size and wavelength.
                         default = (0, 1).
             find_focus_method: str
-                        Method to use for autofocus, (default = 'Brenner'). Only needed if autofocus is
+                        Method to use for autofocus, (default = 'Sum'). Only needed if autofocus is
                         used.
             find_focus_roi: Roi or None
                         Region of interest to use for finding the autofocus, (default = None). Only used for autofocus.
             find_focus_margin: int or None
                         Margin to use for autofocus, in pixels (default = None). Only used for autofocus.
-         
+            use_auto_focus_propagator_lut: boolean
+                        If True, use a propagator LUT to find focus.  Only used for autofocus. This must be created
+                        using the create_auto_focus_propagator_lut() method before autofocus can be used, or provided
+                        manually by setting the auto_focus_propagator_lut property.
 
         Backgound and Normalisation Parameters:
             background: numpy.ndarray  or None
@@ -147,8 +151,8 @@ class Holo:
                         Flag to calculate relative amplitude in off-axis holography (default = False). If True, the background
                         hologram will be used to calculate the relative amplitude.
             relative_phase: bool
-                        Flag to make the phase relative to the mean phase in the whole image or a specified ROI (default = False)
-                        in off-axis holography. !!!!
+                        Flag to calculate relative phase in off-axis holography (default = False). If True, the background
+                        hologram will be used to calculate the relative phase.
 
         Windowing Parameters:
             auto_window: bool
@@ -173,10 +177,10 @@ class Holo:
             crop_centre: tuple or None
                         Centre of the crop in the off-axis demodulation, (x, y) in pixels (default = None). If None, the calib_off_axis()
                         method must be called to find the crop centre.
-            crop_radius: int or None
+            crop_radius: int or (int, int) or None
                         Radius of the crop in the off-axis demodulation, in pixels (default = None). If None, the calib_off_axis()
                         method must be called to find the crop radius.
-            crop_mask: numpy.ndarray or None
+            crop_mask:  enum or None
                         Shape of crop mask to use in the off-axis demodulation, pyholoscope.CIRCLE, pyholoscope.CIRCLE_COSINE, or
                         pyholsocope.CUSTOM. (default = None). If specified as pyholoscope.CUSTOM, the mask must be specified
                         using the custom_crop_window parameter. Otherwise, the crop mask will be a circle or a circle with a cosine
@@ -190,20 +194,13 @@ class Holo:
                         crop window over which it transitions from opaque to transparent (default = 10).
             return_fft: bool
                         Flag to return the FFT of the off-axis demodulated image (default = False).
-                        If True, the process() method will be return a tuple of (demodulated image, fft)
+                        If True, the process() method will be return the FFT of the off-axis demodulated image 
+                        instead of the demodulated image itself.
             off_axis_real_fft: bool
                         Flag to use a real FFT for off-axis demodulation (default = False). If True, the real FFT will be used instead
                         of the complex FFT. This is faster but should only be used if the reference beam is not tilted in such a way that
                         the cross-term crosses the vetical axis in the FFT.
-        Phase Processing Parameters:
-            relative_phase: bool
-                        Flag to make the phase relative to the mean phase in the whole image or a specified ROI (default = False).
-            stable_phase: bool
-                        Flag to make the phase stable, i.e. to remove the global phase from the image (default = False).
-            stable_roi: pyholoscope.Roi or None
-                        Region of interest to use for making the phase stable. In the output image
-                        the mean phase in this region will be zero. (default = None). If None, the whole image will be used.
-
+        
         Display Parameters:
                 invert: bool
                         Flag to invert the image, i.e. largest value becomes smallest and vice versa (default = False).
@@ -228,14 +225,15 @@ class Holo:
 
         # Numerical refocusing
         self.depth = kwargs.get("depth", 0)
-        self.set_background(kwargs.get("background", None))
-        self.set_normalise(kwargs.get("normalise", None))
-        self.geometry = kwargs.get("geometry", "plane")
+        self.background = kwargs.get("background", None)
+        self.normalise = kwargs.get("normalise", None)
         self.use_prop_lut = kwargs.get("use_prop_lut", False)
         self.source_distance = kwargs.get("source_distance", None)
+        self.correct_pixel_size = kwargs.get("correct_pixel_size", False)
         self.correct_curvature = kwargs.get("correct_curvature", False)
+        self.propagation_method = kwargs.get("propagation_method", "angular_spectrum")
 
-        # Widowing
+        # Windowing
         self.auto_window = kwargs.get("auto_window", False)
         self.post_window = kwargs.get("post_window", False)
         self.window = kwargs.get("window", None)
@@ -244,7 +242,7 @@ class Holo:
         self.window_thickness = kwargs.get("window_thickness", 10)
 
         # Autofocus
-        self.find_focus_method = kwargs.get("find_focus_method", "Brenner")
+        self.find_focus_method = kwargs.get("find_focus_method", "Sum")
         self.find_focus_roi = kwargs.get("find_focus_roi", None)
         self.find_focus_margin = kwargs.get("find_focus_margin", None)
         self.find_focus_depth_range = kwargs.get("find_focus_depth_range", (0, 1))
@@ -256,7 +254,7 @@ class Holo:
         self.return_fft = kwargs.get("return_fft", False)
         self.crop_mask = kwargs.get("crop_mask", None)
         self.custom_crop_window = kwargs.get("custom_crop_window", None)
-        self.__crop_window_skin_thickness = kwargs.get("crop_window_skin_thickness", 10)
+        self.crop_window_skin_thickness = kwargs.get("crop_window_skin_thickness", 10)
         self.off_axis_real_fft = kwargs.get("off_axis_real_fft", False)
         self.relative_amplitude = kwargs.get("relative_amplitude", False)
 
@@ -276,7 +274,7 @@ class Holo:
         self.cuda = kwargs.get("cuda", True)
 
         # Image data type
-        self.set_precision(kwargs.get("precision", "single"))
+        self.precision = (kwargs.get("precision", "single"))
 
     def __process_inline(self, img):
         """Process an inline hologram image, img, using the currently selected
@@ -328,6 +326,9 @@ class Holo:
                     wavelength=self.wavelength,
                     pixel_size=self.pixel_size,
                     depth=self.depth,
+                    propagation_method=self.propagation_method,
+                    correct_pixel_size=self.correct_pixel_size,
+                    source_distance=self.source_distance,
                 )
                 is False
             ):
@@ -454,6 +455,9 @@ class Holo:
                 depth=self.depth,
                 wavelength=self.wavelength,
                 pixel_size=self.oa_pixel_size,
+                propagation_method=self.propagation_method,
+                correct_pixel_size=self.correct_pixel_size,
+                source_distance=self.source_distance,
             ):
                 self.update_propagator(demod)
 
@@ -492,7 +496,7 @@ class Holo:
 
     def process(self, img):
         """Process a hologram using the currently selected parameters.
-        Calls _process_inline or __process_off_axis depending  on mode.
+        Calls _process_inline or __process_off_axis depending on mode.
         """
 
         # If we are refocusing we must have a wavelength, pixel size and depth specified
@@ -509,9 +513,9 @@ class Holo:
 
         assert img.ndim == 2, "Input must be a 2D numpy array."
 
-        if self.mode == self.INLINE_MODE or self.mode == self.INLINE:
+        if self.mode == self.INLINE:
             return self.__process_inline(img)
-        elif self.mode == self.OFFAXIS_MODE or self.mode == self.OFF_AXIS:
+        elif self.mode == self.OFF_AXIS:
             return self.__process_off_axis(img)
         else:
             raise Exception("Invalid processing mode.")
@@ -555,17 +559,7 @@ class Holo:
         if normalise is not None:
             self._normalise = normalise.astype(self.image_type)
 
-    @property
-    def relative_amplitude(self):
-        return self._relative_amplitude
-
-    @relative_amplitude.setter
-    def relative_amplitude(self, boolean):
-        assert boolean == True or boolean == False, (
-            "Argument of set_relative_amplitude must be True or False"
-        )
-        self._relative_amplitude = boolean
-
+   
     @property
     def window(self):
         return self._window
@@ -879,7 +873,7 @@ class Holo:
                 self.__crop_window = circ_cosine_window(
                     (self.crop_radius[0] * 2, self.crop_radius[1] * 2),
                     self.crop_radius,
-                    self.__crop_window_skin_thickness,
+                    self.crop_window_skin_thickness,
                 )
         elif self.crop_mask == self.CUSTOM:
             self.__crop_window = self.custom_crop_window
@@ -898,7 +892,7 @@ class Holo:
             real_fft=self.off_axis_real_fft,
         )
         self.background_abs = np.abs(self.background_field)  # Store these now for speed
-        self.backgroundPhase = np.angle(self.background_field)
+        self.background_phase = np.angle(self.background_field)
 
     def __off_axis_normalise_field(self):
         """Demodulate the background hologram."""
@@ -919,18 +913,21 @@ class Holo:
         should be an 2D numpy array of the same size as the images to be processed.
         """
 
-        if self.mode == self.INLINE_MODE:
-            assert self.pixel_size is not None, (
+        assert self.pixel_size is not None, (
                 "Pixel size must be specified before propagator is created."
             )
+        assert self.wavelength is not None, (
+                "Wavelength must be specified before propagator is created."    
+            )
+
+        if self.mode == self.INLINE_MODE:           
             self.propagator_pixel_size = self.pixel_size * self.downsample
             downsample = self.downsample
-        else:
-            assert self.oa_pixel_size is not None, (
-                "Pixel size must be specified before propagator is created."
-            )
+        elif self.mode == self.OFF_AXIS:
             self.propagator_pixel_size = self.oa_pixel_size
             downsample = 1  # The way oa_pixel_size is calculated, we already take account of the downsample factor
+        else:
+            raise Exception("Mode must be set to INLINE or OFF_AXIS before propagator can be created.")
 
         prop_width = int(np.shape(img)[1] / downsample / 2) * 2
         prop_height = int(np.shape(img)[0] / downsample / 2) * 2
@@ -940,8 +937,10 @@ class Holo:
             self.wavelength,
             self.propagator_pixel_size,
             self.depth,
+            propagation_method=self.propagation_method,
+            correct_pixel_size=self.correct_pixel_size,
+            source_distance=self.source_distance,
             precision=self.precision,
-            geometry=self.geometry,
             use_numba=self.use_numba,
         )
 
@@ -953,7 +952,7 @@ class Holo:
         """Sets the parameters used by the find_focus method.
 
         Keyword Arguments:
-            depth_range   : double
+            depth_range  : double
                            tuple of (min, max) depths to search within in m.
             roi          : instance of Roi
                            area to assess focus within, default is None in which
@@ -965,12 +964,13 @@ class Holo:
                            refocused. If None (default) the whole image will be
                            refocused regardless. Has no effect if roi not specified.
             use_prop_lut : bool
-                                Whether or not to use the auto focus propagator LUT for 
-                                finding focus. Default is False. If True, the LUT
-                                must have been generated with make_auto_focus_propagator_LUT() 
-                                and must cover the depth range specified by depth_range.
+                           Whether or not to use the auto focus propagator LUT for 
+                           finding focus. Default is False. If True, the LUT
+                           must have been generated with make_auto_focus_propagator_LUT() 
+                           or set manually using the auto_focus_propagator_lut property,
+                           and must cover the depth range specified by depth_range.
         """
-        self.find_focus_depth_range = kwargs.get("depth_range", (0, 0.1))
+        self.find_focus_depth_range = kwargs.get("depth_range", (0, 1))
         self.find_focus_roi = kwargs.get("roi", None)
         self.find_focus_method = kwargs.get("method", "sum")
         self.find_focus_margin = kwargs.get("margin", None)
@@ -990,16 +990,27 @@ class Holo:
         """
 
         if self.use_auto_focus_propagator_lut:
-            if self.auto_focus_propagator_lut is not None:
-                if (
-                    self.auto_focus_propagator_lut.wavelength != self.wavelength
-                    or self.auto_focus_propagator_lut.pixel_size != self.pixel_size
-                ):
-                    raise "Auto focus propagator LUT was generated with different wavelength or pixel size to current settings."
-            else:
-                raise "Auto focus propagator LUT has not been generated, but use_propagator_LUT is set to True."
+
+            assert isinstance(self.auto_focus_propagator_lut, PropLUT), (
+                "Requested to use auto focus propagator LUT, but this has not been generated or set."
+            )
+
+            assert self.auto_focus_propagator_lut.wavelength == self.wavelength, (
+                "Auto focus propagator LUT was generated with different wavelength to current settings."
+            )   
+                
+            assert self.auto_focus_propagator_lut.pixel_size == self.pixel_size, ( 
+                 "Auto focus propagator LUT was generated with different pixel size to current settings."
+            )
+
+            assert self.auto_focus_propagator_lut.depth_range[0] <= self.find_focus_depth_range[0] and self.auto_focus_propagator_lut.depth_range[1] >= self.find_focus_depth_range[1], (
+                "Auto focus propagator LUT does not cover the depth range specified for finding focus."
+            )
+
             prop_lut = self.auto_focus_propagator_lut
+           
         else:
+
             prop_lut = None
 
         args = {
@@ -1030,16 +1041,18 @@ class Holo:
         and then refocuses to this depth and returns the refocused image. Note that
         this is sets the depth of the Holo class to the found focus depth, so 
         subsequent calls to process() will be at this depth unless depth is 
-        changed again.
+        changed again. The refocus depth can be read from the Holo class
+        depth property after calling this method.
         
         Arguments:
             img         : ndarray
                           2D array containing hologram
         Returns:
-            ndarray      : refocused image at optimal focus depth.
+            ndarray     : refocused image at optimal focus depth.
         """
-        focus_depth = self.find_focus(img)
-        self.set_depth(focus_depth)
+
+        self.focus_depth = self.find_focus(img)
+        
         return self.__process_inline(img)    
 
     
@@ -1061,6 +1074,9 @@ class Holo:
             self.pixel_size,
             depth_range,
             num_depths,
+            propagation_method=self.propagation_method,
+            correct_pixel_size=self.correct_pixel_size,
+            source_distance=self.source_distance,
             use_numba=(numba_available and self.use_numba),
             precision=self.precision,
         )
@@ -1093,6 +1109,9 @@ class Holo:
             self.pixel_size,
             depth_range,
             num_depths,
+            propagation_method=self.propagation_method,
+            correct_pixel_size=self.correct_pixel_size,
+            source_distance=self.source_distance,
             use_numba=(numba_available and self.use_numba),
             precision=self.precision,
         )
@@ -1122,18 +1141,11 @@ class Holo:
             FocusStack : instance of FocusStack containing the refocused images.
         """
 
-        if self.mode == self.INLINE_MODE:
+        if self.mode == self.INLINE or self.relative_amplitude:
             pre_background = self.background
-            post_background = None
         else:
             pre_background = None
-            post_background = None
-        args = {
-            "background": self.background,
-            "window": self.window,
-            "numba": numba_available and self.use_numba,
-        }
-
+        
         return refocus_stack(
             img,
             self.wavelength,
@@ -1141,7 +1153,9 @@ class Holo:
             depth_range,
             num_depth,
             precision=self.precision,
-            **args,
+            background=pre_background,
+            window=self.window,
+            numba=numba_available and self.use_numba,
         )
 
     def __str__(self):

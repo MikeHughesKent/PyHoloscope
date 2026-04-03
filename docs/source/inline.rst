@@ -2,7 +2,7 @@
 Inline Holography Using Holo Class
 ----------------------------------
 Inline Holography can be performed using the :doc:`holo` of PyHoloscope by setting ``mode = pyholoscope.INLINE``. This allows
-numerical refocusing using the angular spectrum method, as well as optional background subtraction, normalisation and windowing.
+numerical refocusing using the angular spectrum or Fresnel propagator methods, as well as optional background subtraction, normalisation, windowing and autofocusing.
 See the `Holo class documentation <holo.html>`_ for a full list of methods and arguments. For code examples see the `Inline Holography Example <https://github.com/MikeHughesKent/PyHoloscope/blob/main/examples/inline_example.py>`_
 or `Inline Holography Advanced Example <https://github.com/MikeHughesKent/PyHoloscope/blob/main/examples/inline_example_advanced.py>`_ on github.
 
@@ -59,6 +59,19 @@ particularly noticeable when using GPU acceleration as the propagator creation
 will often be the rate-limiting step. Subsequent refocusing to the same depth 
 will be faster providing no parameters are changed that force a new propagator 
 to be created (depth, pixel size, wavelength or grid size). 
+    
+The angular spectrum propagator and the window are both created the first time
+``process`` is called for a particular set of parameters. If we prefer to pre-generate these, we can call::
+
+    holo.update_propagator(img)
+    holo.update_auto_window(img)
+
+where ``img`` is a 2D numpy array of the size of the hologram to be processed.
+
+
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Windowing
+^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 If we would like to smooth the edges of the hologram, we can apply a window before
 refocusing by calling:: 
@@ -68,14 +81,27 @@ refocusing by calling::
 By default the window will be a rectangular cosine window. Options for the window size and shape
 are set using the ``window_shape``, ``window_radius`` and ``window_thickness`` attributes
 of :doc:`holo`.
-    
-The angular spectrum propagator and the window are both created the first time
-``process`` is called for a particular set of parameters. If we prefer to pre-generate these, we can call::
 
-    holo.update_propagator(img)
-    holo.update_auto_window(img)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Propagation Models and Geometric Magnification Correction
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+If required, the wavefront propagation model can be switched by changing ``propagation_method`` from ``"angular_spectrum"`` (default) to ``"fresnel"``.
+For example::
 
-where ``img`` is a 2D numpy array of the size of the hologram to be processed.
+    holo.propagation_method = "fresnel"
+
+While less accurate than the angular spectrum method in some cases, the Fresnel method is slightly faster to 
+compute and may be sufficient for many applications.
+
+When using a point source, the effective pixel size is not the physical pixel camera size,
+as the hologram is magnified onto the camera due to projection effects. The ``depth`` value
+for which focus is achieved will therefore not be the true distane to the sample plane.
+
+Effective-magnification correction can be enabled by setting ``correct_pixel_size = True`` and
+providing ``source_distance`` (source-to-camera distance), for example::
+
+    holo = pyh.Holo(mode = pyh.INLINE, pixel_size = 2e-6, wavelength = 0.5e-6, depth = 0.005,
+                    source_distance = 0.01, correct_pixel_size = True)
 
 
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^

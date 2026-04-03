@@ -15,7 +15,7 @@ from pyholoscope import get8bit, get16bit, amplitude, phase, save_image, save_im
 
 from pyholoscope import save_amplitude_image8, save_amplitude_image16, save_phase_image
 
-from pyholoscope import load_image, extract_central, circ_cosine_window, dimensions
+from pyholoscope import load_image, extract_central, circ_cosine_window, dimensions, cshow
 
 
 class TestUtils(unittest.TestCase):
@@ -103,6 +103,26 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(window[0, 0], 0)
         self.assertEqual(window[50, 50], 1)
         self.assertTupleEqual(np.shape(window), (imgSize, imgSize))
+
+
+    def test_cshow(self):
+        img = (2 * np.random.rand(10, 10)) - 1 + 1j * (2 * np.random.rand(10, 10) - 1)
+        import matplotlib.pyplot as plt
+        original_show = plt.show
+        fig = None
+        try:
+            plt.show = lambda *args, **kwargs: None
+            fig, (ax1, ax2) = cshow(img, title="Test")
+            self.assertIsNotNone(fig)
+            self.assertIsNotNone(ax1)
+            self.assertIsNotNone(ax2)
+            self.assertIn(ax1, fig.axes)
+            self.assertIn(ax2, fig.axes)
+            self.assertEqual(fig._suptitle.get_text(), "Test")
+        finally:
+            plt.show = original_show
+            #if fig is not None:
+              #  plt.close(fig)
 
     def test_dimensions(self):
         w = 2

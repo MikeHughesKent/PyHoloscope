@@ -106,6 +106,69 @@ class TestPropagatorLut(unittest.TestCase):
 
         assert (recon == recon_lut).all()
 
+    def test_propagator_lut_fresnel(self):
+        num_depths = 11
+        depth_range = (0, 0.002)
+
+        prop_lut = pyh.PropLUT(
+            (self.grid_size1, self.grid_size2),
+            self.wavelength,
+            self.pixel_size,
+            depth_range,
+            num_depths,
+            use_numba=False,
+            precision="single",
+            propagation_method="fresnel",
+        )
+
+        prop = pyh.propagator(
+            (self.grid_size1, self.grid_size2),
+            self.wavelength,
+            self.pixel_size,
+            self.depth2,
+            precision="single",
+            propagation_method="fresnel",
+            use_numba=False,
+        )
+        prop_from_lut = prop_lut.propagator(self.depth2)
+
+        assert prop_from_lut.propagation_method == "fresnel"
+        assert (prop_from_lut.propagator == prop.propagator).all()
+
+    def test_propagator_lut_correct_pixel_size(self):
+        num_depths = 11
+        depth_range = (0, 0.002)
+        source_distance = 0.02
+
+        prop_lut = pyh.PropLUT(
+            (self.grid_size1, self.grid_size2),
+            self.wavelength,
+            self.pixel_size,
+            depth_range,
+            num_depths,
+            correct_pixel_size=True,
+            source_distance=source_distance,
+            use_numba=False,
+            precision="single",
+        )
+
+        prop = pyh.propagator(
+            (self.grid_size1, self.grid_size2),
+            self.wavelength,
+            self.pixel_size,
+            self.depth2,
+            precision="single",
+            correct_pixel_size=True,
+            source_distance=source_distance,
+            use_numba=False,
+        )
+
+        prop_from_lut = prop_lut.propagator(self.depth2)
+
+        assert prop_from_lut.correct_pixel_size is True
+        assert np.isclose(prop_from_lut.source_distance, source_distance)
+        assert (prop_from_lut.propagator == prop.propagator).all()
+
 
 if __name__ == "__main__":
     unittest.main()

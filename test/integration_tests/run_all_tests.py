@@ -13,6 +13,12 @@ import test_inline
 print("# Inline Holography Depth Stack")
 import test_inline_depth_stack
 
+print("# Inline Holography: Angular Spectrum vs Fresnel")
+import test_inline_propagation_methods
+
+print("# Inline Holo Class: Angular Spectrum vs Fresnel")
+import test_inline_holo_class_propagation_methods
+
 print("# Off Axis Holography OOP")
 import test_off_axis
 
@@ -24,6 +30,9 @@ import test_off_axis_focusing
 
 print("# Off Axis Focusing Low Level")
 import test_off_axis_focusing_low_level
+
+print("# Off Axis Low Level: Angular Spectrum vs Fresnel")
+import test_off_axis_propagation_methods_low_level
 
 print("# Relative phase")
 import test_relative_phase

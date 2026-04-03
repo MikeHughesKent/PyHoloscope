@@ -43,7 +43,6 @@ prop = pyh.propagator(
     wavelength,
     adjusted_pixel_size,
     depth,
-    geometry="point",
 )
 refocused_field = pyh.refocus(corrected_field, prop)
 

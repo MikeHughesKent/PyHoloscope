@@ -29,7 +29,6 @@ class TestHoloClassInline(unittest.TestCase):
             self.wavelength,
             self.pixel_size,
             self.depth,
-            geometry="point",
         )
         img_refocus = pyh.refocus(self.img, prop)
 
@@ -38,7 +37,6 @@ class TestHoloClassInline(unittest.TestCase):
             wavelength=self.wavelength,
             pixel_size=self.pixel_size,
             depth=self.depth,
-            geometry="point",
         )
         img_refocus_oop = holo.process(self.img)
 
@@ -50,7 +48,6 @@ class TestHoloClassInline(unittest.TestCase):
             self.wavelength,
             self.pixel_size,
             self.depth,
-            geometry="plane",
             precision="double",
         )
         img_refocus = pyh.refocus(self.img, prop)
@@ -60,7 +57,6 @@ class TestHoloClassInline(unittest.TestCase):
             wavelength=self.wavelength,
             pixel_size=self.pixel_size,
             depth=self.depth,
-            geometry="plane",
             precision="double",
         )
 
@@ -73,7 +69,6 @@ class TestHoloClassInline(unittest.TestCase):
             self.wavelength,
             self.pixel_size,
             self.depth,
-            geometry="point",
             precision="double",
         )
         img_refocus = pyh.refocus(self.img, prop)
@@ -83,7 +78,6 @@ class TestHoloClassInline(unittest.TestCase):
             wavelength=self.wavelength,
             pixel_size=self.pixel_size,
             depth=self.depth,
-            geometry="point",
             precision="double",
         )
 
@@ -96,7 +90,6 @@ class TestHoloClassInline(unittest.TestCase):
             self.wavelength,
             self.pixel_size,
             self.depth,
-            geometry="point",
             precision="single",
         )
         img_refocus = pyh.refocus(
@@ -108,7 +101,6 @@ class TestHoloClassInline(unittest.TestCase):
             wavelength=self.wavelength,
             pixel_size=self.pixel_size,
             depth=self.depth,
-            geometry="point",
             precision="single",
             background=self.background,
             normalise=self.background,
@@ -123,7 +115,6 @@ class TestHoloClassInline(unittest.TestCase):
             self.wavelength,
             self.pixel_size,
             self.depth,
-            geometry="point",
             precision="single",
         )
         window = pyh.square_cosine_window(self.img, 100, 10)
@@ -136,7 +127,6 @@ class TestHoloClassInline(unittest.TestCase):
             pixel_size=self.pixel_size,
             depth=self.depth,
             window=window,
-            geometry="point",
             precision="single",
         )
 
@@ -149,7 +139,6 @@ class TestHoloClassInline(unittest.TestCase):
             self.wavelength,
             self.pixel_size,
             self.depth,
-            geometry="point",
             precision="single",
         )
         window = pyh.square_cosine_window(self.img, radius=100, skin_thickness=10)
@@ -164,7 +153,6 @@ class TestHoloClassInline(unittest.TestCase):
             auto_window=True,
             window_radius=100,
             window_thickness=10,
-            geometry="point",
             precision="single",
         )
 
@@ -177,7 +165,6 @@ class TestHoloClassInline(unittest.TestCase):
             self.wavelength,
             self.pixel_size,
             self.depth,
-            geometry="point",
             precision="single",
         )
         window = pyh.square_cosine_window(self.img, 100, 10)
@@ -196,7 +183,6 @@ class TestHoloClassInline(unittest.TestCase):
             post_window=True,
             window_radius=100,
             window_thickness=10,
-            geometry="point",
             precision="single",
         )
 
@@ -235,6 +221,46 @@ class TestHoloClassInline(unittest.TestCase):
         depth_holo = holo.find_focus(self.img)
 
         assert np.isclose(depth_low, depth_holo)
+
+    def test_propagator_regenerates_on_method_change(self):
+        holo = pyh.Holo(
+            mode=pyh.INLINE,
+            wavelength=self.wavelength,
+            pixel_size=self.pixel_size,
+            depth=self.depth,
+            propagation_method="angular_spectrum",
+        )
+
+        _ = holo.process(self.img)
+        prop_angular = holo.propagator.propagator.copy()
+
+        holo.propagation_method = "fresnel"
+        _ = holo.process(self.img)
+        prop_fresnel = holo.propagator.propagator
+
+        assert holo.propagator.propagation_method == "fresnel"
+        assert not np.allclose(prop_angular, prop_fresnel)
+
+    def test_propagator_regenerates_on_correct_pixel_size_change(self):
+        holo = pyh.Holo(
+            mode=pyh.INLINE,
+            wavelength=self.wavelength,
+            pixel_size=self.pixel_size,
+            depth=self.depth,
+            source_distance=0.02,
+            correct_pixel_size=False,
+        )
+
+        _ = holo.process(self.img)
+        prop_uncorrected = holo.propagator.propagator.copy()
+
+        holo.correct_pixel_size = True
+        _ = holo.process(self.img)
+        prop_corrected = holo.propagator.propagator
+
+        assert holo.propagator.correct_pixel_size is True
+        assert np.isclose(holo.propagator.source_distance, 0.02)
+        assert not np.allclose(prop_uncorrected, prop_corrected)
 
 
 if __name__ == "__main__":

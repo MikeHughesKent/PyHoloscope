@@ -19,7 +19,12 @@ from pyholoscope.propagator import Propagator
 
 @jit(nopython=True)
 def propagator_numba(
-    grid_size, wavelength, pixel_size, depth, geometry="plane", precision="single"
+    grid_size,
+    wavelength,
+    pixel_size,
+    depth,
+    propagation_method="angular_spectrum",
+    precision="single",
 ):
     """Numba optimised version of propagator().
     Creates Fourier domain propagator for angular spectrum method.
@@ -40,8 +45,9 @@ def propagator_numba(
                       refocus depth in same units as pixelSize
 
     Keyword Arguments:
-         geometry   : str
-                      'plane' (default) or 'point'
+         propagation_method : str
+                      wave propagation model, 'angular_spectrum' (default)
+                      or 'fresnel'
          precision  : str
                       numerical precision of ouptut, 'single' (defualt)
                       or 'double' [NOT IMPLEMENTED]
@@ -62,21 +68,7 @@ def propagator_numba(
     delta0x = 1 / width
     delta0y = 1 / height
 
-    if geometry == "point":
-        fac = math.pi * wavelength * depth
-
-        for x in range(centre_x + 1):
-            uSq = (delta0x * x) ** 2
-
-            for y in range(centre_y + 1):
-                vSq = (delta0y * y) ** 2
-                phase = fac * (uSq + vSq)
-
-                # This is about as twice as fast as using np.exp(1j * phase)
-                prop_corner.real[y, x] = math.cos(phase)
-                prop_corner.imag[y, x] = math.sin(phase)
-
-    elif geometry == "plane":
+    if propagation_method == "angular_spectrum":
         fac = -2 * math.pi * depth / wavelength
         for x in range(centre_x + 1):
             alphaSq = (float(wavelength) * x * delta0x) ** 2
@@ -89,8 +81,24 @@ def propagator_numba(
                     # This is about as twice as fast as using np.exp(1j * phase)
                     prop_corner.real[y, x] = math.cos(phase)
                     prop_corner.imag[y, x] = math.sin(phase)
+
+    elif propagation_method == "fresnel":
+        fac = math.pi * wavelength * depth
+        global_phase = -2 * math.pi * depth / wavelength
+
+        for x in range(centre_x + 1):
+            uSq = (delta0x * x) ** 2
+
+            for y in range(centre_y + 1):
+                vSq = (delta0y * y) ** 2
+                phase = fac * (uSq + vSq) + global_phase
+
+                # This is about as twice as fast as using np.exp(1j * phase)
+                prop_corner.real[y, x] = math.cos(phase)
+                prop_corner.imag[y, x] = math.sin(phase)
+
     else:
-        raise Exception("Invalid geometry.")
+        raise Exception("Invalid propagation_method.")
 
     # Duplicate the top left quadrant into the other three quadrants as
     # this is quicker then explicitly calculating the values

@@ -29,7 +29,6 @@ class TestRefocus(unittest.TestCase):
             self.wavelength,
             self.pixel_size,
             self.depth,
-            geometry="plane",
             precision="single",
         )
         self.img_refocus = pyh.refocus(self.img, prop)
@@ -43,7 +42,6 @@ class TestRefocus(unittest.TestCase):
             self.wavelength,
             self.pixel_size,
             self.depth,
-            geometry="plane",
             precision="double",
         )
         self.img_refocus = pyh.refocus(self.img, prop)
@@ -57,7 +55,6 @@ class TestRefocus(unittest.TestCase):
             self.wavelength,
             self.pixel_size,
             self.depth,
-            geometry="point",
             precision="double",
         )
         self.img_refocus = pyh.refocus(self.img, prop)
@@ -72,7 +69,6 @@ class TestRefocus(unittest.TestCase):
             self.wavelength,
             self.pixel_size,
             self.depth,
-            geometry="plane",
             precision="single",
         )
         img_fft = scipy.fft.fft2(self.img)
@@ -113,7 +109,6 @@ class TestRefocus(unittest.TestCase):
             self.pixel_size,
             depth_range,
             num_depths,
-            geometry="plane",
         )
 
         # Check first depth is correct
@@ -122,7 +117,6 @@ class TestRefocus(unittest.TestCase):
             self.wavelength,
             self.pixel_size,
             first_depth,
-            geometry="plane",
             precision="single",
         )
 
@@ -135,7 +129,6 @@ class TestRefocus(unittest.TestCase):
             self.wavelength,
             self.pixel_size,
             last_depth,
-            geometry="plane",
             precision="single",
         )
 

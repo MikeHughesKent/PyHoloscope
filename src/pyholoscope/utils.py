@@ -8,6 +8,7 @@ This file contains utility functions.
 
 import math
 import numpy as np
+import matplotlib.pyplot as plt 
 
 try:
     import cupy as cp
@@ -153,7 +154,6 @@ def phase(img):
     """
     return np.angle(img) % (2 * math.pi)
 
-
 def load_image(filename):
     """
     Loads an image or stack of images from a file. Supports all formats supported by PIL.
@@ -168,11 +168,14 @@ def load_image(filename):
     """
     im = Image.open(filename)
 
-    if im.n_frames > 1:
-        h, w = np.shape(im)
-        dt = np.array(im).dtype
-        stack = np.zeros((im.n_frames, h, w), dtype=dt)
-        for i in range(im.n_frames):
+    num_frames = getattr(im, "n_frames", 1)
+
+    if num_frames > 1:
+        example_img = np.array(im)
+        h, w = np.shape(example_img)[0:2]
+        dt = example_img.dtype
+        stack = np.zeros((num_frames, h, w), dtype=dt)
+        for i in range(num_frames):
             im.seek(i)
             stack[i, :, :] = np.array(im)
         return stack
@@ -323,3 +326,56 @@ def dimensions(inp):
         h = inp
 
     return int(h), int(w)
+
+
+def cshow(img, dpi=100, figsize=(10, 5), phase_cmap="twilight", amp_cmap="gray", title=None):
+    """ Displays a complex image as two subplots, one for amplitude and one for phase.
+
+    Parameters:
+        img        : numpy.ndarray
+                     complex image to display
+    Keyword Arguments:
+        dpi        : int
+                     resolution of figure in dots per inch (default = 100)
+        figsize    : tuple of (float, float)
+                     size of figure in inches (default = (10, 5))
+        phase_cmap : str
+                     name of matplotlib colormap to use for phase (default = 'twilight')
+        amp_cmap   : str
+                     name of matplotlib colormap to use for amplitude (default = 'gray')
+        title      : str or None
+                     title to set for whole figure (default = None)
+    
+    Returns:
+        tuple of (Figure, (Axes, Axes)) : figure and axes objects from matplotlib
+     """
+    
+    
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=figsize, dpi = dpi)
+    
+    # Set title of whole figure
+    if title is not None:
+        fig.suptitle(title, fontsize=16)
+    
+    amp = ax1.imshow(amplitude(img), cmap=amp_cmap)
+    ax1.set_title("Amplitude")
+    ph = ax2.imshow(phase(img), cmap=phase_cmap, vmin=0, vmax=2 * np.pi)
+    ax2.set_title("Phase")
+
+    # Create a colourbar for the phase plot, scaled to show 0 to 2pi radians
+    cbar_phase = plt.colorbar(ph, ax=ax2, fraction=0.046, pad=0.04)
+    cbar_phase.set_label('Phase (radians)', rotation=270, labelpad=15)
+    cbar_phase.set_ticks([0, np.pi, 2 * np.pi]) 
+    cbar_phase.set_ticklabels(['0', 'π', '2π']) 
+    
+    # Create a colourbar for the amplitude plot
+    cbar_amp = plt.colorbar(amp, ax=ax1, fraction=0.046, pad=0.04)
+    cbar_amp.set_label('Amplitude', rotation=270, labelpad=15)
+
+    # Increase spacing between subplots to prevent overlap of colourbars and titles
+    plt.subplots_adjust(wspace=0.3, top=0.85)
+    plt.show()
+
+    return fig, (ax1, ax2)
+
+    
