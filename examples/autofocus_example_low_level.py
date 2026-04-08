@@ -53,6 +53,7 @@ autofocus = pyh.find_focus(
      depth_range,
      method,
      background=background,
+     roi=roi,
 )
 print(f"Best focus at: {round(1000 * autofocus,3)} um")
 

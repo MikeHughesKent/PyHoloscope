@@ -88,17 +88,22 @@ def propagator(
 
     """
 
+    true_pixel_size = pixel_size
+    true_depth = depth
+    magnified_pixel_size = pixel_size
+    magnified_depth = depth
+
     if correct_pixel_size:
         if source_distance is None:
             raise Exception("source_distance must be provided when correct_pixel_size=True.")
         if source_distance == 0:
             raise Exception("source_distance must be non-zero when correct_pixel_size=True.")
-
-        effective_magnification = (source_distance + depth) / source_distance
-        if effective_magnification == 0:
-            raise Exception("Invalid effective magnification; source_distance + depth must be non-zero.")
-
-        pixel_size = pixel_size / effective_magnification
+        if depth >= source_distance:
+            raise Exception("depth must be less than source_distance when correct_pixel_size=True.")
+        
+        effective_magnification = source_distance / (source_distance - depth) 
+        magnified_pixel_size = pixel_size / effective_magnification
+        magnified_depth = depth / effective_magnification
 
     if precision == "double":
         data_type = "complex128"
@@ -108,32 +113,36 @@ def propagator(
         raise Exception(f"Invalid precision {precision}, must be 'single' or 'double'.")
 
     grid_height, grid_width = dimensions(grid_size)
+    
+    # Generate the propagator using the Numba version of the function if we have 
+    # Numba and use_numba is True, this is much faster for large images
     if numba_available and use_numba:
         prop = propagator_numba(
             (grid_height, grid_width),
             wavelength,
-            pixel_size,
-            depth,
+            magnified_pixel_size,
+            magnified_depth,
             propagation_method,
         )
         return Propagator(
             propagator=prop,
             wavelength=wavelength,
-            pixel_size=pixel_size,
-            depth=depth,
+            pixel_size=true_pixel_size,
+            magnified_pixel_size=magnified_pixel_size,
+            depth=true_depth,
+            magnified_depth=magnified_depth,
             propagation_method=propagation_method,
             correct_pixel_size=correct_pixel_size,
             source_distance=source_distance,
         )
 
-    grid_height, grid_width = dimensions(grid_size)
-
+    # Otherwise we use the pure Python version
     centre_x = int(grid_width // 2)
     centre_y = int(grid_height // 2)
 
     # Physical size of hologram in real units
-    width = grid_width * pixel_size
-    height = grid_height * pixel_size
+    width = grid_width * magnified_pixel_size
+    height = grid_height * magnified_pixel_size
 
     # Grid points to generate one quadrant of propagator on
     (xM, yM) = np.meshgrid(range(centre_x + 1), range(centre_y + 1))
@@ -147,18 +156,14 @@ def propagator(
         alpha = wavelength * xM / width
         beta = wavelength * yM / height
         prop_corner = np.exp(
-            (-1j * 2 * math.pi * depth * np.sqrt(1 - alpha**2 - beta**2) / wavelength)
+            (-1j * 2 * math.pi * magnified_depth * np.sqrt(1 - alpha**2 - beta**2) / wavelength)
         )
         prop_corner[alpha**2 + beta**2 > 1] = 0
 
     elif propagation_method == "fresnel":
         u = delta0x * xM
         v = delta0y * yM
-        phase = math.pi * wavelength * depth * (u**2 + v**2)
-
-        # Include global phase term for plane-wave illumination.
-        phase = phase - (2 * math.pi * depth / wavelength)
-
+        phase = math.pi * wavelength * magnified_depth * (u**2 + v**2)
         prop_corner = np.exp(1j * phase)
 
     else:
@@ -179,15 +184,19 @@ def propagator(
         prop[1 : centre_y + 1, :], 0
     )  # bottom half
 
+    # Generate the Propagator object to return
     prop_obj = Propagator(
         propagator=prop,
         wavelength=wavelength,
-        pixel_size=pixel_size,
-        depth=depth,
+        pixel_size=true_pixel_size,
+        magnified_pixel_size=magnified_pixel_size,
+        depth=true_depth,
+        magnified_depth=magnified_depth,
         propagation_method=propagation_method,
         correct_pixel_size=correct_pixel_size,
         source_distance=source_distance,
     )
+
     return prop_obj
 
 
@@ -231,7 +240,7 @@ def refocus(img, propagator, **kwargs):
     img_is_fourier = kwargs.pop("fourier_domain", False)
     cuda = kwargs.pop("cuda", True)
 
-    # If we were sent the propagator on the CPU, push to GPU now
+    # If doing GPU and we were sent the propagator on the CPU, push to GPU now
     if (
         cuda is True
         and cuda_available is True
@@ -294,10 +303,14 @@ def correct_curvature(img, wavelength, pixel_size, source_distance):
     y = pixel_size * (yM - centre_y)
 
     # Distance from point source to each pixel
-    # r = np.sqrt(x**2 + y**2 + source_distance ** 2)
-    phase = (x**2 + y**2) / (2 * source_distance)
+    r = np.sqrt(x**2 + y**2 + source_distance ** 2)
+    k = 2.0 * np.pi / wavelength
 
-    correction = np.exp(-1j * 2 * math.pi * phase / wavelength)
+   # phase = (x**2 + y**2) / (2 * source_distance)
+
+    #correction = np.exp(-1j * 2 * math.pi * phase / wavelength)
+    correction = np.exp(-1j * k * (r - source_distance))
+
 
     return img * correction
 
@@ -472,6 +485,7 @@ def find_focus(img, wavelength, pixel_size, depth_range, method, **kwargs):
     correct_curvature_bool = kwargs.get("correct_curvature", False)
     source_distance = kwargs.get("source_distance", None)
     
+    #print(method, score_roi, margin, prop_lut is not None, use_numba, use_cuda, propagation_method, max_iter, downsample, correct_curvature_bool, source_distance)
 
     c_hologram = pyholoscope.pre_process(
         img, background=background, normalise=normalise, window=window,
@@ -509,7 +523,6 @@ def find_focus(img, wavelength, pixel_size, depth_range, method, **kwargs):
 
     # Pre-compute the FFT of the hologram since we need this for every trial depth
     img_fft = scipy.fft.fft2(cropped_img)
-
 
     # Find the depth using optimiser
     depth = scipy.optimize.minimize_scalar(

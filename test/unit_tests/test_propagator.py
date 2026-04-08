@@ -146,8 +146,9 @@ class TestPropagator(unittest.TestCase):
 
     def test_correct_pixel_size(self):
         source_distance = 0.02
-        effective_magnification = (source_distance + self.depth) / source_distance
+        effective_magnification = source_distance / (source_distance - self.depth) 
         corrected_pixel_size = self.pixel_size / effective_magnification
+        corrected_depth = self.depth/effective_magnification
 
         prop_corrected = pyh.propagator(
             (self.grid_size1, self.grid_size2),
@@ -163,12 +164,15 @@ class TestPropagator(unittest.TestCase):
             (self.grid_size1, self.grid_size2),
             self.wavelength,
             corrected_pixel_size,
-            self.depth,
+            corrected_depth,
             use_numba=False,
         )
 
         assert np.allclose(prop_corrected.propagator, prop_manual.propagator)
-        assert np.isclose(prop_corrected.pixel_size, corrected_pixel_size)
+        assert np.isclose(prop_corrected.magnified_pixel_size, corrected_pixel_size)
+        assert np.isclose(prop_corrected.pixel_size, self.pixel_size)
+        assert np.isclose(prop_corrected.magnified_depth, corrected_depth)
+        assert np.isclose(prop_corrected.depth, self.depth)
         assert prop_corrected.correct_pixel_size is True
         assert np.isclose(prop_corrected.source_distance, source_distance)
 

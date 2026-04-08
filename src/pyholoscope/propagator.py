@@ -18,14 +18,22 @@ class Propagator:
 
         wavelength  : The wavelength of the light used in the propagation (m).
 
-        pixel_size  : The size of the pixels in the hologram (m).
+        pixel_size  : The true physical size of the pixels in the hologram (m).
 
-        depth       : Propagation distance (m).
+        magnified_pixel_size : The effective pixel size used to generate the
+                       propagator after any magnification correction (m).
+
+        depth       : True propagation distance (m).
+
+        magnified_depth : Effective propagation distance used to generate the
+                  propagator after any magnification correction (m).
     """
 
     wavelength = None
     pixel_size = None
+    magnified_pixel_size = None
     depth = None
+    magnified_depth = None
     propagator = None
     shape = None
     propagation_method = None
@@ -37,7 +45,9 @@ class Propagator:
         propagator,
         wavelength=None,
         pixel_size=None,
+        magnified_pixel_size=None,
         depth=None,
+        magnified_depth=None,
         propagation_method=None,
         correct_pixel_size=None,
         source_distance=None,
@@ -52,9 +62,13 @@ class Propagator:
             wavelength: float
                         The wavelength of the light (m).
             pixel_size: float
-                        The size of the pixels in the hologram (m).
+                       The true size of the pixels in the hologram (m).
+                 magnified_pixel_size: float
+                       Effective pixel size used in propagator generation (m).
             depth: float
-                   Propagation distance (m).
+                     True propagation distance (m).
+                 magnified_depth: float
+                     Effective propagation distance used in propagator generation (m).
             propagation_method: str
                                 Propagation model used to generate propagator
                                 ('angular_spectrum' or 'fresnel').
@@ -67,7 +81,9 @@ class Propagator:
         self.propagator = propagator
         self.wavelength = wavelength
         self.pixel_size = pixel_size
+        self.magnified_pixel_size = magnified_pixel_size
         self.depth = depth
+        self.magnified_depth = magnified_depth
         self.propagation_method = propagation_method
         self.correct_pixel_size = correct_pixel_size
         self.source_distance = source_distance
@@ -77,7 +93,9 @@ class Propagator:
         self,
         wavelength=None,
         pixel_size=None,
+        magnified_pixel_size=None,
         depth=None,
+        magnified_depth=None,
         propagation_method=None,
         correct_pixel_size=None,
         source_distance=None,
@@ -100,7 +118,14 @@ class Propagator:
             return False
         if pixel_size is not None and self.pixel_size != pixel_size:
             return False
+        if (
+            magnified_pixel_size is not None
+            and self.magnified_pixel_size != magnified_pixel_size
+        ):
+            return False
         if depth is not None and self.depth != depth:
+            return False
+        if magnified_depth is not None and self.magnified_depth != magnified_depth:
             return False
         if (
             propagation_method is not None

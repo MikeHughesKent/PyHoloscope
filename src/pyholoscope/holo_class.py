@@ -301,6 +301,12 @@ class Holo:
             precision=self.precision,            
         )
 
+        if self.correct_curvature and not self.correct_pixel_size:
+            warnings.warn(
+                "correct_curvature=True with correct_pixel_size=False may give incorrect scaling for point-source holograms.",
+                RuntimeWarning,
+            )
+
         if self.correct_curvature and self.source_distance is not None:
             img_preprocessed = correct_curvature(
                 img_preprocessed,
@@ -1051,8 +1057,8 @@ class Holo:
             ndarray     : refocused image at optimal focus depth.
         """
 
-        self.focus_depth = self.find_focus(img)
-        
+        self.depth = self.find_focus(img)
+       
         return self.__process_inline(img)    
 
     

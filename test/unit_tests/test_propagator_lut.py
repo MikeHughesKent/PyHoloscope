@@ -169,6 +169,47 @@ class TestPropagatorLut(unittest.TestCase):
         assert np.isclose(prop_from_lut.source_distance, source_distance)
         assert (prop_from_lut.propagator == prop.propagator).all()
 
+    def test_propagator_lut_correct_pixel_size_with_source_distance(self):
+        """Test LUT with corrected pixel size against manually corrected parameters."""
+        num_depths = 11
+        depth_range = (0, 0.002)
+        source_distance = 0.02
+
+        prop_lut = pyh.PropLUT(
+            (self.grid_size1, self.grid_size2),
+            self.wavelength,
+            self.pixel_size,
+            depth_range,
+            num_depths,
+            correct_pixel_size=True,
+            source_distance=source_distance,
+            use_numba=False,
+            precision="single",
+        )
+
+        prop_from_lut = prop_lut.propagator(self.depth2)
+
+        effective_magnification = source_distance / (source_distance - self.depth2)
+        corrected_pixel_size = self.pixel_size / effective_magnification
+        corrected_depth = self.depth2 / effective_magnification
+
+        prop_manual = pyh.propagator(
+            (self.grid_size1, self.grid_size2),
+            self.wavelength,
+            corrected_pixel_size,
+            corrected_depth,
+            precision="single",
+            use_numba=False,
+        )
+
+        assert prop_from_lut.correct_pixel_size is True
+        assert np.isclose(prop_from_lut.source_distance, source_distance)
+        assert np.isclose(prop_from_lut.pixel_size, self.pixel_size)
+        assert np.isclose(prop_from_lut.depth, self.depth2)
+        assert np.isclose(prop_from_lut.magnified_pixel_size, corrected_pixel_size)
+        assert np.isclose(prop_from_lut.magnified_depth, corrected_depth)
+        assert np.allclose(prop_from_lut.propagator, prop_manual.propagator)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -104,11 +104,31 @@ class PropLUT:
         # Find nearest propagator
         idx = self.closest_index(depth)
         if idx is not None:
+            prop_depth = self.depths[idx]
+            magnified_pixel_size = self.pixel_size
+            magnified_depth = prop_depth
+
+            if self.correct_pixel_size:
+                if self.source_distance is None:
+                    raise Exception("source_distance must be provided when correct_pixel_size=True.")
+                if self.source_distance == 0:
+                    raise Exception("source_distance must be non-zero when correct_pixel_size=True.")
+                if prop_depth >= self.source_distance:
+                    raise Exception("depth must be less than source_distance when correct_pixel_size=True.")
+
+                effective_magnification = self.source_distance / (
+                    self.source_distance - prop_depth
+                )
+                magnified_pixel_size = self.pixel_size / effective_magnification
+                magnified_depth = prop_depth / effective_magnification
+
             prop = Propagator(
                 self.prop_table[idx, :, :],
                 wavelength=self.wavelength,
                 pixel_size=self.pixel_size,
-                depth=self.depths[idx],
+                magnified_pixel_size=magnified_pixel_size,
+                depth=prop_depth,
+                magnified_depth=magnified_depth,
                 propagation_method=self.propagation_method,
                 correct_pixel_size=self.correct_pixel_size,
                 source_distance=self.source_distance,

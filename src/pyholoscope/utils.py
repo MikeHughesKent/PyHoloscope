@@ -378,4 +378,42 @@ def cshow(img, dpi=100, figsize=(10, 5), phase_cmap="twilight", amp_cmap="gray",
 
     return fig, (ax1, ax2)
 
+
+def qshow(img, title = None, axes = None, cmap = 'gray', dpi = 150, figsize = (5,5), figsizem = None):
+    """ Utility to quickly display an image in a matplotlib figure wtih useful defaults.
     
+    Arguments:
+        img      : ndarray
+                   image to display
+    
+    Keyword Arguments:
+        title    : str
+                   plot title, default is not title
+        axes     : (str, str)
+                   x and y axis labels, default is no labels
+        cmap     : str
+                   matplotlib colormap, default is 'gray'
+        dpi      : int
+                   display dpi, default is 150 
+        figsize  : (float, float)
+                   x and y size of figure in inches, default (5,5)
+        figsizem : (float, float)
+                   x and y size of figure in mm, default None (overrides figsize if specified)   
+
+        Returns:
+        tuple of (Figure, AxesImage) : figure and image objects from matplotlib
+
+    """
+    
+    if figsizem is not None:
+        figsize = (figsizem[0] / 25.4, figsizem[1] / 25.4)
+
+    ax = plt.figure(dpi=dpi, figsize = figsize)
+    im = plt.imshow(img, cmap = cmap, interpolation = 'None', aspect = 'equal')
+    if title is not None: plt.title(title)
+    if axes is not None:
+        plt.xlabel(axes[0])
+        plt.ylabel(axes[1])
+    plt.show()    
+    
+    return ax, im    
